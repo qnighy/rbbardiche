@@ -3,7 +3,7 @@ use bstr::BString;
 
 pub fn parse(source: &[u8]) -> Expr {
     let mut parser = Parser::new(source);
-    parser.parse()
+    parser.parse_stmt()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +15,7 @@ pub struct Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     Ident(BString),
+    Equal,
     InvalidPunct(u8),
     Eof,
 }
@@ -38,7 +39,33 @@ impl Parser {
         }
     }
 
-    fn parse(&mut self) -> Expr {
+    fn parse_stmt(&mut self) -> Expr {
+        let mut e = self.parse_expr();
+        loop {
+            let token = self.next_token();
+            match &token.kind {
+                TokenKind::Eof => break,
+                TokenKind::Equal => {
+                    let rhs = self.parse_expr();
+                    let range = e.range | rhs.range;
+                    e = Expr {
+                        kind: ExprKind::Assign {
+                            lhs: Box::new(e),
+                            rhs: Box::new(rhs),
+                        },
+                        range,
+                    };
+                }
+                _ => {
+                    // rollback
+                    self.pos = token.range.0;
+                }
+            }
+        }
+        e
+    }
+
+    fn parse_expr(&mut self) -> Expr {
         let token = self.next_token();
         match &token.kind {
             TokenKind::Ident(name) => {
@@ -56,7 +83,7 @@ impl Parser {
                     }
                 }
             }
-            TokenKind::InvalidPunct(_) => {
+            TokenKind::Equal | TokenKind::InvalidPunct(_) => {
                 self.errors.push(ParseError {});
                 Expr {
                     kind: ExprKind::Errored,
@@ -98,7 +125,10 @@ impl Parser {
         } else {
             self.pos += 1;
             return Token {
-                kind: TokenKind::InvalidPunct(first),
+                kind: match first {
+                    b'=' => TokenKind::Equal,
+                    _ => TokenKind::InvalidPunct(first),
+                },
                 range: Range(start, self.pos),
             };
         }
