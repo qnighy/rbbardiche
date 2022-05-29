@@ -1,8 +1,28 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+use bstr::BString;
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub enum Node {
+    Nil,
+}
+
+pub fn parse(source: &[u8]) -> Node {
+    let parser = Parser::new(source);
+    Node::Nil
+}
+
+
+#[derive(Debug)]
+struct Parser {
+    source: BString,
+    pos: usize,
+}
+
+impl Parser {
+    fn new(source: &[u8]) -> Parser {
+        Parser {
+            source: source.into(),
+            pos: 0,
+        }
     }
 }
