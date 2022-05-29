@@ -57,9 +57,15 @@ impl OutputFile {
         match std::fs::read(self) {
             Ok(expected) => {
                 if expected != actual {
-                    on_diff(&expected);
-                    // Fallback
-                    assert_eq!(actual, expected);
+                    if mode == SnapshotMode::All {
+                        std::fs::write(self, actual).unwrap_or_else(|e| {
+                            panic!("Error writing {}: {}", self.path.display(), e)
+                        });
+                    } else {
+                        on_diff(&expected);
+                        // Fallback
+                        assert_eq!(actual, expected);
+                    }
                 }
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
