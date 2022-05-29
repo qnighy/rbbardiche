@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "extensionHost",
+      "request": "launch",
+      "name": "Launch VSCode Client",
+      "runtimeExecutable": "${execPath}",
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}/vscode", "${workspaceRoot}/vscode/sample"],
+      "outFiles": ["${workspaceRoot}/vscode/dist/**/*.js"],
+      "preLaunchTask": "npm: watch - vscode"
+    }
+  ]
+}

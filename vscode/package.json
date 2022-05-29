@@ -1,0 +1,29 @@
+{
+  "name": "vscode-rbbardiche",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "yarn@3.2.1",
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "activationEvents": [
+    "onLanguage:ruby"
+  ],
+  "main": "./dist/index.js",
+  "contributes": {},
+  "publisher": "qnighy",
+  "scripts": {
+    "build": "tsc --build",
+    "prepack": "$npm_execpath build",
+    "vscode:prepublish": "$npm_execpath prepack",
+    "watch": "tsc --build --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.36",
+    "@types/vscode": "^1.67.0",
+    "typescript": "^4.7.2"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.0.1"
+  }
+}
