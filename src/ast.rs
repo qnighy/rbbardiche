@@ -4,15 +4,15 @@ use serde::Serialize;
 pub struct Range(pub usize, pub usize);
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct Node {
+pub struct Expr {
     #[serde(flatten)]
-    pub kind: NodeKind,
+    pub kind: ExprKind,
     pub range: Range,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
-pub enum NodeKind {
+pub enum ExprKind {
     Ident { name: String },
     Nil,
     Errored,

@@ -1,7 +1,7 @@
-use crate::ast::{Node, NodeKind, Range};
+use crate::ast::{Expr, ExprKind, Range};
 use bstr::BString;
 
-pub fn parse(source: &[u8]) -> Node {
+pub fn parse(source: &[u8]) -> Expr {
     let mut parser = Parser::new(source);
     parser.parse()
 }
@@ -38,18 +38,18 @@ impl Parser {
         }
     }
 
-    fn parse(&mut self) -> Node {
+    fn parse(&mut self) -> Expr {
         let token = self.next_token();
         match &token.kind {
             TokenKind::Ident(name) => {
                 if name == "nil" {
-                    Node {
-                        kind: NodeKind::Nil,
+                    Expr {
+                        kind: ExprKind::Nil,
                         range: token.range,
                     }
                 } else {
-                    Node {
-                        kind: NodeKind::Ident {
+                    Expr {
+                        kind: ExprKind::Ident {
                             name: name.to_string(),
                         },
                         range: token.range,
@@ -58,15 +58,15 @@ impl Parser {
             }
             TokenKind::InvalidPunct(_) => {
                 self.errors.push(ParseError {});
-                Node {
-                    kind: NodeKind::Errored,
+                Expr {
+                    kind: ExprKind::Errored,
                     range: token.range,
                 }
             }
             TokenKind::Eof => {
                 self.errors.push(ParseError {});
-                Node {
-                    kind: NodeKind::Errored,
+                Expr {
+                    kind: ExprKind::Errored,
                     range: token.range,
                 }
             }
