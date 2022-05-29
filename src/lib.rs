@@ -1,9 +1,19 @@
 use bstr::BString;
 use serde::Serialize;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+pub struct Range(pub usize, pub usize);
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct Node {
+    #[serde(flatten)]
+    pub kind: NodeKind,
+    pub range: Range,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
-pub enum Node {
+pub enum NodeKind {
     Ident { name: String },
     Nil,
     Errored,
@@ -17,6 +27,7 @@ pub fn parse(source: &[u8]) -> Node {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,29 +61,43 @@ impl Parser {
         match &token.kind {
             TokenKind::Ident(name) => {
                 if name == "nil" {
-                    Node::Nil
+                    Node {
+                        kind: NodeKind::Nil,
+                        range: token.range,
+                    }
                 } else {
-                    Node::Ident {
-                        name: name.to_string(),
+                    Node {
+                        kind: NodeKind::Ident {
+                            name: name.to_string(),
+                        },
+                        range: token.range,
                     }
                 }
             }
             TokenKind::InvalidPunct(_) => {
                 self.errors.push(ParseError {});
-                Node::Errored
+                Node {
+                    kind: NodeKind::Errored,
+                    range: token.range,
+                }
             }
             TokenKind::Eof => {
                 self.errors.push(ParseError {});
-                Node::Errored
+                Node {
+                    kind: NodeKind::Errored,
+                    range: token.range,
+                }
             }
         }
     }
 
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
+        let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
                 kind: TokenKind::Eof,
+                range: Range(start, self.pos),
             };
         }
         let first = self.source[self.pos];
@@ -86,11 +111,13 @@ impl Parser {
             }
             return Token {
                 kind: TokenKind::Ident(BString::from(&self.source[start..self.pos])),
+                range: Range(start, self.pos),
             };
         } else {
             self.pos += 1;
             return Token {
                 kind: TokenKind::InvalidPunct(first),
+                range: Range(start, self.pos),
             };
         }
     }
