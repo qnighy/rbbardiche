@@ -1,5 +1,6 @@
 use crate::ast::{Expr, ExprKind, Range};
-use bstr::BString;
+use crate::util::OptionPredExt;
+use bstr::{BString, ByteSlice};
 
 pub fn parse(source: &[u8]) -> Expr {
     let mut parser = Parser::new(source);
@@ -15,6 +16,8 @@ pub struct Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     Ident(BString),
+    // TODO: bigint, float, etc.
+    Numeric(i32),
     Equal,
     InvalidPunct(u8),
     Eof,
@@ -86,6 +89,11 @@ impl Parser {
                     }
                 }
             }
+            TokenKind::Numeric(numval) => Expr {
+                kind: ExprKind::Numeric { numval: *numval },
+                range: token.range,
+                node_id: 0,
+            },
             TokenKind::Equal | TokenKind::InvalidPunct(_) => {
                 self.errors.push(ParseError {});
                 Expr {
@@ -127,6 +135,8 @@ impl Parser {
                 kind: TokenKind::Ident(BString::from(&self.source[start..self.pos])),
                 range: Range(start, self.pos),
             };
+        } else if first.is_ascii_digit() {
+            self.lex_numeric()
         } else {
             self.pos += 1;
             return Token {
@@ -138,6 +148,59 @@ impl Parser {
             };
         }
     }
+
+    fn lex_numeric(&mut self) -> Token {
+        let start = self.pos;
+        if self.next() == Some(b'-') || self.next() == Some(b'+') {
+            todo!("signed number literals");
+        }
+        if self.next() == Some(b'0') {
+            self.pos += 1;
+            match self.next() {
+                Some(b'x') | Some(b'X') => todo!("hexadecimal number"),
+                Some(b'b') | Some(b'B') => todo!("binary number"),
+                Some(b'd') | Some(b'D') => todo!("prefixed decimal nuber"),
+                Some(b'o') | Some(b'O') | Some(b'_') => todo!("octal number"),
+                Some(ch) if ch.is_ascii_digit() => todo!("octal number"),
+                Some(b'.') | Some(b'e') | Some(b'E') => todo!("scientific notation"),
+                _ => {
+                    return Token {
+                        kind: TokenKind::Numeric(0),
+                        range: Range(start, self.pos),
+                    };
+                }
+            }
+        } else if self.next().is_some_and_(|ch| ch.is_ascii_digit()) {
+            while self
+                .next()
+                .is_some_and_(|&ch| ch.is_ascii_digit() || ch == b'_')
+            {
+                self.pos += 1;
+            }
+            match self.next() {
+                Some(b'.') | Some(b'e') | Some(b'E') => todo!("floating-point number"),
+                _ => {}
+            }
+            let numval = self.source[start..self.pos]
+                .to_str()
+                .unwrap()
+                .parse::<i32>()
+                .unwrap_or_else(|_| todo!("large integers"));
+            return Token {
+                kind: TokenKind::Numeric(numval),
+                range: Range(start, self.pos),
+            };
+        }
+        todo!();
+    }
+
+    fn next(&self) -> Option<u8> {
+        self.source.get(self.pos).copied()
+    }
+
+    // fn peek(&self, off: usize) -> Option<u8> {
+    //     self.source.get(self.pos + off).copied()
+    // }
 
     fn skip_whitespace(&mut self) {
         while self.pos < self.source.len() {

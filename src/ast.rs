@@ -24,6 +24,8 @@ pub struct Expr {
 #[serde(tag = "type")]
 pub enum ExprKind {
     Ident { name: String },
+    // TODO: bigint, float, etc.
+    Numeric { numval: i32 },
     Nil,
     Assign { lhs: Box<Expr>, rhs: Box<Expr> },
     Errored,
