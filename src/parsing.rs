@@ -54,6 +54,7 @@ impl Parser {
                             rhs: Box::new(rhs),
                         },
                         range,
+                        node_id: 0,
                     };
                 }
                 _ => {
@@ -73,6 +74,7 @@ impl Parser {
                     Expr {
                         kind: ExprKind::Nil,
                         range: token.range,
+                        node_id: 0,
                     }
                 } else {
                     Expr {
@@ -80,6 +82,7 @@ impl Parser {
                             name: name.to_string(),
                         },
                         range: token.range,
+                        node_id: 0,
                     }
                 }
             }
@@ -88,6 +91,7 @@ impl Parser {
                 Expr {
                     kind: ExprKind::Errored,
                     range: token.range,
+                    node_id: 0,
                 }
             }
             TokenKind::Eof => {
@@ -95,6 +99,7 @@ impl Parser {
                 Expr {
                     kind: ExprKind::Errored,
                     range: token.range,
+                    node_id: 0,
                 }
             }
         }

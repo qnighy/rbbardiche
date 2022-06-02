@@ -16,6 +16,8 @@ pub struct Expr {
     #[serde(flatten)]
     pub kind: ExprKind,
     pub range: Range,
+    #[serde(skip_serializing_if = "is_zero")]
+    pub node_id: usize,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -25,4 +27,8 @@ pub enum ExprKind {
     Nil,
     Assign { lhs: Box<Expr>, rhs: Box<Expr> },
     Errored,
+}
+
+fn is_zero<T: PartialEq + Default>(x: &T) -> bool {
+    *x == T::default()
 }
