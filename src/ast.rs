@@ -23,6 +23,7 @@ pub struct Expr {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum ExprKind {
+    Compound { stmts: Vec<Expr> },
     Ident { name: String },
     // TODO: bigint, float, etc.
     Numeric { numval: i32 },

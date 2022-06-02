@@ -4,7 +4,7 @@ use bstr::{BString, ByteSlice};
 
 pub fn parse(source: &[u8]) -> Expr {
     let mut parser = Parser::new(source);
-    parser.parse_stmt()
+    parser.parse_program()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,7 +18,10 @@ pub enum TokenKind {
     Ident(BString),
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `=`
     Equal,
+    /// `;`
+    Semi,
     InvalidPunct(u8),
     Eof,
 }
@@ -30,25 +33,63 @@ pub struct ParseError {}
 struct Parser {
     source: BString,
     pos: usize,
+    next_token: Token,
     errors: Vec<ParseError>,
 }
 
 impl Parser {
     fn new(source: &[u8]) -> Parser {
-        Parser {
+        let mut parser = Parser {
             source: source.into(),
             pos: 0,
+            // dummy value
+            next_token: Token {
+                kind: TokenKind::Eof,
+                range: Range(0, 0),
+            },
             errors: vec![],
+        };
+        parser.bump();
+        parser
+    }
+
+    fn parse_program(&mut self) -> Expr {
+        let stmts = self.parse_compstmt();
+        if stmts.len() == 1 {
+            let mut stmts = stmts;
+            stmts.pop().unwrap()
+        } else {
+            Expr {
+                kind: ExprKind::Compound { stmts },
+                range: Range(0, self.source.len()),
+                node_id: 0,
+            }
         }
+    }
+
+    fn parse_compstmt(&mut self) -> Vec<Expr> {
+        while let TokenKind::Semi = self.next_token.kind {
+            self.bump();
+        }
+        let mut stmts = Vec::new();
+        while match self.next_token.kind {
+            TokenKind::Semi | TokenKind::Eof => false,
+            _ => true,
+        } {
+            stmts.push(self.parse_stmt());
+            while let TokenKind::Semi = self.next_token.kind {
+                self.bump();
+            }
+        }
+        stmts
     }
 
     fn parse_stmt(&mut self) -> Expr {
         let mut e = self.parse_expr();
         loop {
-            let token = self.next_token();
-            match &token.kind {
-                TokenKind::Eof => break,
+            match &self.next_token.kind {
                 TokenKind::Equal => {
+                    self.bump();
                     let rhs = self.parse_expr();
                     let range = e.range | rhs.range;
                     e = Expr {
@@ -60,19 +101,17 @@ impl Parser {
                         node_id: 0,
                     };
                 }
-                _ => {
-                    // rollback
-                    self.pos = token.range.0;
-                }
+                _ => break,
             }
         }
         e
     }
 
     fn parse_expr(&mut self) -> Expr {
-        let token = self.next_token();
-        match &token.kind {
+        match &self.next_token.kind {
             TokenKind::Ident(name) => {
+                let name = name.to_string();
+                let token = self.bump();
                 if name == "nil" {
                     Expr {
                         kind: ExprKind::Nil,
@@ -81,20 +120,23 @@ impl Parser {
                     }
                 } else {
                     Expr {
-                        kind: ExprKind::Ident {
-                            name: name.to_string(),
-                        },
+                        kind: ExprKind::Ident { name },
                         range: token.range,
                         node_id: 0,
                     }
                 }
             }
-            TokenKind::Numeric(numval) => Expr {
-                kind: ExprKind::Numeric { numval: *numval },
-                range: token.range,
-                node_id: 0,
-            },
-            TokenKind::Equal | TokenKind::InvalidPunct(_) => {
+            TokenKind::Numeric(numval) => {
+                let numval = *numval;
+                let token = self.bump();
+                Expr {
+                    kind: ExprKind::Numeric { numval },
+                    range: token.range,
+                    node_id: 0,
+                }
+            }
+            TokenKind::Equal | TokenKind::Semi | TokenKind::InvalidPunct(_) => {
+                let token = self.bump();
                 self.errors.push(ParseError {});
                 Expr {
                     kind: ExprKind::Errored,
@@ -106,14 +148,19 @@ impl Parser {
                 self.errors.push(ParseError {});
                 Expr {
                     kind: ExprKind::Errored,
-                    range: token.range,
+                    range: self.next_token.range,
                     node_id: 0,
                 }
             }
         }
     }
 
-    fn next_token(&mut self) -> Token {
+    fn bump(&mut self) -> Token {
+        let next_token = self.lex_token();
+        std::mem::replace(&mut self.next_token, next_token)
+    }
+
+    fn lex_token(&mut self) -> Token {
         self.skip_whitespace();
         let start = self.pos;
         if self.pos >= self.source.len() {
@@ -142,6 +189,7 @@ impl Parser {
             return Token {
                 kind: match first {
                     b'=' => TokenKind::Equal,
+                    b';' => TokenKind::Semi,
                     _ => TokenKind::InvalidPunct(first),
                 },
                 range: Range(start, self.pos),
