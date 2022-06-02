@@ -144,6 +144,11 @@ impl Parser {
             let ch = self.source[self.pos];
             if ch.is_ascii_whitespace() {
                 self.pos += 1;
+            } else if ch == b'#' {
+                self.pos += 1;
+                while self.pos < self.source.len() && self.source[self.pos] != b'\n' {
+                    self.pos += 1;
+                }
             } else {
                 return;
             }
