@@ -9,3 +9,13 @@ pub enum ParseError {
     #[error("Unexpected end of file")]
     UnexpectedEof { range: Range },
 }
+
+impl ParseError {
+    pub fn range(&self) -> Range {
+        use ParseError::*;
+        match self {
+            UnexpectedToken { range } => *range,
+            UnexpectedEof { range } => *range,
+        }
+    }
+}

@@ -18,6 +18,16 @@ struct SerializedParseError {
 #[test]
 fn test_parser(#[suffix = ".rb"] input: InputFile, #[suffix = ".json"] output: OutputFile) {
     let source = input.read_bytes();
-    let (node, _errors) = rbbardiche::parse(&source);
-    output.compare_json(&node);
+    let (ast, errors) = rbbardiche::parse(&source);
+    let result = ParseResult {
+        ast,
+        errors: errors
+            .iter()
+            .map(|e| SerializedParseError {
+                message: e.to_string(),
+                range: e.range(),
+            })
+            .collect::<Vec<_>>(),
+    };
+    output.compare_json(&result);
 }

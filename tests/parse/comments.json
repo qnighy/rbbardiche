@@ -1,7 +1,10 @@
 {
-  "type": "Nil",
-  "range": [
-    15,
-    18
-  ]
+  "ast": {
+    "type": "Nil",
+    "range": [
+      15,
+      18
+    ]
+  },
+  "errors": []
 }
