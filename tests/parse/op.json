@@ -1,0 +1,124 @@
+{
+  "ast": {
+    "type": "Compound",
+    "stmts": [
+      {
+        "type": "Unary",
+        "op": "Not",
+        "expr": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            1,
+            4
+          ]
+        },
+        "range": [
+          0,
+          4
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "BitwiseNot",
+        "expr": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            6,
+            9
+          ]
+        },
+        "range": [
+          5,
+          9
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "Plus",
+        "expr": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            11,
+            14
+          ]
+        },
+        "range": [
+          10,
+          14
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "Not",
+        "expr": {
+          "type": "Unary",
+          "op": "Not",
+          "expr": {
+            "type": "Unary",
+            "op": "BitwiseNot",
+            "expr": {
+              "type": "Unary",
+              "op": "Plus",
+              "expr": {
+                "type": "Unary",
+                "op": "BitwiseNot",
+                "expr": {
+                  "type": "Unary",
+                  "op": "Not",
+                  "expr": {
+                    "type": "Unary",
+                    "op": "Not",
+                    "expr": {
+                      "type": "Ident",
+                      "name": "foo",
+                      "range": [
+                        23,
+                        26
+                      ]
+                    },
+                    "range": [
+                      22,
+                      26
+                    ]
+                  },
+                  "range": [
+                    21,
+                    26
+                  ]
+                },
+                "range": [
+                  20,
+                  26
+                ]
+              },
+              "range": [
+                19,
+                26
+              ]
+            },
+            "range": [
+              18,
+              26
+            ]
+          },
+          "range": [
+            16,
+            26
+          ]
+        },
+        "range": [
+          15,
+          26
+        ]
+      }
+    ],
+    "range": [
+      0,
+      27
+    ]
+  },
+  "errors": []
+}

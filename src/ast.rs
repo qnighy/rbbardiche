@@ -27,9 +27,17 @@ pub enum ExprKind {
     Ident { name: String },
     // TODO: bigint, float, etc.
     Numeric { numval: i32 },
+    Unary { op: UnaryOp, expr: Box<Expr> },
     Nil,
     Assign { lhs: Box<Expr>, rhs: Box<Expr> },
     Errored,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum UnaryOp {
+    Plus,
+    Not,
+    BitwiseNot,
 }
 
 fn is_zero<T: PartialEq + Default>(x: &T) -> bool {

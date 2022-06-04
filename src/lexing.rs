@@ -58,6 +58,12 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `+` (unary)
+    UPlus,
+    /// `~`
+    Tilde,
+    /// `!`
+    Excl,
     /// `=`
     Equal,
     /// `;`
@@ -132,37 +138,77 @@ impl Parser {
             };
         }
         let first = self.source[self.pos];
-        if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 {
-            let start = self.pos;
-            while self.pos < self.source.len() && {
-                let ch = self.source[self.pos];
-                ch.is_ascii_alphanumeric() || first == b'_' || first >= 0x80
-            } {
-                self.pos += 1;
+        match first {
+            _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
+                let start = self.pos;
+                while self.pos < self.source.len() && {
+                    let ch = self.source[self.pos];
+                    ch.is_ascii_alphanumeric() || first == b'_' || first >= 0x80
+                } {
+                    self.pos += 1;
+                }
+                let ident = self.source[start..self.pos].as_bstr();
+                let kind = if let Some(kind) = KEYWORDS.get(ident) {
+                    kind.clone()
+                } else {
+                    TokenKind::Ident(ident.to_owned())
+                };
+                return Token {
+                    kind,
+                    range: Range(start, self.pos),
+                };
             }
-            let ident = self.source[start..self.pos].as_bstr();
-            let kind = if let Some(kind) = KEYWORDS.get(ident) {
-                kind.clone()
-            } else {
-                TokenKind::Ident(ident.to_owned())
-            };
-            return Token {
-                kind,
-                range: Range(start, self.pos),
-            };
-        } else if first.is_ascii_digit() {
-            self.lex_numeric()
-        } else {
-            self.pos += 1;
-            return Token {
-                kind: match first {
-                    b'=' => TokenKind::Equal,
-                    b';' => TokenKind::Semi,
-                    b'\n' => TokenKind::NewLine,
-                    _ => TokenKind::InvalidPunct(first),
-                },
-                range: Range(start, self.pos),
-            };
+            b'!' => {
+                self.pos += 1;
+                // TODO: after_operator condition
+                if self.next() == Some(b'=') {
+                    todo!("!=");
+                }
+                if self.next() == Some(b'~') {
+                    todo!("!~");
+                }
+                return Token {
+                    kind: TokenKind::Excl,
+                    range: Range(start, self.pos),
+                };
+            }
+            b'+' => {
+                self.pos += 1;
+                // TODO: after_operator condition
+                if self.next() == Some(b'=') {
+                    todo!("+=");
+                }
+                return Token {
+                    // TODO: spcarg condition
+                    kind: if beg {
+                        TokenKind::UPlus
+                    } else {
+                        TokenKind::InvalidPunct(first)
+                    },
+                    range: Range(start, self.pos),
+                };
+            }
+            _ if first.is_ascii_digit() => self.lex_numeric(),
+            b'~' => {
+                self.pos += 1;
+                // TODO: after_operator condition
+                return Token {
+                    kind: TokenKind::Tilde,
+                    range: Range(start, self.pos),
+                };
+            }
+            _ => {
+                self.pos += 1;
+                return Token {
+                    kind: match first {
+                        b'=' => TokenKind::Equal,
+                        b';' => TokenKind::Semi,
+                        b'\n' => TokenKind::NewLine,
+                        _ => TokenKind::InvalidPunct(first),
+                    },
+                    range: Range(start, self.pos),
+                };
+            }
         }
     }
 

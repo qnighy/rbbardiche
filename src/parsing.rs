@@ -1,4 +1,4 @@
-use crate::ast::{Expr, ExprKind, Range};
+use crate::ast::{Expr, ExprKind, Range, UnaryOp};
 use crate::lexing::{Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -80,6 +80,37 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
+        self.parse_unary()
+    }
+
+    // %right tPOW
+    // %right '!' '~' tUPLUS /* here */
+    // %token tLAST_TOKEN
+    //
+    // arg : tUPLUS arg
+    //     | '!' arg
+    //     | '~' arg
+    fn parse_unary(&mut self) -> Expr {
+        let op = match &self.next_token.kind {
+            TokenKind::UPlus => UnaryOp::Plus,
+            TokenKind::Excl => UnaryOp::Not,
+            TokenKind::Tilde => UnaryOp::BitwiseNot,
+            _ => return self.parse_primary(),
+        };
+        let op_token = self.bump(true);
+        let expr = self.parse_unary();
+        let range = op_token.range | expr.range;
+        Expr {
+            kind: ExprKind::Unary {
+                op,
+                expr: Box::new(expr),
+            },
+            range,
+            node_id: 0,
+        }
+    }
+
+    fn parse_primary(&mut self) -> Expr {
         match &self.next_token.kind {
             TokenKind::Ident(name) => {
                 let name = name.to_string();
