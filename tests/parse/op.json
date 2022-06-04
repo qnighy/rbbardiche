@@ -3,19 +3,179 @@
     "type": "Compound",
     "stmts": [
       {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            0,
+            3
+          ]
+        },
+        "op": "Pow",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            7,
+            10
+          ]
+        },
+        "range": [
+          0,
+          10
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            11,
+            14
+          ]
+        },
+        "op": "Pow",
+        "rhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              18,
+              21
+            ]
+          },
+          "op": "Pow",
+          "rhs": {
+            "type": "Ident",
+            "name": "baz",
+            "range": [
+              25,
+              28
+            ]
+          },
+          "range": [
+            18,
+            28
+          ]
+        },
+        "range": [
+          11,
+          28
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Unary",
+          "op": "Not",
+          "expr": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              30,
+              33
+            ]
+          },
+          "range": [
+            29,
+            33
+          ]
+        },
+        "op": "Pow",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            37,
+            40
+          ]
+        },
+        "range": [
+          29,
+          40
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Unary",
+          "op": "BitwiseNot",
+          "expr": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              42,
+              45
+            ]
+          },
+          "range": [
+            41,
+            45
+          ]
+        },
+        "op": "Pow",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            49,
+            52
+          ]
+        },
+        "range": [
+          41,
+          52
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Unary",
+          "op": "Plus",
+          "expr": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              54,
+              57
+            ]
+          },
+          "range": [
+            53,
+            57
+          ]
+        },
+        "op": "Pow",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            61,
+            64
+          ]
+        },
+        "range": [
+          53,
+          64
+        ]
+      },
+      {
         "type": "Unary",
         "op": "Not",
         "expr": {
           "type": "Ident",
           "name": "foo",
           "range": [
-            1,
-            4
+            67,
+            70
           ]
         },
         "range": [
-          0,
-          4
+          66,
+          70
         ]
       },
       {
@@ -25,13 +185,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            6,
-            9
+            72,
+            75
           ]
         },
         "range": [
-          5,
-          9
+          71,
+          75
         ]
       },
       {
@@ -41,13 +201,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            11,
-            14
+            77,
+            80
           ]
         },
         "range": [
-          10,
-          14
+          76,
+          80
         ]
       },
       {
@@ -75,49 +235,49 @@
                       "type": "Ident",
                       "name": "foo",
                       "range": [
-                        23,
-                        26
+                        89,
+                        92
                       ]
                     },
                     "range": [
-                      22,
-                      26
+                      88,
+                      92
                     ]
                   },
                   "range": [
-                    21,
-                    26
+                    87,
+                    92
                   ]
                 },
                 "range": [
-                  20,
-                  26
+                  86,
+                  92
                 ]
               },
               "range": [
-                19,
-                26
+                85,
+                92
               ]
             },
             "range": [
-              18,
-              26
+              84,
+              92
             ]
           },
           "range": [
-            16,
-            26
+            82,
+            92
           ]
         },
         "range": [
-          15,
-          26
+          81,
+          92
         ]
       }
     ],
     "range": [
       0,
-      27
+      93
     ]
   },
   "errors": []

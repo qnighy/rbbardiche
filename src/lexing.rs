@@ -58,6 +58,8 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `**` (binary)
+    Pow,
     /// `+` (unary)
     UPlus,
     /// `~`
@@ -158,6 +160,24 @@ impl Parser {
                     kind,
                     range: Range(start, self.pos),
                 };
+            }
+            b'*' => {
+                self.pos += 1;
+                if self.next() == Some(b'*') {
+                    self.pos += 1;
+                    return Token {
+                        kind: if beg {
+                            todo!("** as tDStar");
+                        } else {
+                            TokenKind::Pow
+                        },
+                        range: Range(start, self.pos),
+                    };
+                }
+                if self.next() == Some(b'=') {
+                    todo!("*=");
+                }
+                todo!("*");
             }
             b'!' => {
                 self.pos += 1;

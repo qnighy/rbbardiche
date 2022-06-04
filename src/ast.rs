@@ -23,14 +23,36 @@ pub struct Expr {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum ExprKind {
-    Compound { stmts: Vec<Expr> },
-    Ident { name: String },
+    Compound {
+        stmts: Vec<Expr>,
+    },
+    Ident {
+        name: String,
+    },
     // TODO: bigint, float, etc.
-    Numeric { numval: i32 },
-    Unary { op: UnaryOp, expr: Box<Expr> },
+    Numeric {
+        numval: i32,
+    },
+    Binary {
+        lhs: Box<Expr>,
+        op: BinaryOp,
+        rhs: Box<Expr>,
+    },
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr>,
+    },
     Nil,
-    Assign { lhs: Box<Expr>, rhs: Box<Expr> },
+    Assign {
+        lhs: Box<Expr>,
+        rhs: Box<Expr>,
+    },
     Errored,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum BinaryOp {
+    Pow,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]

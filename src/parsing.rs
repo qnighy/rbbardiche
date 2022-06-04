@@ -1,4 +1,4 @@
-use crate::ast::{Expr, ExprKind, Range, UnaryOp};
+use crate::ast::{BinaryOp, Expr, ExprKind, Range, UnaryOp};
 use crate::lexing::{Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -80,7 +80,27 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_unary()
+        self.parse_pow()
+    }
+
+    fn parse_pow(&mut self) -> Expr {
+        let expr = self.parse_unary();
+        if let TokenKind::Pow = self.next_token.kind {
+            self.bump(true);
+            let rhs = self.parse_pow();
+            let range = expr.range | rhs.range;
+            Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op: BinaryOp::Pow,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            }
+        } else {
+            expr
+        }
     }
 
     // %right tPOW
