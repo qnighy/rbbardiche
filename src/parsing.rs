@@ -1,9 +1,11 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 use crate::ast::{Expr, ExprKind, Range};
 use crate::parser_diagnostics::ParseError;
 use crate::util::OptionPredExt;
-use bstr::{BString, ByteSlice};
+use bstr::{BStr, BString, ByteSlice};
+use once_cell::sync::Lazy;
 
 pub fn parse(source: &[u8]) -> (Expr, Vec<ParseError>) {
     let mut parser = Parser::new(source);
@@ -20,6 +22,47 @@ pub struct Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     Ident(BString),
+    UnderscoreEncodingKeyword,
+    UnderscoreLineKeyword,
+    UnderscoreFileKeyword,
+    CapitalBeginKeyword,
+    CapitalEndKeyword,
+    AliasKeyword,
+    AndKeyword,
+    BeginKeyword,
+    BreakKeyword,
+    CaseKeyword,
+    ClassKeyword,
+    DefKeyword,
+    DefinedQKeyword,
+    DoKeyword,
+    ElseKeyword,
+    ElsifKeyword,
+    EndKeyword,
+    EnsureKeyword,
+    FalseKeyword,
+    ForKeyword,
+    IfKeyword,
+    InKeyword,
+    ModuleKeyword,
+    NextKeyword,
+    NilKeyword,
+    NotKeyword,
+    OrKeyword,
+    RedoKeyword,
+    RescueKeyword,
+    RetryKeyword,
+    ReturnKeyword,
+    SelfKeyword,
+    SuperKeyword,
+    ThenKeyword,
+    TrueKeyword,
+    UndefKeyword,
+    UnlessKeyword,
+    UntilKeyword,
+    WhenKeyword,
+    WhileKeyword,
+    YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
     /// `=`
@@ -30,6 +73,55 @@ pub enum TokenKind {
     InvalidPunct(u8),
     Eof,
 }
+
+static KEYWORDS: Lazy<HashMap<&BStr, TokenKind>> = Lazy::new(|| {
+    vec![
+        ("__ENCODING__", TokenKind::UnderscoreEncodingKeyword),
+        ("__LINE__", TokenKind::UnderscoreLineKeyword),
+        ("__FILE__", TokenKind::UnderscoreFileKeyword),
+        ("BEGIN", TokenKind::CapitalBeginKeyword),
+        ("END", TokenKind::CapitalEndKeyword),
+        ("alias", TokenKind::AliasKeyword),
+        ("and", TokenKind::AndKeyword),
+        ("begin", TokenKind::BeginKeyword),
+        ("break", TokenKind::BreakKeyword),
+        ("case", TokenKind::CaseKeyword),
+        ("class", TokenKind::ClassKeyword),
+        ("def", TokenKind::DefKeyword),
+        ("defined?", TokenKind::DefinedQKeyword),
+        ("do", TokenKind::DoKeyword),
+        ("else", TokenKind::ElseKeyword),
+        ("elsif", TokenKind::ElsifKeyword),
+        ("end", TokenKind::EndKeyword),
+        ("ensure", TokenKind::EnsureKeyword),
+        ("false", TokenKind::FalseKeyword),
+        ("for", TokenKind::ForKeyword),
+        ("if", TokenKind::IfKeyword),
+        ("in", TokenKind::InKeyword),
+        ("module", TokenKind::ModuleKeyword),
+        ("next", TokenKind::NextKeyword),
+        ("nil", TokenKind::NilKeyword),
+        ("not", TokenKind::NotKeyword),
+        ("or", TokenKind::OrKeyword),
+        ("redo", TokenKind::RedoKeyword),
+        ("rescue", TokenKind::RescueKeyword),
+        ("retry", TokenKind::RetryKeyword),
+        ("return", TokenKind::ReturnKeyword),
+        ("self", TokenKind::SelfKeyword),
+        ("super", TokenKind::SuperKeyword),
+        ("then", TokenKind::ThenKeyword),
+        ("true", TokenKind::TrueKeyword),
+        ("undef", TokenKind::UndefKeyword),
+        ("unless", TokenKind::UnlessKeyword),
+        ("until", TokenKind::UntilKeyword),
+        ("when", TokenKind::WhenKeyword),
+        ("while", TokenKind::WhileKeyword),
+        ("yield", TokenKind::YieldKeyword),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k.as_bytes().as_bstr(), v))
+    .collect::<HashMap<_, _>>()
+});
 
 #[derive(Debug)]
 struct Parser {
@@ -114,18 +206,18 @@ impl Parser {
             TokenKind::Ident(name) => {
                 let name = name.to_string();
                 let token = self.bump(false);
-                if name == "nil" {
-                    Expr {
-                        kind: ExprKind::Nil,
-                        range: token.range,
-                        node_id: 0,
-                    }
-                } else {
-                    Expr {
-                        kind: ExprKind::Ident { name },
-                        range: token.range,
-                        node_id: 0,
-                    }
+                Expr {
+                    kind: ExprKind::Ident { name },
+                    range: token.range,
+                    node_id: 0,
+                }
+            }
+            TokenKind::NilKeyword => {
+                let token = self.bump(false);
+                Expr {
+                    kind: ExprKind::Nil,
+                    range: token.range,
+                    node_id: 0,
                 }
             }
             TokenKind::Numeric(numval) => {
@@ -137,19 +229,6 @@ impl Parser {
                     node_id: 0,
                 }
             }
-            TokenKind::Equal
-            | TokenKind::Semi
-            | TokenKind::NewLine
-            | TokenKind::InvalidPunct(_) => {
-                let token = self.bump(false);
-                self.errors
-                    .push(ParseError::UnexpectedToken { range: token.range });
-                Expr {
-                    kind: ExprKind::Errored,
-                    range: token.range,
-                    node_id: 0,
-                }
-            }
             TokenKind::Eof => {
                 self.errors.push(ParseError::UnexpectedEof {
                     range: self.next_token.range,
@@ -157,6 +236,16 @@ impl Parser {
                 Expr {
                     kind: ExprKind::Errored,
                     range: self.next_token.range,
+                    node_id: 0,
+                }
+            }
+            _ => {
+                let token = self.bump(false);
+                self.errors
+                    .push(ParseError::UnexpectedToken { range: token.range });
+                Expr {
+                    kind: ExprKind::Errored,
+                    range: token.range,
                     node_id: 0,
                 }
             }
@@ -186,8 +275,14 @@ impl Parser {
             } {
                 self.pos += 1;
             }
+            let ident = self.source[start..self.pos].as_bstr();
+            let kind = if let Some(kind) = KEYWORDS.get(ident) {
+                kind.clone()
+            } else {
+                TokenKind::Ident(ident.to_owned())
+            };
             return Token {
-                kind: TokenKind::Ident(BString::from(&self.source[start..self.pos])),
+                kind,
                 range: Range(start, self.pos),
             };
         } else if first.is_ascii_digit() {

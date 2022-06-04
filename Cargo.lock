@@ -367,6 +367,7 @@ name = "rbbardiche"
 version = "0.1.0"
 dependencies = [
  "bstr",
+ "once_cell",
  "serde",
  "testfiles",
  "thiserror",
