@@ -140,6 +140,7 @@ impl Parser {
         let first = self.source[self.pos];
         match first {
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
+                // TODO: support __END__
                 let start = self.pos;
                 while self.pos < self.source.len() && {
                     let ch = self.source[self.pos];
