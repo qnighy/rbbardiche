@@ -238,7 +238,13 @@ impl Parser {
                 Some(b'.') | Some(b'e') | Some(b'E') => todo!("floating-point number"),
                 _ => {}
             }
+            let range = Range(start, self.pos);
             let s = self.source[start..self.pos].to_str().unwrap();
+            if s.ends_with("_") {
+                self.errors.push(ParseError::TrailingUnderscore { range });
+            } else if s.contains("__") {
+                self.errors.push(ParseError::DoubleUnderscore { range });
+            }
             let s = if s.contains("_") {
                 Cow::Owned(s.replace("_", ""))
             } else {
@@ -247,7 +253,7 @@ impl Parser {
             let numval = s.parse::<i32>().unwrap_or_else(|_| todo!("large integers"));
             return Token {
                 kind: TokenKind::Numeric(numval),
-                range: Range(start, self.pos),
+                range,
             };
         }
         todo!();

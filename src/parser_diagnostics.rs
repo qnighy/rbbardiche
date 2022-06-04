@@ -8,6 +8,10 @@ pub enum ParseError {
     UnexpectedToken { range: Range },
     #[error("Unexpected end of file")]
     UnexpectedEof { range: Range },
+    #[error("Trailing `_' in number")]
+    TrailingUnderscore { range: Range },
+    #[error("Consecutive `__' in number")]
+    DoubleUnderscore { range: Range },
 }
 
 impl ParseError {
@@ -16,6 +20,8 @@ impl ParseError {
         match self {
             UnexpectedToken { range } => *range,
             UnexpectedEof { range } => *range,
+            TrailingUnderscore { range } => *range,
+            DoubleUnderscore { range } => *range,
         }
     }
 }

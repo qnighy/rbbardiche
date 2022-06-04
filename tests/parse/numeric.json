@@ -41,12 +41,43 @@
           9,
           18
         ]
+      },
+      {
+        "type": "Numeric",
+        "numval": 1234,
+        "range": [
+          28,
+          33
+        ]
+      },
+      {
+        "type": "Numeric",
+        "numval": 1234,
+        "range": [
+          42,
+          48
+        ]
       }
     ],
     "range": [
       0,
-      19
+      49
     ]
   },
-  "errors": []
+  "errors": [
+    {
+      "message": "Trailing `_' in number",
+      "range": [
+        28,
+        33
+      ]
+    },
+    {
+      "message": "Consecutive `__' in number",
+      "range": [
+        42,
+        48
+      ]
+    }
+  ]
 }
