@@ -1,12 +1,14 @@
 use std::borrow::Cow;
 
 use crate::ast::{Expr, ExprKind, Range};
+use crate::parser_diagnostics::ParseError;
 use crate::util::OptionPredExt;
 use bstr::{BString, ByteSlice};
 
-pub fn parse(source: &[u8]) -> Expr {
+pub fn parse(source: &[u8]) -> (Expr, Vec<ParseError>) {
     let mut parser = Parser::new(source);
-    parser.parse_program()
+    let program = parser.parse_program();
+    (program, parser.errors)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,9 +30,6 @@ pub enum TokenKind {
     InvalidPunct(u8),
     Eof,
 }
-
-#[derive(Debug, Clone)]
-pub struct ParseError {}
 
 #[derive(Debug)]
 struct Parser {
@@ -143,7 +142,8 @@ impl Parser {
             | TokenKind::NewLine
             | TokenKind::InvalidPunct(_) => {
                 let token = self.bump(false);
-                self.errors.push(ParseError {});
+                self.errors
+                    .push(ParseError::UnexpectedToken { range: token.range });
                 Expr {
                     kind: ExprKind::Errored,
                     range: token.range,
@@ -151,7 +151,9 @@ impl Parser {
                 }
             }
             TokenKind::Eof => {
-                self.errors.push(ParseError {});
+                self.errors.push(ParseError::UnexpectedEof {
+                    range: self.next_token.range,
+                });
                 Expr {
                     kind: ExprKind::Errored,
                     range: self.next_token.range,
