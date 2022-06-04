@@ -1,8 +1,49 @@
 {
-  "type": "Numeric",
-  "numval": 42,
+  "type": "Compound",
+  "stmts": [
+    {
+      "type": "Numeric",
+      "numval": 0,
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "type": "Numeric",
+      "numval": 1,
+      "range": [
+        2,
+        3
+      ]
+    },
+    {
+      "type": "Numeric",
+      "numval": 2,
+      "range": [
+        4,
+        5
+      ]
+    },
+    {
+      "type": "Numeric",
+      "numval": 42,
+      "range": [
+        6,
+        8
+      ]
+    },
+    {
+      "type": "Numeric",
+      "numval": 1234567,
+      "range": [
+        9,
+        18
+      ]
+    }
+  ],
   "range": [
     0,
-    2
+    19
   ]
 }

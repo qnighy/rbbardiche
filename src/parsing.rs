@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::ast::{Expr, ExprKind, Range};
 use crate::util::OptionPredExt;
 use bstr::{BString, ByteSlice};
@@ -234,11 +236,13 @@ impl Parser {
                 Some(b'.') | Some(b'e') | Some(b'E') => todo!("floating-point number"),
                 _ => {}
             }
-            let numval = self.source[start..self.pos]
-                .to_str()
-                .unwrap()
-                .parse::<i32>()
-                .unwrap_or_else(|_| todo!("large integers"));
+            let s = self.source[start..self.pos].to_str().unwrap();
+            let s = if s.contains("_") {
+                Cow::Owned(s.replace("_", ""))
+            } else {
+                Cow::Borrowed(s)
+            };
+            let numval = s.parse::<i32>().unwrap_or_else(|_| todo!("large integers"));
             return Token {
                 kind: TokenKind::Numeric(numval),
                 range: Range(start, self.pos),
