@@ -236,6 +236,7 @@ impl Parser {
             }
             match self.next() {
                 Some(b'.') | Some(b'e') | Some(b'E') => todo!("floating-point number"),
+                Some(b'i') | Some(b'r') => todo!("number suffixes"),
                 _ => {}
             }
             let range = Range(start, self.pos);
