@@ -22,6 +22,7 @@ pub enum TokenKind {
     Equal,
     /// `;`
     Semi,
+    NewLine,
     InvalidPunct(u8),
     Eof,
 }
@@ -49,7 +50,7 @@ impl Parser {
             },
             errors: vec![],
         };
-        parser.bump();
+        parser.bump(true);
         parser
     }
 
@@ -68,8 +69,8 @@ impl Parser {
     }
 
     fn parse_compstmt(&mut self) -> Vec<Expr> {
-        while let TokenKind::Semi = self.next_token.kind {
-            self.bump();
+        while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+            self.bump(true);
         }
         let mut stmts = Vec::new();
         while match self.next_token.kind {
@@ -77,8 +78,8 @@ impl Parser {
             _ => true,
         } {
             stmts.push(self.parse_stmt());
-            while let TokenKind::Semi = self.next_token.kind {
-                self.bump();
+            while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+                self.bump(true);
             }
         }
         stmts
@@ -89,7 +90,7 @@ impl Parser {
         loop {
             match &self.next_token.kind {
                 TokenKind::Equal => {
-                    self.bump();
+                    self.bump(true);
                     let rhs = self.parse_expr();
                     let range = e.range | rhs.range;
                     e = Expr {
@@ -111,7 +112,7 @@ impl Parser {
         match &self.next_token.kind {
             TokenKind::Ident(name) => {
                 let name = name.to_string();
-                let token = self.bump();
+                let token = self.bump(false);
                 if name == "nil" {
                     Expr {
                         kind: ExprKind::Nil,
@@ -128,15 +129,18 @@ impl Parser {
             }
             TokenKind::Numeric(numval) => {
                 let numval = *numval;
-                let token = self.bump();
+                let token = self.bump(false);
                 Expr {
                     kind: ExprKind::Numeric { numval },
                     range: token.range,
                     node_id: 0,
                 }
             }
-            TokenKind::Equal | TokenKind::Semi | TokenKind::InvalidPunct(_) => {
-                let token = self.bump();
+            TokenKind::Equal
+            | TokenKind::Semi
+            | TokenKind::NewLine
+            | TokenKind::InvalidPunct(_) => {
+                let token = self.bump(false);
                 self.errors.push(ParseError {});
                 Expr {
                     kind: ExprKind::Errored,
@@ -155,13 +159,13 @@ impl Parser {
         }
     }
 
-    fn bump(&mut self) -> Token {
-        let next_token = self.lex_token();
+    fn bump(&mut self, beg: bool) -> Token {
+        let next_token = self.lex_token(beg);
         std::mem::replace(&mut self.next_token, next_token)
     }
 
-    fn lex_token(&mut self) -> Token {
-        self.skip_whitespace();
+    fn lex_token(&mut self, beg: bool) -> Token {
+        self.skip_whitespace(beg);
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -190,6 +194,7 @@ impl Parser {
                 kind: match first {
                     b'=' => TokenKind::Equal,
                     b';' => TokenKind::Semi,
+                    b'\n' => TokenKind::NewLine,
                     _ => TokenKind::InvalidPunct(first),
                 },
                 range: Range(start, self.pos),
@@ -250,10 +255,12 @@ impl Parser {
     //     self.source.get(self.pos + off).copied()
     // }
 
-    fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self, beg: bool) {
         while self.pos < self.source.len() {
             let ch = self.source[self.pos];
-            if ch.is_ascii_whitespace() {
+            if ch == b'\n' && !beg {
+                return;
+            } else if ch.is_ascii_whitespace() {
                 self.pos += 1;
             } else if ch == b'#' {
                 self.pos += 1;
