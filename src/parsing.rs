@@ -80,9 +80,49 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_pow()
+        self.parse_multiplicative()
     }
 
+    // %left '+' '-'
+    // %left '*' '/' '%' /* <------ here */
+    // %right tUMINUS_NUM tUMINUS
+    //
+    // arg : arg '*' arg
+    //     | arg '/' arg
+    //     | arg '%' arg
+    //
+    /// Parses `e * e`, `e / e`, `e % e`, and higher.
+    fn parse_multiplicative(&mut self) -> Expr {
+        let mut expr = self.parse_pow();
+        loop {
+            let op = match &self.next_token.kind {
+                TokenKind::Mul => BinaryOp::Mul,
+                TokenKind::Div => BinaryOp::Div,
+                TokenKind::Mod => BinaryOp::Mod,
+                _ => return expr,
+            };
+            self.bump(true);
+            let rhs = self.parse_pow();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
+    }
+
+    // %right tUMINUS_NUM tUMINUS
+    // %right tPOW /* <------ here */
+    // %right '!' '~' tUPLUS
+    //
+    // arg : arg tPOW arg
+    //
+    /// Parses `e ** e` and higher.
     fn parse_pow(&mut self) -> Expr {
         let expr = self.parse_unary();
         if let TokenKind::Pow = self.next_token.kind {
@@ -90,6 +130,8 @@ impl Parser {
             let rhs = self.parse_pow();
             match self.decompose_uminus(expr) {
                 Ok((uminus_range, expr)) => {
+                    // Special case for `-e ** e`
+                    // In this case, we reinterpret `(-e) ** e` as `-(e ** e)`.
                     let pow_range = expr.range | rhs.range;
                     let range = uminus_range | expr.range;
                     Expr {
@@ -127,6 +169,8 @@ impl Parser {
         }
     }
 
+    /// Decomposes `-x` into `-` and `x`.
+    /// Handles negative literals like `-123` as well.
     fn decompose_uminus(&self, expr: Expr) -> Result<(Range, Expr), Expr> {
         match expr {
             Expr {
@@ -154,13 +198,18 @@ impl Parser {
         }
     }
 
+    // %left '*' '/' '%'
+    // %right tUMINUS_NUM tUMINUS /* <------ here as well */
     // %right tPOW
-    // %right '!' '~' tUPLUS /* here */
+    // %right '!' '~' tUPLUS /* <------ here */
     // %token tLAST_TOKEN
     //
     // arg : tUPLUS arg
+    //     | tUMINUS arg
     //     | '!' arg
     //     | '~' arg
+    //
+    /// Parses `+e`, `-e`, `!e`, `~e`, and higher.
     fn parse_unary(&mut self) -> Expr {
         let op = match &self.next_token.kind {
             TokenKind::UPlus => UnaryOp::Plus,

@@ -58,6 +58,12 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `*` (binary)
+    Mul,
+    /// `/` (binary)
+    Div,
+    /// `%` (binary)
+    Mod,
     /// `-` (unary)
     UMinus,
     /// `**` (binary)
@@ -171,7 +177,12 @@ impl Parser {
                 } else if self.next() == Some(b'=') {
                     todo!("*=");
                 } else {
-                    todo!("*");
+                    // TODO: spcarg condition
+                    if beg {
+                        todo!("* as tStar");
+                    } else {
+                        TokenKind::Mul
+                    }
                 }
             }
             b'!' => {
@@ -225,10 +236,33 @@ impl Parser {
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
+            b'/' => {
+                self.pos += 1;
+                if beg {
+                    todo!("regexp");
+                }
+                if self.next() == Some(b'=') {
+                    todo!("/=");
+                }
+                // TODO: spcarg condition
+                TokenKind::Div
+            }
             b'~' => {
                 self.pos += 1;
                 // TODO: after_operator condition
                 TokenKind::Tilde
+            }
+            b'%' => {
+                self.pos += 1;
+                if beg {
+                    todo!("%q()");
+                }
+                if self.next() == Some(b'=') {
+                    todo!("%=");
+                }
+                // TODO: spcarg condition
+                // TODO: fitem condition
+                TokenKind::Mod
             }
             _ => {
                 self.pos += 1;
