@@ -80,10 +80,49 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_range(false)
+        self.parse_arg()
     }
 
-    // %left '?' ':'
+    fn parse_arg(&mut self) -> Expr {
+        self.parse_ternary_cond()
+    }
+
+    // %left modifier_rescue
+    // %right '?' ':' /* <------ here */
+    // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3
+    //
+    // arg : arg '?' arg opt_nl ':' arg
+    //
+    /// Parses `e ? e : e`, and higher.
+    fn parse_ternary_cond(&mut self) -> Expr {
+        let expr = self.parse_range(false);
+        if matches!(self.next_token.kind, TokenKind::Question) {
+            self.bump(true);
+            // This is delimited by `?` and `:` so the full `arg` can come here
+            let consequence = self.parse_arg();
+            self.parse_opt_nl();
+            if matches!(self.next_token.kind, TokenKind::Colon) {
+                self.bump(true);
+            } else {
+                todo!("error handling for missing colon");
+            }
+            let alternate = self.parse_ternary_cond();
+            let range = expr.range | alternate.range;
+            Expr {
+                kind: ExprKind::TernaryCond {
+                    cond: Box::new(expr),
+                    consequence: Box::new(consequence),
+                    alternate: Box::new(alternate),
+                },
+                range,
+                node_id: 0,
+            }
+        } else {
+            expr
+        }
+    }
+
+    // %right '?' ':'
     // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3 /* <------ here */
     // %left tOROP
     //
@@ -658,6 +697,12 @@ impl Parser {
                     node_id: 0,
                 }
             }
+        }
+    }
+
+    fn parse_opt_nl(&mut self) {
+        if matches!(self.next_token.kind, TokenKind::NewLine) {
+            self.bump(true);
         }
     }
 }

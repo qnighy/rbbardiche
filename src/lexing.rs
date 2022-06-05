@@ -86,6 +86,10 @@ pub(crate) enum TokenKind {
     /// Unary operator
     /// Note: some operators have overloaded meanings.
     UnOp(UnaryOp),
+    /// `?`
+    Question,
+    /// `:`
+    Colon,
     /// `=`
     Equal,
     /// `;`
@@ -264,6 +268,25 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Gt)
                 }
             }
+            b'?' => {
+                self.pos += 1;
+                // TODO: end_any condition
+                match self.next() {
+                    None => {
+                        // On EOF, this is reported as "incomplete character syntax" in CRuby
+                        // Here we emit '?' instead, and it will lead to syntax error anyway.
+                        TokenKind::Question
+                    }
+                    Some(ch) if ch.is_ascii_whitespace() || ch == b'\x0B' => TokenKind::Question,
+                    Some(b'\\') => {
+                        todo!("character syntax with escapes")
+                    }
+                    Some(_ch) => {
+                        // TODO: fallback to Question token in case like `cond ?foo : bar`
+                        todo!("character syntax")
+                    }
+                }
+            }
             b'&' => {
                 self.pos += 1;
                 if self.next() == Some(b'&') {
@@ -371,6 +394,21 @@ impl Parser {
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
+            b':' => {
+                self.pos += 1;
+                if self.next() == Some(b':') {
+                    self.pos += 1;
+                    todo!("::");
+                    // TODO: end_any condition
+                } else if self
+                    .next()
+                    .is_some_and_(|&ch| ch.is_ascii_whitespace() || ch == b'\x0B' || ch == b'#')
+                {
+                    TokenKind::Colon
+                } else {
+                    todo!("tSYMBEG");
+                }
+            }
             b'/' => {
                 self.pos += 1;
                 if beg {
@@ -482,7 +520,7 @@ impl Parser {
             let ch = self.source[self.pos];
             if ch == b'\n' && !beg {
                 return;
-            } else if ch.is_ascii_whitespace() {
+            } else if ch.is_ascii_whitespace() || ch == b'\x0B' {
                 self.pos += 1;
             } else if ch == b'#' {
                 self.pos += 1;

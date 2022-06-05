@@ -33,6 +33,11 @@ pub enum ExprKind {
     Numeric {
         numval: i32,
     },
+    TernaryCond {
+        cond: Box<Expr>,
+        consequence: Box<Expr>,
+        alternate: Box<Expr>,
+    },
     Binary {
         lhs: Box<Expr>,
         op: BinaryOp,

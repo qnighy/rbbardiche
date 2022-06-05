@@ -1,3 +1,10 @@
+foo ? bar : baz
+a ? b : c ? d : e
+a ? b ? c : d : e
+foo .. bar ? baz : quux
+foo ? bar .. baz : quux
+foo ? bar : baz .. quux
+
 foo .. bar
 foo ... bar
 foo || bar .. baz
