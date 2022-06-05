@@ -1,4 +1,4 @@
-use crate::ast::Range;
+use crate::ast::{BinaryOp, Range, UnaryOp};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::util::OptionPredExt;
@@ -10,6 +10,28 @@ use std::{borrow::Cow, collections::HashMap};
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) range: Range,
+}
+
+impl Token {
+    pub(crate) fn to_binop<F>(&self, cond: F) -> Option<BinaryOp>
+    where
+        F: FnOnce(BinaryOp) -> bool,
+    {
+        match &self.kind {
+            TokenKind::BinOp(op) if cond(*op) => Some(*op),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn to_unop<F>(&self, cond: F) -> Option<UnaryOp>
+    where
+        F: FnOnce(UnaryOp) -> bool,
+    {
+        match &self.kind {
+            TokenKind::UnOp(op) if cond(*op) => Some(*op),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,30 +80,12 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
-    /// `<<`
-    LShift,
-    /// `>>`
-    RShift,
-    /// `+` (binary)
-    Plus,
-    /// `-` (binary)
-    Minus,
-    /// `*` (binary)
-    Mul,
-    /// `/` (binary)
-    Div,
-    /// `%` (binary)
-    Mod,
-    /// `-` (unary)
-    UMinus,
-    /// `**` (binary)
-    Pow,
-    /// `+` (unary)
-    UPlus,
-    /// `~`
-    Tilde,
-    /// `!`
-    Excl,
+    /// Binary operator
+    /// Note: some operators have overloaded meanings.
+    BinOp(BinaryOp),
+    /// Unary operator
+    /// Note: some operators have overloaded meanings.
+    UnOp(UnaryOp),
     /// `=`
     Equal,
     /// `;`
@@ -180,7 +184,7 @@ impl Parser {
                     if beg {
                         todo!("** as tDStar");
                     } else {
-                        TokenKind::Pow
+                        TokenKind::BinOp(BinaryOp::Pow)
                     }
                 } else if self.next() == Some(b'=') {
                     todo!("*=");
@@ -189,7 +193,7 @@ impl Parser {
                     if beg {
                         todo!("* as tStar");
                     } else {
-                        TokenKind::Mul
+                        TokenKind::BinOp(BinaryOp::Mul)
                     }
                 }
             }
@@ -201,7 +205,7 @@ impl Parser {
                 } else if self.next() == Some(b'~') {
                     todo!("!~");
                 } else {
-                    TokenKind::Excl
+                    TokenKind::UnOp(UnaryOp::Not)
                 }
             }
             b'<' => {
@@ -219,7 +223,7 @@ impl Parser {
                     if self.next() == Some(b'=') {
                         todo!("<<=");
                     } else {
-                        TokenKind::LShift
+                        TokenKind::BinOp(BinaryOp::LShift)
                     }
                 } else {
                     todo!("<");
@@ -232,7 +236,7 @@ impl Parser {
                     todo!(">=");
                 } else if self.next() == Some(b'>') {
                     self.pos += 1;
-                    TokenKind::RShift
+                    TokenKind::BinOp(BinaryOp::RShift)
                 } else {
                     todo!(">");
                 }
@@ -249,10 +253,10 @@ impl Parser {
                         self.pos = start;
                         self.lex_numeric()
                     } else {
-                        TokenKind::UPlus
+                        TokenKind::UnOp(UnaryOp::Plus)
                     }
                 } else {
-                    TokenKind::Plus
+                    TokenKind::BinOp(BinaryOp::Add)
                 }
             }
             b'-' => {
@@ -270,10 +274,10 @@ impl Parser {
                         self.pos = start;
                         self.lex_numeric()
                     } else {
-                        TokenKind::UMinus
+                        TokenKind::UnOp(UnaryOp::Neg)
                     }
                 } else {
-                    TokenKind::Minus
+                    TokenKind::BinOp(BinaryOp::Sub)
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
@@ -286,12 +290,12 @@ impl Parser {
                     todo!("/=");
                 }
                 // TODO: spcarg condition
-                TokenKind::Div
+                TokenKind::BinOp(BinaryOp::Div)
             }
             b'~' => {
                 self.pos += 1;
                 // TODO: after_operator condition
-                TokenKind::Tilde
+                TokenKind::UnOp(UnaryOp::BitwiseNot)
             }
             b'%' => {
                 self.pos += 1;
@@ -303,7 +307,7 @@ impl Parser {
                 }
                 // TODO: spcarg condition
                 // TODO: fitem condition
-                TokenKind::Mod
+                TokenKind::BinOp(BinaryOp::Mod)
             }
             _ => {
                 self.pos += 1;

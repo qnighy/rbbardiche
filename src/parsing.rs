@@ -94,10 +94,13 @@ impl Parser {
     fn parse_shift(&mut self) -> Expr {
         let mut expr = self.parse_additive();
         loop {
-            let op = match &self.next_token.kind {
-                TokenKind::LShift => BinaryOp::LShift,
-                TokenKind::RShift => BinaryOp::RShift,
-                _ => return expr,
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::LShift | BinaryOp::RShift))
+            {
+                op
+            } else {
+                break;
             };
             self.bump(true);
             let rhs = self.parse_additive();
@@ -112,6 +115,7 @@ impl Parser {
                 node_id: 0,
             };
         }
+        expr
     }
 
     // %left tLSHFT tRSHFT
@@ -125,10 +129,13 @@ impl Parser {
     fn parse_additive(&mut self) -> Expr {
         let mut expr = self.parse_multiplicative();
         loop {
-            let op = match &self.next_token.kind {
-                TokenKind::Plus => BinaryOp::Add,
-                TokenKind::Minus => BinaryOp::Sub,
-                _ => return expr,
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::Add | BinaryOp::Sub))
+            {
+                op
+            } else {
+                break;
             };
             self.bump(true);
             let rhs = self.parse_multiplicative();
@@ -143,6 +150,7 @@ impl Parser {
                 node_id: 0,
             };
         }
+        expr
     }
 
     // %left '+' '-'
@@ -157,11 +165,13 @@ impl Parser {
     fn parse_multiplicative(&mut self) -> Expr {
         let mut expr = self.parse_pow();
         loop {
-            let op = match &self.next_token.kind {
-                TokenKind::Mul => BinaryOp::Mul,
-                TokenKind::Div => BinaryOp::Div,
-                TokenKind::Mod => BinaryOp::Mod,
-                _ => return expr,
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::Mul | BinaryOp::Div | BinaryOp::Mod))
+            {
+                op
+            } else {
+                break;
             };
             self.bump(true);
             let rhs = self.parse_pow();
@@ -176,6 +186,7 @@ impl Parser {
                 node_id: 0,
             };
         }
+        expr
     }
 
     // %right tUMINUS_NUM tUMINUS
@@ -187,47 +198,48 @@ impl Parser {
     /// Parses `e ** e` and higher.
     fn parse_pow(&mut self) -> Expr {
         let expr = self.parse_unary();
-        if let TokenKind::Pow = self.next_token.kind {
-            self.bump(true);
-            let rhs = self.parse_pow();
-            match self.decompose_uminus(expr) {
-                Ok((uminus_range, expr)) => {
-                    // Special case for `-e ** e`
-                    // In this case, we reinterpret `(-e) ** e` as `-(e ** e)`.
-                    let pow_range = expr.range | rhs.range;
-                    let range = uminus_range | expr.range;
-                    Expr {
-                        kind: ExprKind::Unary {
-                            op: UnaryOp::Neg,
-                            expr: Box::new(Expr {
-                                kind: ExprKind::Binary {
-                                    lhs: Box::new(expr),
-                                    op: BinaryOp::Pow,
-                                    rhs: Box::new(rhs),
-                                },
-                                range: pow_range,
-                                node_id: 0,
-                            }),
-                        },
-                        range,
-                        node_id: 0,
-                    }
-                }
-                Err(expr) => {
-                    let range = expr.range | rhs.range;
-                    Expr {
-                        kind: ExprKind::Binary {
-                            lhs: Box::new(expr),
-                            op: BinaryOp::Pow,
-                            rhs: Box::new(rhs),
-                        },
-                        range,
-                        node_id: 0,
-                    }
+        let _op = if let Some(op) = self.next_token.to_binop(|op| matches!(op, BinaryOp::Pow)) {
+            op
+        } else {
+            return expr;
+        };
+        self.bump(true);
+        let rhs = self.parse_pow();
+        match self.decompose_uminus(expr) {
+            Ok((uminus_range, expr)) => {
+                // Special case for `-e ** e`
+                // In this case, we reinterpret `(-e) ** e` as `-(e ** e)`.
+                let pow_range = expr.range | rhs.range;
+                let range = uminus_range | expr.range;
+                Expr {
+                    kind: ExprKind::Unary {
+                        op: UnaryOp::Neg,
+                        expr: Box::new(Expr {
+                            kind: ExprKind::Binary {
+                                lhs: Box::new(expr),
+                                op: BinaryOp::Pow,
+                                rhs: Box::new(rhs),
+                            },
+                            range: pow_range,
+                            node_id: 0,
+                        }),
+                    },
+                    range,
+                    node_id: 0,
                 }
             }
-        } else {
-            expr
+            Err(expr) => {
+                let range = expr.range | rhs.range;
+                Expr {
+                    kind: ExprKind::Binary {
+                        lhs: Box::new(expr),
+                        op: BinaryOp::Pow,
+                        rhs: Box::new(rhs),
+                    },
+                    range,
+                    node_id: 0,
+                }
+            }
         }
     }
 
@@ -273,12 +285,15 @@ impl Parser {
     //
     /// Parses `+e`, `-e`, `!e`, `~e`, and higher.
     fn parse_unary(&mut self) -> Expr {
-        let op = match &self.next_token.kind {
-            TokenKind::UPlus => UnaryOp::Plus,
-            TokenKind::UMinus => UnaryOp::Neg,
-            TokenKind::Excl => UnaryOp::Not,
-            TokenKind::Tilde => UnaryOp::BitwiseNot,
-            _ => return self.parse_primary(),
+        let op = if let Some(op) = self.next_token.to_unop(|op| {
+            matches!(
+                op,
+                UnaryOp::Plus | UnaryOp::Neg | UnaryOp::Not | UnaryOp::BitwiseNot
+            )
+        }) {
+            op
+        } else {
+            return self.parse_primary();
         };
         let op_token = self.bump(true);
         let expr = self.parse_unary();
