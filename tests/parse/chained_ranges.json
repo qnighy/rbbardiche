@@ -1,0 +1,357 @@
+{
+  "ast": {
+    "type": "Compound",
+    "stmts": [
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              0,
+              3
+            ]
+          },
+          "op": "RangeIncl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              7,
+              10
+            ]
+          },
+          "range": [
+            0,
+            10
+          ]
+        },
+        "op": "RangeIncl",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            14,
+            17
+          ]
+        },
+        "range": [
+          0,
+          17
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              18,
+              21
+            ]
+          },
+          "op": "RangeIncl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              25,
+              28
+            ]
+          },
+          "range": [
+            18,
+            28
+          ]
+        },
+        "op": "RangeExcl",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            33,
+            36
+          ]
+        },
+        "range": [
+          18,
+          36
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              37,
+              40
+            ]
+          },
+          "op": "RangeExcl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              45,
+              48
+            ]
+          },
+          "range": [
+            37,
+            48
+          ]
+        },
+        "op": "RangeIncl",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            52,
+            55
+          ]
+        },
+        "range": [
+          37,
+          55
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              56,
+              59
+            ]
+          },
+          "op": "RangeExcl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              64,
+              67
+            ]
+          },
+          "range": [
+            56,
+            67
+          ]
+        },
+        "op": "RangeExcl",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            72,
+            75
+          ]
+        },
+        "range": [
+          56,
+          75
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "RangeIncl",
+        "expr": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              79,
+              82
+            ]
+          },
+          "op": "RangeIncl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              86,
+              89
+            ]
+          },
+          "range": [
+            79,
+            89
+          ]
+        },
+        "range": [
+          76,
+          89
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "RangeIncl",
+        "expr": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              93,
+              96
+            ]
+          },
+          "op": "RangeExcl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              101,
+              104
+            ]
+          },
+          "range": [
+            93,
+            104
+          ]
+        },
+        "range": [
+          90,
+          104
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "RangeExcl",
+        "expr": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              109,
+              112
+            ]
+          },
+          "op": "RangeIncl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              116,
+              119
+            ]
+          },
+          "range": [
+            109,
+            119
+          ]
+        },
+        "range": [
+          105,
+          119
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "RangeExcl",
+        "expr": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              124,
+              127
+            ]
+          },
+          "op": "RangeExcl",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              132,
+              135
+            ]
+          },
+          "range": [
+            124,
+            135
+          ]
+        },
+        "range": [
+          120,
+          135
+        ]
+      }
+    ],
+    "range": [
+      0,
+      136
+    ]
+  },
+  "errors": [
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        11,
+        13
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        29,
+        32
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        49,
+        51
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        68,
+        71
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        83,
+        85
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        97,
+        100
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        113,
+        115
+      ]
+    },
+    {
+      "message": "Unexpected chained range operator",
+      "range": [
+        128,
+        131
+      ]
+    }
+  ]
+}
