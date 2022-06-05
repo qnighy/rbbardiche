@@ -42,6 +42,10 @@ pub enum ExprKind {
         op: UnaryOp,
         expr: Box<Expr>,
     },
+    PostfixUnary {
+        expr: Box<Expr>,
+        op: PostfixUnaryOp,
+    },
     Nil,
     Assign {
         lhs: Box<Expr>,
@@ -52,6 +56,10 @@ pub enum ExprKind {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum BinaryOp {
+    /// `..`
+    RangeIncl,
+    /// `...`
+    RangeExcl,
     /// `||`
     LogicalOr,
     /// `&&`
@@ -102,6 +110,10 @@ pub enum BinaryOp {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum UnaryOp {
+    /// `..`
+    RangeIncl,
+    /// `...`
+    RangeExcl,
     /// `+`
     Plus,
     /// `-`
@@ -110,6 +122,14 @@ pub enum UnaryOp {
     Not,
     /// `~`
     BitwiseNot,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum PostfixUnaryOp {
+    /// `..`
+    RangeIncl,
+    /// `...`
+    RangeExcl,
 }
 
 fn is_zero<T: PartialEq + Default>(x: &T) -> bool {

@@ -346,6 +346,30 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Sub)
                 }
             }
+            b'.' => {
+                self.pos += 1;
+                if self.next() == Some(b'.') {
+                    self.pos += 1;
+                    if self.next() == Some(b'.') {
+                        self.pos += 1;
+                        // TODO: in_argdef condition
+                        // TODO: EOF warning
+                        // TODO: lpar_beg condition
+                        if beg {
+                            TokenKind::UnOp(UnaryOp::RangeExcl)
+                        } else {
+                            TokenKind::BinOp(BinaryOp::RangeExcl)
+                        }
+                    } else if beg {
+                        TokenKind::UnOp(UnaryOp::RangeIncl)
+                    } else {
+                        TokenKind::BinOp(BinaryOp::RangeIncl)
+                    }
+                } else {
+                    // TODO: digit case
+                    todo!(".");
+                }
+            }
             _ if first.is_ascii_digit() => self.lex_numeric(),
             b'/' => {
                 self.pos += 1;

@@ -12,6 +12,8 @@ pub enum ParseError {
     TrailingUnderscore { range: Range },
     #[error("Consecutive `__' in number")]
     DoubleUnderscore { range: Range },
+    #[error("Unexpected chained range operator")]
+    ChainedRange { range: Range },
     #[error("Unexpected chained comparison")]
     ChainedEquality { range: Range },
     #[error("comparison after comparison")]
@@ -26,6 +28,7 @@ impl ParseError {
             UnexpectedEof { range } => *range,
             TrailingUnderscore { range } => *range,
             DoubleUnderscore { range } => *range,
+            ChainedRange { range } => *range,
             ChainedEquality { range } => *range,
             ChainedInequality { range } => *range,
         }
@@ -38,6 +41,7 @@ impl ParseError {
             | UnexpectedEof { .. }
             | TrailingUnderscore { .. }
             | DoubleUnderscore { .. }
+            | ChainedRange { .. }
             | ChainedEquality { .. } => true,
             ChainedInequality { .. } => false,
         }

@@ -80,7 +80,53 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_logical_or()
+        self.parse_range(false)
+    }
+
+    // %left '?' ':'
+    // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3 /* <------ here */
+    // %left tOROP
+    //
+    // arg : arg tDOT2 arg
+    //     | arg tDOT3 arg
+    //     | arg tDOT2
+    //     | arg tDOT3
+    //     | tBDOT2 arg /* <------ handled in parse_unary */
+    //     | tBDOT3 arg /* <------ handled in parse_unary */
+    //
+    /// Parses `e .. e`, `e ... e`, `e ..`, `e ...`, and higher.
+    fn parse_range(&mut self, mut chaining: bool) -> Expr {
+        let mut expr = self.parse_logical_or();
+        loop {
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::RangeIncl | BinaryOp::RangeExcl))
+            {
+                op
+            } else {
+                break;
+            };
+            let op_token = self.bump(true);
+            if chaining {
+                self.errors.push(ParseError::ChainedRange {
+                    range: op_token.range,
+                });
+            }
+            // TODO: parse endless ranges (like `42..`)
+            let rhs = self.parse_logical_or();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+            chaining = true;
+        }
+        expr
     }
 
     // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3
@@ -511,13 +557,19 @@ impl Parser {
         }
     }
 
+    // %left '?' ':'
+    // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3 /* <------ here as well */
+    // %left tOROP
+    //
     // %left '*' '/' '%'
     // %right tUMINUS_NUM tUMINUS /* <------ here as well */
     // %right tPOW
     // %right '!' '~' tUPLUS /* <------ here */
     // %token tLAST_TOKEN
     //
-    // arg : tUPLUS arg
+    // arg : tBDOT2 arg
+    //     | tBDOT3 arg
+    //     | tUPLUS arg
     //     | tUMINUS arg
     //     | '!' arg
     //     | '~' arg
@@ -527,7 +579,12 @@ impl Parser {
         let op = if let Some(op) = self.next_token.to_unop(|op| {
             matches!(
                 op,
-                UnaryOp::Plus | UnaryOp::Neg | UnaryOp::Not | UnaryOp::BitwiseNot
+                UnaryOp::RangeIncl
+                    | UnaryOp::RangeExcl
+                    | UnaryOp::Plus
+                    | UnaryOp::Neg
+                    | UnaryOp::Not
+                    | UnaryOp::BitwiseNot
             )
         }) {
             op
@@ -535,7 +592,13 @@ impl Parser {
             return self.parse_primary();
         };
         let op_token = self.bump(true);
-        let expr = self.parse_unary();
+        let expr = if matches!(op, UnaryOp::RangeIncl | UnaryOp::RangeExcl) {
+            // Within these rules, shift takes precedence over reduce
+            // E.g. `..1 + 2` is interpreted as being `..(1 + 2)`
+            self.parse_range(true)
+        } else {
+            self.parse_unary()
+        };
         let range = op_token.range | expr.range;
         Expr {
             kind: ExprKind::Unary {

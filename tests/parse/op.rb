@@ -1,3 +1,17 @@
+foo .. bar
+foo ... bar
+foo || bar .. baz
+foo .. bar || baz
+.. foo
++ .. foo
+.. + foo
++ .. foo + bar
+.. + foo + bar
+# (foo ..)
+# (~ foo ..)
+# (foo + bar ..)
+# (~ foo + bar ..)
+
 foo || bar || baz
 foo || bar && baz
 foo && bar || baz
