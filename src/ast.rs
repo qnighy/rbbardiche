@@ -52,6 +52,26 @@ pub enum ExprKind {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum BinaryOp {
+    /// `<=>`
+    Cmp,
+    /// `==`
+    Eq,
+    /// `===`
+    Eqq,
+    /// `!=`
+    NEq,
+    /// `=~`
+    Match,
+    /// `!~`
+    NMatch,
+    /// `>`
+    Gt,
+    /// `>=`
+    GtEq,
+    /// `<`
+    Lt,
+    /// `<=`
+    LtEq,
     /// `|`
     BitwiseOr,
     /// `^`

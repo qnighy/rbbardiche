@@ -80,12 +80,114 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_bitwise_or()
+        self.parse_equality()
     }
 
+    // %left tANDOP
+    // %nonassoc tCMP tEQ tEQQ tNEQ tMATCH tNMATCH /* <------ here */
+    // %left '>' tGEQ '<' tLEQ
+    //
+    // arg : arg tCMP arg
+    //     | arg tEQ arg
+    //     | arg tEQQ arg
+    //     | arg tNEQ arg
+    //     | arg tMATCH arg
+    //     | arg tNMATCH arg
+    //
+    /// Parses `e <=> e`, `e == e`, `e === e`, `e != e`, `e =~ e`, `e !~ e`, and higher.
+    fn parse_equality(&mut self) -> Expr {
+        let mut expr = self.parse_inequality();
+        let mut chaining = false;
+        loop {
+            let op = if let Some(op) = self.next_token.to_binop(|op| {
+                matches!(
+                    op,
+                    BinaryOp::Cmp
+                        | BinaryOp::Eq
+                        | BinaryOp::Eqq
+                        | BinaryOp::NEq
+                        | BinaryOp::Match
+                        | BinaryOp::NMatch
+                )
+            }) {
+                op
+            } else {
+                break;
+            };
+            let op_token = self.bump(true);
+            if chaining {
+                self.errors.push(ParseError::ChainedEquality {
+                    range: op_token.range,
+                });
+            }
+            let rhs = self.parse_inequality();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+            chaining = true;
+        }
+        expr
+    }
+
+    // %nonassoc tCMP tEQ tEQQ tNEQ tMATCH tNMATCH
+    // %left '>' tGEQ '<' tLEQ /* <------ here */
     // %left '|' '^'
-    // %left '&' /* <------ here */
-    // %left tLSHFT tRSHFT
+    //
+    // arg : rel_expr
+    // relop : '>'
+    //       | '<'
+    //       | tGEQ
+    //       | tLEQ
+    // rel_expr : arg relop arg  %prec '>'
+    //          | rel_expr relop arg  %prec '>' /* warned against */
+    //
+    /// Parses `e > e`, `e >= e`, `e < e`, `e <= e`, and higher.
+    fn parse_inequality(&mut self) -> Expr {
+        let mut expr = self.parse_bitwise_or();
+        let mut chaining = false;
+        loop {
+            let op = if let Some(op) = self.next_token.to_binop(|op| {
+                matches!(
+                    op,
+                    BinaryOp::Gt | BinaryOp::GtEq | BinaryOp::Lt | BinaryOp::LtEq
+                )
+            }) {
+                op
+            } else {
+                break;
+            };
+            let op_token = self.bump(true);
+            if chaining {
+                self.errors.push(ParseError::ChainedInequality {
+                    range: op_token.range,
+                });
+            }
+            let rhs = self.parse_bitwise_or();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+            chaining = true;
+        }
+        expr
+    }
+
+    // %left '>' tGEQ '<' tLEQ
+    // %left '|' '^' /* <------ here */
+    // %left '&'
     //
     // arg : arg '|' arg
     //     | arg '^' arg

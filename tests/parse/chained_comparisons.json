@@ -1,0 +1,647 @@
+{
+  "ast": {
+    "type": "Compound",
+    "stmts": [
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              0,
+              3
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              7,
+              10
+            ]
+          },
+          "range": [
+            0,
+            10
+          ]
+        },
+        "op": "Eq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            14,
+            17
+          ]
+        },
+        "range": [
+          0,
+          17
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              18,
+              21
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              25,
+              28
+            ]
+          },
+          "range": [
+            18,
+            28
+          ]
+        },
+        "op": "Cmp",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            33,
+            36
+          ]
+        },
+        "range": [
+          18,
+          36
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              37,
+              40
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              44,
+              47
+            ]
+          },
+          "range": [
+            37,
+            47
+          ]
+        },
+        "op": "NEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            51,
+            54
+          ]
+        },
+        "range": [
+          37,
+          54
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              55,
+              58
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              62,
+              65
+            ]
+          },
+          "range": [
+            55,
+            65
+          ]
+        },
+        "op": "Eqq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            70,
+            73
+          ]
+        },
+        "range": [
+          55,
+          73
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              74,
+              77
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              81,
+              84
+            ]
+          },
+          "range": [
+            74,
+            84
+          ]
+        },
+        "op": "Match",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            88,
+            91
+          ]
+        },
+        "range": [
+          74,
+          91
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              92,
+              95
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              99,
+              102
+            ]
+          },
+          "range": [
+            92,
+            102
+          ]
+        },
+        "op": "NMatch",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            106,
+            109
+          ]
+        },
+        "range": [
+          92,
+          109
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              111,
+              114
+            ]
+          },
+          "op": "Lt",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              117,
+              120
+            ]
+          },
+          "range": [
+            111,
+            120
+          ]
+        },
+        "op": "LtEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            124,
+            127
+          ]
+        },
+        "range": [
+          111,
+          127
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              128,
+              131
+            ]
+          },
+          "op": "LtEq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              135,
+              138
+            ]
+          },
+          "range": [
+            128,
+            138
+          ]
+        },
+        "op": "Lt",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            141,
+            144
+          ]
+        },
+        "range": [
+          128,
+          144
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              145,
+              148
+            ]
+          },
+          "op": "Gt",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              151,
+              154
+            ]
+          },
+          "range": [
+            145,
+            154
+          ]
+        },
+        "op": "GtEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            158,
+            161
+          ]
+        },
+        "range": [
+          145,
+          161
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              162,
+              165
+            ]
+          },
+          "op": "GtEq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              169,
+              172
+            ]
+          },
+          "range": [
+            162,
+            172
+          ]
+        },
+        "op": "Gt",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            175,
+            178
+          ]
+        },
+        "range": [
+          162,
+          178
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              179,
+              182
+            ]
+          },
+          "op": "Lt",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              185,
+              188
+            ]
+          },
+          "range": [
+            179,
+            188
+          ]
+        },
+        "op": "Gt",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            191,
+            194
+          ]
+        },
+        "range": [
+          179,
+          194
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              195,
+              198
+            ]
+          },
+          "op": "Gt",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              201,
+              204
+            ]
+          },
+          "range": [
+            195,
+            204
+          ]
+        },
+        "op": "Lt",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            207,
+            210
+          ]
+        },
+        "range": [
+          195,
+          210
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Binary",
+            "lhs": {
+              "type": "Ident",
+              "name": "foo",
+              "range": [
+                211,
+                214
+              ]
+            },
+            "op": "Lt",
+            "rhs": {
+              "type": "Ident",
+              "name": "bar",
+              "range": [
+                217,
+                220
+              ]
+            },
+            "range": [
+              211,
+              220
+            ]
+          },
+          "op": "Lt",
+          "rhs": {
+            "type": "Ident",
+            "name": "baz",
+            "range": [
+              223,
+              226
+            ]
+          },
+          "range": [
+            211,
+            226
+          ]
+        },
+        "op": "Lt",
+        "rhs": {
+          "type": "Ident",
+          "name": "quux",
+          "range": [
+            229,
+            233
+          ]
+        },
+        "range": [
+          211,
+          233
+        ]
+      }
+    ],
+    "range": [
+      0,
+      234
+    ]
+  },
+  "errors": [
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        11,
+        13
+      ]
+    },
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        29,
+        32
+      ]
+    },
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        48,
+        50
+      ]
+    },
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        66,
+        69
+      ]
+    },
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        85,
+        87
+      ]
+    },
+    {
+      "message": "Unexpected chained comparison",
+      "range": [
+        103,
+        105
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        121,
+        123
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        139,
+        140
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        155,
+        157
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        173,
+        174
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        189,
+        190
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        205,
+        206
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        221,
+        222
+      ]
+    },
+    {
+      "message": "comparison after comparison",
+      "range": [
+        227,
+        228
+      ]
+    }
+  ]
+}

@@ -201,11 +201,33 @@ impl Parser {
                 self.pos += 1;
                 // TODO: after_operator condition
                 if self.next() == Some(b'=') {
-                    todo!("!=");
+                    self.pos += 1;
+                    TokenKind::BinOp(BinaryOp::NEq)
                 } else if self.next() == Some(b'~') {
-                    todo!("!~");
+                    self.pos += 1;
+                    TokenKind::BinOp(BinaryOp::NMatch)
                 } else {
                     TokenKind::UnOp(UnaryOp::Not)
+                }
+            }
+            b'=' => {
+                self.pos += 1;
+                // TODO: "=begin" comment
+                if self.next() == Some(b'=') {
+                    self.pos += 1;
+                    if self.next() == Some(b'=') {
+                        self.pos += 1;
+                        TokenKind::BinOp(BinaryOp::Eqq)
+                    } else {
+                        TokenKind::BinOp(BinaryOp::Eq)
+                    }
+                } else if self.next() == Some(b'~') {
+                    self.pos += 1;
+                    TokenKind::BinOp(BinaryOp::Match)
+                } else if self.next() == Some(b'>') {
+                    todo!("=>");
+                } else {
+                    TokenKind::Equal
                 }
             }
             b'<' => {
@@ -214,9 +236,10 @@ impl Parser {
                 if self.next() == Some(b'=') {
                     self.pos += 1;
                     if self.next() == Some(b'>') {
-                        todo!("<=>");
+                        self.pos += 1;
+                        TokenKind::BinOp(BinaryOp::Cmp)
                     } else {
-                        todo!("<=>");
+                        TokenKind::BinOp(BinaryOp::LtEq)
                     }
                 } else if self.next() == Some(b'<') {
                     self.pos += 1;
@@ -226,19 +249,19 @@ impl Parser {
                         TokenKind::BinOp(BinaryOp::LShift)
                     }
                 } else {
-                    todo!("<");
+                    TokenKind::BinOp(BinaryOp::Lt)
                 }
             }
             b'>' => {
                 self.pos += 1;
                 if self.next() == Some(b'=') {
                     self.pos += 1;
-                    todo!(">=");
+                    TokenKind::BinOp(BinaryOp::GtEq)
                 } else if self.next() == Some(b'>') {
                     self.pos += 1;
                     TokenKind::BinOp(BinaryOp::RShift)
                 } else {
-                    todo!(">");
+                    TokenKind::BinOp(BinaryOp::Gt)
                 }
             }
             b'&' => {
@@ -360,7 +383,6 @@ impl Parser {
             _ => {
                 self.pos += 1;
                 match first {
-                    b'=' => TokenKind::Equal,
                     b';' => TokenKind::Semi,
                     b'\n' => TokenKind::NewLine,
                     _ => TokenKind::InvalidPunct(first),
