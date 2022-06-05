@@ -80,7 +80,38 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_additive()
+        self.parse_shift()
+    }
+
+    // %left '&'
+    // %left tLSHFT tRSHFT /* <------ here */
+    // %left '+' '-'
+    //
+    // arg : arg tLSHFT arg
+    //     | arg tRSHFT arg
+    //
+    /// Parses `e << e`, `e >> e`, and higher.
+    fn parse_shift(&mut self) -> Expr {
+        let mut expr = self.parse_additive();
+        loop {
+            let op = match &self.next_token.kind {
+                TokenKind::LShift => BinaryOp::LShift,
+                TokenKind::RShift => BinaryOp::RShift,
+                _ => return expr,
+            };
+            self.bump(true);
+            let rhs = self.parse_additive();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
     }
 
     // %left tLSHFT tRSHFT

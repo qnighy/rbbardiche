@@ -58,6 +58,10 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `<<`
+    LShift,
+    /// `>>`
+    RShift,
     /// `+` (binary)
     Plus,
     /// `-` (binary)
@@ -198,6 +202,39 @@ impl Parser {
                     todo!("!~");
                 } else {
                     TokenKind::Excl
+                }
+            }
+            b'<' => {
+                self.pos += 1;
+                // TODO: heredoc
+                if self.next() == Some(b'=') {
+                    self.pos += 1;
+                    if self.next() == Some(b'>') {
+                        todo!("<=>");
+                    } else {
+                        todo!("<=>");
+                    }
+                } else if self.next() == Some(b'<') {
+                    self.pos += 1;
+                    if self.next() == Some(b'=') {
+                        todo!("<<=");
+                    } else {
+                        TokenKind::LShift
+                    }
+                } else {
+                    todo!("<");
+                }
+            }
+            b'>' => {
+                self.pos += 1;
+                if self.next() == Some(b'=') {
+                    self.pos += 1;
+                    todo!(">=");
+                } else if self.next() == Some(b'>') {
+                    self.pos += 1;
+                    TokenKind::RShift
+                } else {
+                    todo!(">");
                 }
             }
             b'+' => {
