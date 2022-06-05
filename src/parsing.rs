@@ -83,6 +83,14 @@ impl Parser {
         self.parse_additive()
     }
 
+    // %left tLSHFT tRSHFT
+    // %left '+' '-' /* <------ here */
+    // %left '*' '/' '%'
+    //
+    // arg : arg '+' arg
+    //     | arg '-' arg
+    //
+    /// Parses `e + e`, `e - e`, and higher.
     fn parse_additive(&mut self) -> Expr {
         let mut expr = self.parse_multiplicative();
         loop {
