@@ -58,6 +58,8 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `-` (unary)
+    UMinus,
     /// `**` (binary)
     Pow,
     /// `+` (unary)
@@ -191,7 +193,33 @@ impl Parser {
                 }
                 // TODO: spcarg condition
                 if beg {
-                    TokenKind::UPlus
+                    if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
+                        self.pos -= 1;
+                        self.lex_numeric()
+                    } else {
+                        TokenKind::UPlus
+                    }
+                } else {
+                    TokenKind::InvalidPunct(first)
+                }
+            }
+            b'-' => {
+                self.pos += 1;
+                // TODO: after_operator condition
+                if self.next() == Some(b'=') {
+                    todo!("-=");
+                }
+                if self.next() == Some(b'>') {
+                    todo!("->");
+                }
+                // TODO: spcarg condition
+                if beg {
+                    if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
+                        self.pos -= 1;
+                        self.lex_numeric()
+                    } else {
+                        TokenKind::UMinus
+                    }
                 } else {
                     TokenKind::InvalidPunct(first)
                 }
@@ -221,7 +249,7 @@ impl Parser {
     fn lex_numeric(&mut self) -> TokenKind {
         let start = self.pos;
         if self.next() == Some(b'-') || self.next() == Some(b'+') {
-            todo!("signed number literals");
+            self.pos += 1;
         }
         if self.next() == Some(b'0') {
             self.pos += 1;

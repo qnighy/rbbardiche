@@ -57,8 +57,13 @@ pub enum BinaryOp {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum UnaryOp {
+    /// `+`
     Plus,
+    /// `-`
+    Neg,
+    /// `!`
     Not,
+    /// `~`
     BitwiseNot,
 }
 

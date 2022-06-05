@@ -164,18 +164,50 @@
       },
       {
         "type": "Unary",
+        "op": "Neg",
+        "expr": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              88,
+              91
+            ]
+          },
+          "op": "Pow",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              95,
+              98
+            ]
+          },
+          "range": [
+            88,
+            98
+          ]
+        },
+        "range": [
+          87,
+          91
+        ]
+      },
+      {
+        "type": "Unary",
         "op": "Not",
         "expr": {
           "type": "Ident",
           "name": "foo",
           "range": [
-            67,
-            70
+            101,
+            104
           ]
         },
         "range": [
-          66,
-          70
+          100,
+          104
         ]
       },
       {
@@ -185,13 +217,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            72,
-            75
+            106,
+            109
           ]
         },
         "range": [
-          71,
-          75
+          105,
+          109
         ]
       },
       {
@@ -201,13 +233,29 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            77,
-            80
+            111,
+            114
           ]
         },
         "range": [
-          76,
-          80
+          110,
+          114
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "Neg",
+        "expr": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            116,
+            119
+          ]
+        },
+        "range": [
+          115,
+          119
         ]
       },
       {
@@ -235,49 +283,97 @@
                       "type": "Ident",
                       "name": "foo",
                       "range": [
-                        89,
-                        92
+                        128,
+                        131
                       ]
                     },
                     "range": [
-                      88,
-                      92
+                      127,
+                      131
                     ]
                   },
                   "range": [
-                    87,
-                    92
+                    126,
+                    131
                   ]
                 },
                 "range": [
-                  86,
-                  92
+                  125,
+                  131
                 ]
               },
               "range": [
-                85,
-                92
+                124,
+                131
               ]
             },
             "range": [
-              84,
-              92
+              123,
+              131
             ]
           },
           "range": [
-            82,
-            92
+            121,
+            131
           ]
         },
         "range": [
-          81,
-          92
+          120,
+          131
+        ]
+      },
+      {
+        "type": "Numeric",
+        "numval": 123,
+        "range": [
+          133,
+          137
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "Plus",
+        "expr": {
+          "type": "Numeric",
+          "numval": 123,
+          "range": [
+            150,
+            153
+          ]
+        },
+        "range": [
+          148,
+          153
+        ]
+      },
+      {
+        "type": "Numeric",
+        "numval": -123,
+        "range": [
+          169,
+          173
+        ]
+      },
+      {
+        "type": "Unary",
+        "op": "Neg",
+        "expr": {
+          "type": "Numeric",
+          "numval": 123,
+          "range": [
+            186,
+            189
+          ]
+        },
+        "range": [
+          184,
+          189
         ]
       }
     ],
     "range": [
       0,
-      93
+      205
     ]
   },
   "errors": []

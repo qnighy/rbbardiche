@@ -88,18 +88,69 @@ impl Parser {
         if let TokenKind::Pow = self.next_token.kind {
             self.bump(true);
             let rhs = self.parse_pow();
-            let range = expr.range | rhs.range;
-            Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op: BinaryOp::Pow,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
+            match self.decompose_uminus(expr) {
+                Ok((uminus_range, expr)) => {
+                    let pow_range = expr.range | rhs.range;
+                    let range = uminus_range | expr.range;
+                    Expr {
+                        kind: ExprKind::Unary {
+                            op: UnaryOp::Neg,
+                            expr: Box::new(Expr {
+                                kind: ExprKind::Binary {
+                                    lhs: Box::new(expr),
+                                    op: BinaryOp::Pow,
+                                    rhs: Box::new(rhs),
+                                },
+                                range: pow_range,
+                                node_id: 0,
+                            }),
+                        },
+                        range,
+                        node_id: 0,
+                    }
+                }
+                Err(expr) => {
+                    let range = expr.range | rhs.range;
+                    Expr {
+                        kind: ExprKind::Binary {
+                            lhs: Box::new(expr),
+                            op: BinaryOp::Pow,
+                            rhs: Box::new(rhs),
+                        },
+                        range,
+                        node_id: 0,
+                    }
+                }
             }
         } else {
             expr
+        }
+    }
+
+    fn decompose_uminus(&self, expr: Expr) -> Result<(Range, Expr), Expr> {
+        match expr {
+            Expr {
+                kind:
+                    ExprKind::Unary {
+                        op: UnaryOp::Neg,
+                        expr,
+                    },
+                range,
+                ..
+            } => Ok((Range(range.0, range.0 + 1), *expr)),
+            Expr {
+                kind: ExprKind::Numeric { numval },
+                range,
+                ..
+            } if self.source.get(range.0).copied() == Some(b'-') => Ok((
+                Range(range.0, range.0 + 1),
+                Expr {
+                    kind: ExprKind::Numeric { numval: -numval },
+                    range: Range(range.0 + 1, range.1),
+                    node_id: 0,
+                },
+            )),
+            _ => Err(expr),
         }
     }
 
@@ -113,6 +164,7 @@ impl Parser {
     fn parse_unary(&mut self) -> Expr {
         let op = match &self.next_token.kind {
             TokenKind::UPlus => UnaryOp::Plus,
+            TokenKind::UMinus => UnaryOp::Neg,
             TokenKind::Excl => UnaryOp::Not,
             TokenKind::Tilde => UnaryOp::BitwiseNot,
             _ => return self.parse_primary(),
