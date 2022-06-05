@@ -80,7 +80,75 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_equality()
+        self.parse_logical_or()
+    }
+
+    // %nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3
+    // %left tOROP /* <------ here */
+    // %left tANDOP
+    //
+    // arg : arg tOROP arg
+    //
+    /// Parses `e || e`, and higher.
+    fn parse_logical_or(&mut self) -> Expr {
+        let mut expr = self.parse_logical_and();
+        loop {
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::LogicalOr))
+            {
+                op
+            } else {
+                break;
+            };
+            self.bump(true);
+            let rhs = self.parse_logical_and();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
+        expr
+    }
+
+    // %left tOROP
+    // %left tANDOP /* <------ here */
+    // %nonassoc tCMP tEQ tEQQ tNEQ tMATCH tNMATCH
+    //
+    // arg : arg tANDOP arg
+    //
+    /// Parses `e && e`, and higher.
+    fn parse_logical_and(&mut self) -> Expr {
+        let mut expr = self.parse_equality();
+        loop {
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::LogicalAnd))
+            {
+                op
+            } else {
+                break;
+            };
+            self.bump(true);
+            let rhs = self.parse_equality();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
+        expr
     }
 
     // %left tANDOP

@@ -5,25 +5,41 @@
       {
         "type": "Binary",
         "lhs": {
-          "type": "Ident",
-          "name": "foo",
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              0,
+              3
+            ]
+          },
+          "op": "LogicalOr",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              7,
+              10
+            ]
+          },
           "range": [
             0,
-            3
+            10
           ]
         },
-        "op": "Cmp",
+        "op": "LogicalOr",
         "rhs": {
           "type": "Ident",
-          "name": "bar",
+          "name": "baz",
           "range": [
-            8,
-            11
+            14,
+            17
           ]
         },
         "range": [
           0,
-          11
+          17
         ]
       },
       {
@@ -32,158 +48,38 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            12,
-            15
+            18,
+            21
           ]
         },
-        "op": "Eq",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            19,
-            22
-          ]
-        },
-        "range": [
-          12,
-          22
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            23,
-            26
-          ]
-        },
-        "op": "Eqq",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            31,
-            34
-          ]
-        },
-        "range": [
-          23,
-          34
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            35,
-            38
-          ]
-        },
-        "op": "NEq",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            42,
-            45
-          ]
-        },
-        "range": [
-          35,
-          45
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            46,
-            49
-          ]
-        },
-        "op": "Match",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            53,
-            56
-          ]
-        },
-        "range": [
-          46,
-          56
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            57,
-            60
-          ]
-        },
-        "op": "NMatch",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            64,
-            67
-          ]
-        },
-        "range": [
-          57,
-          67
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            68,
-            71
-          ]
-        },
-        "op": "Eq",
+        "op": "LogicalOr",
         "rhs": {
           "type": "Binary",
           "lhs": {
             "type": "Ident",
             "name": "bar",
             "range": [
-              75,
-              78
+              25,
+              28
             ]
           },
-          "op": "Lt",
+          "op": "LogicalAnd",
           "rhs": {
             "type": "Ident",
             "name": "baz",
             "range": [
-              81,
-              84
+              32,
+              35
             ]
           },
           "range": [
-            75,
-            84
+            25,
+            35
           ]
         },
         "range": [
-          68,
-          84
+          18,
+          35
         ]
       },
       {
@@ -194,60 +90,204 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              85,
-              88
+              36,
+              39
             ]
           },
-          "op": "Lt",
+          "op": "LogicalAnd",
           "rhs": {
             "type": "Ident",
             "name": "bar",
+            "range": [
+              43,
+              46
+            ]
+          },
+          "range": [
+            36,
+            46
+          ]
+        },
+        "op": "LogicalOr",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            50,
+            53
+          ]
+        },
+        "range": [
+          36,
+          53
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              55,
+              58
+            ]
+          },
+          "op": "LogicalAnd",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              62,
+              65
+            ]
+          },
+          "range": [
+            55,
+            65
+          ]
+        },
+        "op": "LogicalAnd",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            69,
+            72
+          ]
+        },
+        "range": [
+          55,
+          72
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            73,
+            76
+          ]
+        },
+        "op": "LogicalAnd",
+        "rhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              80,
+              83
+            ]
+          },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "baz",
+            "range": [
+              87,
+              90
+            ]
+          },
+          "range": [
+            80,
+            90
+          ]
+        },
+        "range": [
+          73,
+          90
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
             "range": [
               91,
               94
             ]
           },
+          "op": "Eq",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              98,
+              101
+            ]
+          },
           "range": [
-            85,
-            94
+            91,
+            101
+          ]
+        },
+        "op": "LogicalAnd",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            105,
+            108
+          ]
+        },
+        "range": [
+          91,
+          108
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            110,
+            113
+          ]
+        },
+        "op": "Cmp",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            118,
+            121
+          ]
+        },
+        "range": [
+          110,
+          121
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            122,
+            125
           ]
         },
         "op": "Eq",
         "rhs": {
           "type": "Ident",
-          "name": "baz",
-          "range": [
-            98,
-            101
-          ]
-        },
-        "range": [
-          85,
-          101
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            103,
-            106
-          ]
-        },
-        "op": "Lt",
-        "rhs": {
-          "type": "Ident",
           "name": "bar",
           "range": [
-            109,
-            112
+            129,
+            132
           ]
         },
         "range": [
-          103,
-          112
+          122,
+          132
         ]
       },
       {
@@ -256,59 +296,11 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            113,
-            116
+            133,
+            136
           ]
         },
-        "op": "LtEq",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            120,
-            123
-          ]
-        },
-        "range": [
-          113,
-          123
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            124,
-            127
-          ]
-        },
-        "op": "Gt",
-        "rhs": {
-          "type": "Ident",
-          "name": "bar",
-          "range": [
-            130,
-            133
-          ]
-        },
-        "range": [
-          124,
-          133
-        ]
-      },
-      {
-        "type": "Binary",
-        "lhs": {
-          "type": "Ident",
-          "name": "foo",
-          "range": [
-            134,
-            137
-          ]
-        },
-        "op": "GtEq",
+        "op": "Eqq",
         "rhs": {
           "type": "Ident",
           "name": "bar",
@@ -318,7 +310,7 @@
           ]
         },
         "range": [
-          134,
+          133,
           144
         ]
       },
@@ -332,6 +324,254 @@
             148
           ]
         },
+        "op": "NEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            152,
+            155
+          ]
+        },
+        "range": [
+          145,
+          155
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            156,
+            159
+          ]
+        },
+        "op": "Match",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            163,
+            166
+          ]
+        },
+        "range": [
+          156,
+          166
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            167,
+            170
+          ]
+        },
+        "op": "NMatch",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            174,
+            177
+          ]
+        },
+        "range": [
+          167,
+          177
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            178,
+            181
+          ]
+        },
+        "op": "Eq",
+        "rhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              185,
+              188
+            ]
+          },
+          "op": "Lt",
+          "rhs": {
+            "type": "Ident",
+            "name": "baz",
+            "range": [
+              191,
+              194
+            ]
+          },
+          "range": [
+            185,
+            194
+          ]
+        },
+        "range": [
+          178,
+          194
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Binary",
+          "lhs": {
+            "type": "Ident",
+            "name": "foo",
+            "range": [
+              195,
+              198
+            ]
+          },
+          "op": "Lt",
+          "rhs": {
+            "type": "Ident",
+            "name": "bar",
+            "range": [
+              201,
+              204
+            ]
+          },
+          "range": [
+            195,
+            204
+          ]
+        },
+        "op": "Eq",
+        "rhs": {
+          "type": "Ident",
+          "name": "baz",
+          "range": [
+            208,
+            211
+          ]
+        },
+        "range": [
+          195,
+          211
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            213,
+            216
+          ]
+        },
+        "op": "Lt",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            219,
+            222
+          ]
+        },
+        "range": [
+          213,
+          222
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            223,
+            226
+          ]
+        },
+        "op": "LtEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            230,
+            233
+          ]
+        },
+        "range": [
+          223,
+          233
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            234,
+            237
+          ]
+        },
+        "op": "Gt",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            240,
+            243
+          ]
+        },
+        "range": [
+          234,
+          243
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            244,
+            247
+          ]
+        },
+        "op": "GtEq",
+        "rhs": {
+          "type": "Ident",
+          "name": "bar",
+          "range": [
+            251,
+            254
+          ]
+        },
+        "range": [
+          244,
+          254
+        ]
+      },
+      {
+        "type": "Binary",
+        "lhs": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            255,
+            258
+          ]
+        },
         "op": "Lt",
         "rhs": {
           "type": "Binary",
@@ -339,8 +579,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              151,
-              154
+              261,
+              264
             ]
           },
           "op": "BitwiseOr",
@@ -348,18 +588,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              157,
-              160
+              267,
+              270
             ]
           },
           "range": [
-            151,
-            160
+            261,
+            270
           ]
         },
         "range": [
-          145,
-          160
+          255,
+          270
         ]
       },
       {
@@ -370,8 +610,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              161,
-              164
+              271,
+              274
             ]
           },
           "op": "BitwiseOr",
@@ -379,13 +619,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              167,
-              170
+              277,
+              280
             ]
           },
           "range": [
-            161,
-            170
+            271,
+            280
           ]
         },
         "op": "Lt",
@@ -393,13 +633,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            173,
-            176
+            283,
+            286
           ]
         },
         "range": [
-          161,
-          176
+          271,
+          286
         ]
       },
       {
@@ -410,8 +650,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              178,
-              181
+              288,
+              291
             ]
           },
           "op": "BitwiseOr",
@@ -419,13 +659,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              184,
-              187
+              294,
+              297
             ]
           },
           "range": [
-            178,
-            187
+            288,
+            297
           ]
         },
         "op": "BitwiseXor",
@@ -433,13 +673,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            190,
-            193
+            300,
+            303
           ]
         },
         "range": [
-          178,
-          193
+          288,
+          303
         ]
       },
       {
@@ -450,8 +690,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              194,
-              197
+              304,
+              307
             ]
           },
           "op": "BitwiseXor",
@@ -459,13 +699,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              200,
-              203
+              310,
+              313
             ]
           },
           "range": [
-            194,
-            203
+            304,
+            313
           ]
         },
         "op": "BitwiseOr",
@@ -473,13 +713,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            206,
-            209
+            316,
+            319
           ]
         },
         "range": [
-          194,
-          209
+          304,
+          319
         ]
       },
       {
@@ -488,8 +728,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            210,
-            213
+            320,
+            323
           ]
         },
         "op": "BitwiseOr",
@@ -499,8 +739,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              216,
-              219
+              326,
+              329
             ]
           },
           "op": "BitwiseAnd",
@@ -508,18 +748,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              222,
-              225
+              332,
+              335
             ]
           },
           "range": [
-            216,
-            225
+            326,
+            335
           ]
         },
         "range": [
-          210,
-          225
+          320,
+          335
         ]
       },
       {
@@ -530,8 +770,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              226,
-              229
+              336,
+              339
             ]
           },
           "op": "BitwiseAnd",
@@ -539,13 +779,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              232,
-              235
+              342,
+              345
             ]
           },
           "range": [
-            226,
-            235
+            336,
+            345
           ]
         },
         "op": "BitwiseOr",
@@ -553,13 +793,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            238,
-            241
+            348,
+            351
           ]
         },
         "range": [
-          226,
-          241
+          336,
+          351
         ]
       },
       {
@@ -570,8 +810,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              243,
-              246
+              353,
+              356
             ]
           },
           "op": "BitwiseAnd",
@@ -579,13 +819,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              249,
-              252
+              359,
+              362
             ]
           },
           "range": [
-            243,
-            252
+            353,
+            362
           ]
         },
         "op": "BitwiseAnd",
@@ -593,13 +833,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            255,
-            258
+            365,
+            368
           ]
         },
         "range": [
-          243,
-          258
+          353,
+          368
         ]
       },
       {
@@ -608,8 +848,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            259,
-            262
+            369,
+            372
           ]
         },
         "op": "BitwiseAnd",
@@ -619,8 +859,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              265,
-              268
+              375,
+              378
             ]
           },
           "op": "LShift",
@@ -628,18 +868,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              272,
-              275
+              382,
+              385
             ]
           },
           "range": [
-            265,
-            275
+            375,
+            385
           ]
         },
         "range": [
-          259,
-          275
+          369,
+          385
         ]
       },
       {
@@ -650,8 +890,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              276,
-              279
+              386,
+              389
             ]
           },
           "op": "LShift",
@@ -659,13 +899,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              283,
-              286
+              393,
+              396
             ]
           },
           "range": [
-            276,
-            286
+            386,
+            396
           ]
         },
         "op": "BitwiseAnd",
@@ -673,13 +913,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            289,
-            292
+            399,
+            402
           ]
         },
         "range": [
-          276,
-          292
+          386,
+          402
         ]
       },
       {
@@ -690,8 +930,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              294,
-              297
+              404,
+              407
             ]
           },
           "op": "LShift",
@@ -699,13 +939,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              301,
-              304
+              411,
+              414
             ]
           },
           "range": [
-            294,
-            304
+            404,
+            414
           ]
         },
         "op": "RShift",
@@ -713,13 +953,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            308,
-            311
+            418,
+            421
           ]
         },
         "range": [
-          294,
-          311
+          404,
+          421
         ]
       },
       {
@@ -730,8 +970,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              312,
-              315
+              422,
+              425
             ]
           },
           "op": "RShift",
@@ -739,13 +979,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              319,
-              322
+              429,
+              432
             ]
           },
           "range": [
-            312,
-            322
+            422,
+            432
           ]
         },
         "op": "LShift",
@@ -753,13 +993,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            326,
-            329
+            436,
+            439
           ]
         },
         "range": [
-          312,
-          329
+          422,
+          439
         ]
       },
       {
@@ -770,8 +1010,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              330,
-              333
+              440,
+              443
             ]
           },
           "op": "Add",
@@ -779,13 +1019,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              336,
-              339
+              446,
+              449
             ]
           },
           "range": [
-            330,
-            339
+            440,
+            449
           ]
         },
         "op": "LShift",
@@ -793,13 +1033,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            343,
-            346
+            453,
+            456
           ]
         },
         "range": [
-          330,
-          346
+          440,
+          456
         ]
       },
       {
@@ -808,8 +1048,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            347,
-            350
+            457,
+            460
           ]
         },
         "op": "LShift",
@@ -819,8 +1059,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              354,
-              357
+              464,
+              467
             ]
           },
           "op": "Add",
@@ -828,18 +1068,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              360,
-              363
+              470,
+              473
             ]
           },
           "range": [
-            354,
-            363
+            464,
+            473
           ]
         },
         "range": [
-          347,
-          363
+          457,
+          473
         ]
       },
       {
@@ -850,8 +1090,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              365,
-              368
+              475,
+              478
             ]
           },
           "op": "Add",
@@ -859,13 +1099,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              371,
-              374
+              481,
+              484
             ]
           },
           "range": [
-            365,
-            374
+            475,
+            484
           ]
         },
         "op": "Sub",
@@ -873,13 +1113,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            377,
-            380
+            487,
+            490
           ]
         },
         "range": [
-          365,
-          380
+          475,
+          490
         ]
       },
       {
@@ -890,8 +1130,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              381,
-              384
+              491,
+              494
             ]
           },
           "op": "Sub",
@@ -899,13 +1139,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              387,
-              390
+              497,
+              500
             ]
           },
           "range": [
-            381,
-            390
+            491,
+            500
           ]
         },
         "op": "Add",
@@ -913,13 +1153,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            393,
-            396
+            503,
+            506
           ]
         },
         "range": [
-          381,
-          396
+          491,
+          506
         ]
       },
       {
@@ -930,8 +1170,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              397,
-              400
+              507,
+              510
             ]
           },
           "op": "Mul",
@@ -939,13 +1179,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              403,
-              406
+              513,
+              516
             ]
           },
           "range": [
-            397,
-            406
+            507,
+            516
           ]
         },
         "op": "Add",
@@ -953,13 +1193,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            409,
-            412
+            519,
+            522
           ]
         },
         "range": [
-          397,
-          412
+          507,
+          522
         ]
       },
       {
@@ -968,8 +1208,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            413,
-            416
+            523,
+            526
           ]
         },
         "op": "Add",
@@ -979,8 +1219,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              419,
-              422
+              529,
+              532
             ]
           },
           "op": "Mul",
@@ -988,18 +1228,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              425,
-              428
+              535,
+              538
             ]
           },
           "range": [
-            419,
-            428
+            529,
+            538
           ]
         },
         "range": [
-          413,
-          428
+          523,
+          538
         ]
       },
       {
@@ -1011,13 +1251,13 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              430,
-              433
+              540,
+              543
             ]
           },
           "range": [
-            429,
-            433
+            539,
+            543
           ]
         },
         "op": "Add",
@@ -1025,13 +1265,13 @@
           "type": "Ident",
           "name": "bar",
           "range": [
-            436,
-            439
+            546,
+            549
           ]
         },
         "range": [
-          429,
-          439
+          539,
+          549
         ]
       },
       {
@@ -1040,8 +1280,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            440,
-            443
+            550,
+            553
           ]
         },
         "op": "Add",
@@ -1052,18 +1292,18 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              447,
-              450
+              557,
+              560
             ]
           },
           "range": [
-            446,
-            450
+            556,
+            560
           ]
         },
         "range": [
-          440,
-          450
+          550,
+          560
         ]
       },
       {
@@ -1076,8 +1316,8 @@
               "type": "Ident",
               "name": "foo",
               "range": [
-                452,
-                455
+                562,
+                565
               ]
             },
             "op": "Mul",
@@ -1085,13 +1325,13 @@
               "type": "Ident",
               "name": "bar",
               "range": [
-                458,
-                461
+                568,
+                571
               ]
             },
             "range": [
-              452,
-              461
+              562,
+              571
             ]
           },
           "op": "Div",
@@ -1099,13 +1339,13 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              464,
-              467
+              574,
+              577
             ]
           },
           "range": [
-            452,
-            467
+            562,
+            577
           ]
         },
         "op": "Mod",
@@ -1113,13 +1353,13 @@
           "type": "Ident",
           "name": "quux",
           "range": [
-            470,
-            474
+            580,
+            584
           ]
         },
         "range": [
-          452,
-          474
+          562,
+          584
         ]
       },
       {
@@ -1132,8 +1372,8 @@
               "type": "Ident",
               "name": "foo",
               "range": [
-                475,
-                478
+                585,
+                588
               ]
             },
             "op": "Mod",
@@ -1141,13 +1381,13 @@
               "type": "Ident",
               "name": "bar",
               "range": [
-                481,
-                484
+                591,
+                594
               ]
             },
             "range": [
-              475,
-              484
+              585,
+              594
             ]
           },
           "op": "Div",
@@ -1155,13 +1395,13 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              487,
-              490
+              597,
+              600
             ]
           },
           "range": [
-            475,
-            490
+            585,
+            600
           ]
         },
         "op": "Mul",
@@ -1169,13 +1409,13 @@
           "type": "Ident",
           "name": "quux",
           "range": [
-            493,
-            497
+            603,
+            607
           ]
         },
         "range": [
-          475,
-          497
+          585,
+          607
         ]
       },
       {
@@ -1186,8 +1426,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              498,
-              501
+              608,
+              611
             ]
           },
           "op": "Pow",
@@ -1195,13 +1435,13 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              505,
-              508
+              615,
+              618
             ]
           },
           "range": [
-            498,
-            508
+            608,
+            618
           ]
         },
         "op": "Mul",
@@ -1209,13 +1449,13 @@
           "type": "Ident",
           "name": "baz",
           "range": [
-            511,
-            514
+            621,
+            624
           ]
         },
         "range": [
-          498,
-          514
+          608,
+          624
         ]
       },
       {
@@ -1224,8 +1464,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            515,
-            518
+            625,
+            628
           ]
         },
         "op": "Mul",
@@ -1235,8 +1475,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              521,
-              524
+              631,
+              634
             ]
           },
           "op": "Pow",
@@ -1244,18 +1484,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              528,
-              531
+              638,
+              641
             ]
           },
           "range": [
-            521,
-            531
+            631,
+            641
           ]
         },
         "range": [
-          515,
-          531
+          625,
+          641
         ]
       },
       {
@@ -1264,8 +1504,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            533,
-            536
+            643,
+            646
           ]
         },
         "op": "Pow",
@@ -1273,13 +1513,13 @@
           "type": "Ident",
           "name": "bar",
           "range": [
-            540,
-            543
+            650,
+            653
           ]
         },
         "range": [
-          533,
-          543
+          643,
+          653
         ]
       },
       {
@@ -1288,8 +1528,8 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            544,
-            547
+            654,
+            657
           ]
         },
         "op": "Pow",
@@ -1299,8 +1539,8 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              551,
-              554
+              661,
+              664
             ]
           },
           "op": "Pow",
@@ -1308,18 +1548,18 @@
             "type": "Ident",
             "name": "baz",
             "range": [
-              558,
-              561
+              668,
+              671
             ]
           },
           "range": [
-            551,
-            561
+            661,
+            671
           ]
         },
         "range": [
-          544,
-          561
+          654,
+          671
         ]
       },
       {
@@ -1331,13 +1571,13 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              563,
-              566
+              673,
+              676
             ]
           },
           "range": [
-            562,
-            566
+            672,
+            676
           ]
         },
         "op": "Pow",
@@ -1345,13 +1585,13 @@
           "type": "Ident",
           "name": "bar",
           "range": [
-            570,
-            573
+            680,
+            683
           ]
         },
         "range": [
-          562,
-          573
+          672,
+          683
         ]
       },
       {
@@ -1363,13 +1603,13 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              575,
-              578
+              685,
+              688
             ]
           },
           "range": [
-            574,
-            578
+            684,
+            688
           ]
         },
         "op": "Pow",
@@ -1377,13 +1617,13 @@
           "type": "Ident",
           "name": "bar",
           "range": [
-            582,
-            585
+            692,
+            695
           ]
         },
         "range": [
-          574,
-          585
+          684,
+          695
         ]
       },
       {
@@ -1395,13 +1635,13 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              587,
-              590
+              697,
+              700
             ]
           },
           "range": [
-            586,
-            590
+            696,
+            700
           ]
         },
         "op": "Pow",
@@ -1409,13 +1649,13 @@
           "type": "Ident",
           "name": "bar",
           "range": [
-            594,
-            597
+            704,
+            707
           ]
         },
         "range": [
-          586,
-          597
+          696,
+          707
         ]
       },
       {
@@ -1427,8 +1667,8 @@
             "type": "Ident",
             "name": "foo",
             "range": [
-              621,
-              624
+              731,
+              734
             ]
           },
           "op": "Pow",
@@ -1436,18 +1676,18 @@
             "type": "Ident",
             "name": "bar",
             "range": [
-              628,
-              631
+              738,
+              741
             ]
           },
           "range": [
-            621,
-            631
+            731,
+            741
           ]
         },
         "range": [
-          620,
-          624
+          730,
+          734
         ]
       },
       {
@@ -1457,13 +1697,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            634,
-            637
+            744,
+            747
           ]
         },
         "range": [
-          633,
-          637
+          743,
+          747
         ]
       },
       {
@@ -1473,13 +1713,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            639,
-            642
+            749,
+            752
           ]
         },
         "range": [
-          638,
-          642
+          748,
+          752
         ]
       },
       {
@@ -1489,13 +1729,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            644,
-            647
+            754,
+            757
           ]
         },
         "range": [
-          643,
-          647
+          753,
+          757
         ]
       },
       {
@@ -1505,13 +1745,13 @@
           "type": "Ident",
           "name": "foo",
           "range": [
-            649,
-            652
+            759,
+            762
           ]
         },
         "range": [
-          648,
-          652
+          758,
+          762
         ]
       },
       {
@@ -1539,51 +1779,51 @@
                       "type": "Ident",
                       "name": "foo",
                       "range": [
-                        661,
-                        664
+                        771,
+                        774
                       ]
                     },
                     "range": [
-                      660,
-                      664
+                      770,
+                      774
                     ]
                   },
                   "range": [
-                    659,
-                    664
+                    769,
+                    774
                   ]
                 },
                 "range": [
-                  658,
-                  664
+                  768,
+                  774
                 ]
               },
               "range": [
-                657,
-                664
+                767,
+                774
               ]
             },
             "range": [
-              656,
-              664
+              766,
+              774
             ]
           },
           "range": [
-            654,
-            664
+            764,
+            774
           ]
         },
         "range": [
-          653,
-          664
+          763,
+          774
         ]
       },
       {
         "type": "Numeric",
         "numval": 123,
         "range": [
-          666,
-          670
+          776,
+          780
         ]
       },
       {
@@ -1593,21 +1833,21 @@
           "type": "Numeric",
           "numval": 123,
           "range": [
-            683,
-            686
+            793,
+            796
           ]
         },
         "range": [
-          681,
-          686
+          791,
+          796
         ]
       },
       {
         "type": "Numeric",
         "numval": -123,
         "range": [
-          702,
-          706
+          812,
+          816
         ]
       },
       {
@@ -1617,19 +1857,19 @@
           "type": "Numeric",
           "numval": 123,
           "range": [
-            719,
-            722
+            829,
+            832
           ]
         },
         "range": [
-          717,
-          722
+          827,
+          832
         ]
       }
     ],
     "range": [
       0,
-      738
+      848
     ]
   },
   "errors": []

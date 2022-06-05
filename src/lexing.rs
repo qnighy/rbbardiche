@@ -271,7 +271,7 @@ impl Parser {
                     if self.next() == Some(b'=') {
                         todo!("&&=");
                     } else {
-                        todo!("&&");
+                        TokenKind::BinOp(BinaryOp::LogicalAnd)
                     }
                 } else if self.next() == Some(b'=') {
                     self.pos += 1;
@@ -293,9 +293,12 @@ impl Parser {
                     if self.next() == Some(b'=') {
                         self.pos += 1;
                         todo!("||=");
+                    } else if beg {
+                        // Split `||` into two `|`s
+                        self.pos = start + 1;
+                        TokenKind::BinOp(BinaryOp::BitwiseOr)
                     } else {
-                        // TODO: beg condition
-                        todo!("||");
+                        TokenKind::BinOp(BinaryOp::LogicalOr)
                     }
                 } else if self.next() == Some(b'=') {
                     self.pos += 1;
