@@ -140,7 +140,7 @@ impl Parser {
             };
         }
         let first = self.source[self.pos];
-        match first {
+        let kind = match first {
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
                 // TODO: support __END__
                 let start = self.pos;
@@ -151,47 +151,37 @@ impl Parser {
                     self.pos += 1;
                 }
                 let ident = self.source[start..self.pos].as_bstr();
-                let kind = if let Some(kind) = KEYWORDS.get(ident) {
+                if let Some(kind) = KEYWORDS.get(ident) {
                     kind.clone()
                 } else {
                     TokenKind::Ident(ident.to_owned())
-                };
-                return Token {
-                    kind,
-                    range: Range(start, self.pos),
-                };
+                }
             }
             b'*' => {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
                     self.pos += 1;
-                    return Token {
-                        kind: if beg {
-                            todo!("** as tDStar");
-                        } else {
-                            TokenKind::Pow
-                        },
-                        range: Range(start, self.pos),
-                    };
-                }
-                if self.next() == Some(b'=') {
+                    if beg {
+                        todo!("** as tDStar");
+                    } else {
+                        TokenKind::Pow
+                    }
+                } else if self.next() == Some(b'=') {
                     todo!("*=");
+                } else {
+                    todo!("*");
                 }
-                todo!("*");
             }
             b'!' => {
                 self.pos += 1;
                 // TODO: after_operator condition
                 if self.next() == Some(b'=') {
                     todo!("!=");
-                }
-                if self.next() == Some(b'~') {
+                } else if self.next() == Some(b'~') {
                     todo!("!~");
+                } else {
+                    TokenKind::Excl
                 }
-                return Token {
-                    kind: TokenKind::Excl,
-                    range: Range(start, self.pos),
-                };
             }
             b'+' => {
                 self.pos += 1;
@@ -199,41 +189,36 @@ impl Parser {
                 if self.next() == Some(b'=') {
                     todo!("+=");
                 }
-                return Token {
-                    // TODO: spcarg condition
-                    kind: if beg {
-                        TokenKind::UPlus
-                    } else {
-                        TokenKind::InvalidPunct(first)
-                    },
-                    range: Range(start, self.pos),
-                };
+                // TODO: spcarg condition
+                if beg {
+                    TokenKind::UPlus
+                } else {
+                    TokenKind::InvalidPunct(first)
+                }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
             b'~' => {
                 self.pos += 1;
                 // TODO: after_operator condition
-                return Token {
-                    kind: TokenKind::Tilde,
-                    range: Range(start, self.pos),
-                };
+                TokenKind::Tilde
             }
             _ => {
                 self.pos += 1;
-                return Token {
-                    kind: match first {
-                        b'=' => TokenKind::Equal,
-                        b';' => TokenKind::Semi,
-                        b'\n' => TokenKind::NewLine,
-                        _ => TokenKind::InvalidPunct(first),
-                    },
-                    range: Range(start, self.pos),
-                };
+                match first {
+                    b'=' => TokenKind::Equal,
+                    b';' => TokenKind::Semi,
+                    b'\n' => TokenKind::NewLine,
+                    _ => TokenKind::InvalidPunct(first),
+                }
             }
+        };
+        Token {
+            kind,
+            range: Range(start, self.pos),
         }
     }
 
-    fn lex_numeric(&mut self) -> Token {
+    fn lex_numeric(&mut self) -> TokenKind {
         let start = self.pos;
         if self.next() == Some(b'-') || self.next() == Some(b'+') {
             todo!("signed number literals");
@@ -247,12 +232,7 @@ impl Parser {
                 Some(b'o') | Some(b'O') | Some(b'_') => todo!("octal number"),
                 Some(ch) if ch.is_ascii_digit() => todo!("octal number"),
                 Some(b'.') | Some(b'e') | Some(b'E') => todo!("scientific notation"),
-                _ => {
-                    return Token {
-                        kind: TokenKind::Numeric(0),
-                        range: Range(start, self.pos),
-                    };
-                }
+                _ => TokenKind::Numeric(0),
             }
         } else if self.next().is_some_and_(|ch| ch.is_ascii_digit()) {
             while self
@@ -279,12 +259,10 @@ impl Parser {
                 Cow::Borrowed(s)
             };
             let numval = s.parse::<i32>().unwrap_or_else(|_| todo!("large integers"));
-            return Token {
-                kind: TokenKind::Numeric(numval),
-                range,
-            };
+            TokenKind::Numeric(numval)
+        } else {
+            todo!();
         }
-        todo!();
     }
 
     fn next(&self) -> Option<u8> {
