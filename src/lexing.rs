@@ -241,6 +241,46 @@ impl Parser {
                     todo!(">");
                 }
             }
+            b'&' => {
+                self.pos += 1;
+                if self.next() == Some(b'&') {
+                    self.pos += 1;
+                    if self.next() == Some(b'=') {
+                        todo!("&&=");
+                    } else {
+                        todo!("&&");
+                    }
+                } else if self.next() == Some(b'=') {
+                    self.pos += 1;
+                    todo!("&=");
+                } else if self.next() == Some(b'.') {
+                    self.pos += 1;
+                    todo!("&.");
+                // TODO: spcarg condition
+                } else if beg {
+                    todo!("& as tAMPER");
+                } else {
+                    TokenKind::BinOp(BinaryOp::BitwiseAnd)
+                }
+            }
+            b'|' => {
+                self.pos += 1;
+                if self.next() == Some(b'|') {
+                    self.pos += 1;
+                    if self.next() == Some(b'=') {
+                        self.pos += 1;
+                        todo!("||=");
+                    } else {
+                        // TODO: beg condition
+                        todo!("||");
+                    }
+                } else if self.next() == Some(b'=') {
+                    self.pos += 1;
+                    todo!("|=");
+                } else {
+                    TokenKind::BinOp(BinaryOp::BitwiseOr)
+                }
+            }
             b'+' => {
                 self.pos += 1;
                 // TODO: after_operator condition
@@ -291,6 +331,14 @@ impl Parser {
                 }
                 // TODO: spcarg condition
                 TokenKind::BinOp(BinaryOp::Div)
+            }
+            b'^' => {
+                self.pos += 1;
+                if self.next() == Some(b'=') {
+                    todo!("^=");
+                } else {
+                    TokenKind::BinOp(BinaryOp::BitwiseXor)
+                }
             }
             b'~' => {
                 self.pos += 1;

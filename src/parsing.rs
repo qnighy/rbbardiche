@@ -80,7 +80,76 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_shift()
+        self.parse_bitwise_or()
+    }
+
+    // %left '|' '^'
+    // %left '&' /* <------ here */
+    // %left tLSHFT tRSHFT
+    //
+    // arg : arg '|' arg
+    //     | arg '^' arg
+    //
+    /// Parses `e | e`, `e ^ e`, and higher.
+    fn parse_bitwise_or(&mut self) -> Expr {
+        let mut expr = self.parse_bitwise_and();
+        loop {
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::BitwiseOr | BinaryOp::BitwiseXor))
+            {
+                op
+            } else {
+                break;
+            };
+            self.bump(true);
+            let rhs = self.parse_bitwise_and();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
+        expr
+    }
+
+    // %left '|' '^'
+    // %left '&' /* <------ here */
+    // %left tLSHFT tRSHFT
+    //
+    // arg : arg '&' arg
+    //
+    /// Parses `e & e` and higher.
+    fn parse_bitwise_and(&mut self) -> Expr {
+        let mut expr = self.parse_shift();
+        loop {
+            let op = if let Some(op) = self
+                .next_token
+                .to_binop(|op| matches!(op, BinaryOp::BitwiseAnd))
+            {
+                op
+            } else {
+                break;
+            };
+            self.bump(true);
+            let rhs = self.parse_shift();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
+        expr
     }
 
     // %left '&'
