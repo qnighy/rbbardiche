@@ -80,7 +80,30 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_multiplicative()
+        self.parse_additive()
+    }
+
+    fn parse_additive(&mut self) -> Expr {
+        let mut expr = self.parse_multiplicative();
+        loop {
+            let op = match &self.next_token.kind {
+                TokenKind::Plus => BinaryOp::Add,
+                TokenKind::Minus => BinaryOp::Sub,
+                _ => return expr,
+            };
+            self.bump(true);
+            let rhs = self.parse_multiplicative();
+            let range = expr.range | rhs.range;
+            expr = Expr {
+                kind: ExprKind::Binary {
+                    lhs: Box::new(expr),
+                    op,
+                    rhs: Box::new(rhs),
+                },
+                range,
+                node_id: 0,
+            };
+        }
     }
 
     // %left '+' '-'

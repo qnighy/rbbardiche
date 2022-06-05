@@ -58,6 +58,10 @@ pub(crate) enum TokenKind {
     YieldKeyword,
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `+` (binary)
+    Plus,
+    /// `-` (binary)
+    Minus,
     /// `*` (binary)
     Mul,
     /// `/` (binary)
@@ -205,13 +209,13 @@ impl Parser {
                 // TODO: spcarg condition
                 if beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
-                        self.pos -= 1;
+                        self.pos = start;
                         self.lex_numeric()
                     } else {
                         TokenKind::UPlus
                     }
                 } else {
-                    TokenKind::InvalidPunct(first)
+                    TokenKind::Plus
                 }
             }
             b'-' => {
@@ -226,13 +230,13 @@ impl Parser {
                 // TODO: spcarg condition
                 if beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
-                        self.pos -= 1;
+                        self.pos = start;
                         self.lex_numeric()
                     } else {
                         TokenKind::UMinus
                     }
                 } else {
-                    TokenKind::InvalidPunct(first)
+                    TokenKind::Minus
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
