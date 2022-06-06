@@ -44,10 +44,7 @@ impl Parser {
             self.bump(true);
         }
         let mut stmts = Vec::new();
-        while match self.next_token.kind {
-            TokenKind::Semi | TokenKind::Eof => false,
-            _ => true,
-        } {
+        while !matches!(self.next_token.kind, TokenKind::Eof | TokenKind::RParen) {
             stmts.push(self.parse_stmt());
             while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 self.bump(true);
@@ -674,6 +671,23 @@ impl Parser {
                 Expr {
                     kind: ExprKind::Numeric { numval },
                     range: token.range,
+                    node_id: 0,
+                }
+            }
+            TokenKind::LParenBeg => {
+                let lparen_token = self.bump(true);
+                let stmts = self.parse_compstmt();
+                if !matches!(self.next_token.kind, TokenKind::RParen) {
+                    todo!(
+                        "error recovery on unmatched parentheses: {:?}",
+                        self.next_token
+                    );
+                }
+                let rparen_token = self.bump(false);
+                let range = lparen_token.range | rparen_token.range;
+                Expr {
+                    kind: ExprKind::Parenthesized { stmts },
+                    range,
                     node_id: 0,
                 }
             }

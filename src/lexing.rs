@@ -86,6 +86,10 @@ pub(crate) enum TokenKind {
     /// Unary operator
     /// Note: some operators have overloaded meanings.
     UnOp(UnaryOp),
+    /// `(` at the beginning of the expression
+    LParenBeg,
+    /// `)`
+    RParen,
     /// `?`
     Question,
     /// `:`
@@ -378,6 +382,10 @@ impl Parser {
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),
+            b')' => {
+                self.pos += 1;
+                TokenKind::RParen
+            }
             b':' => {
                 self.pos += 1;
                 if self.next() == Some(b':') {
@@ -420,6 +428,14 @@ impl Parser {
                 self.pos += 1;
                 // TODO: after_operator condition
                 TokenKind::UnOp(UnaryOp::BitwiseNot)
+            }
+            b'(' => {
+                self.pos += 1;
+                if beg {
+                    TokenKind::LParenBeg
+                } else {
+                    todo!("(")
+                }
             }
             b'%' => {
                 self.pos += 1;

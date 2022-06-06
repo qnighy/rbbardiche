@@ -23,6 +23,9 @@ pub struct Expr {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum ExprKind {
+    Parenthesized {
+        stmts: Vec<Expr>,
+    },
     Compound {
         stmts: Vec<Expr>,
     },
