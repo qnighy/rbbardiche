@@ -95,7 +95,6 @@ pub(crate) enum TokenKind {
     /// `;`
     Semi,
     NewLine,
-    InvalidPunct(u8),
     Eof,
 }
 
@@ -165,22 +164,7 @@ impl Parser {
         }
         let first = self.source[self.pos];
         let kind = match first {
-            _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
-                // TODO: support __END__
-                let start = self.pos;
-                while self.pos < self.source.len() && {
-                    let ch = self.source[self.pos];
-                    ch.is_ascii_alphanumeric() || first == b'_' || first >= 0x80
-                } {
-                    self.pos += 1;
-                }
-                let ident = self.source[start..self.pos].as_bstr();
-                if let Some(kind) = KEYWORDS.get(ident) {
-                    kind.clone()
-                } else {
-                    TokenKind::Ident(ident.to_owned())
-                }
-            }
+            b'\n' => TokenKind::NewLine,
             b'*' => {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
@@ -428,6 +412,10 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::BitwiseXor)
                 }
             }
+            b';' => {
+                self.pos += 1;
+                TokenKind::Semi
+            }
             b'~' => {
                 self.pos += 1;
                 // TODO: after_operator condition
@@ -445,14 +433,23 @@ impl Parser {
                 // TODO: fitem condition
                 TokenKind::BinOp(BinaryOp::Mod)
             }
-            _ => {
-                self.pos += 1;
-                match first {
-                    b';' => TokenKind::Semi,
-                    b'\n' => TokenKind::NewLine,
-                    _ => TokenKind::InvalidPunct(first),
+            _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
+                // TODO: support __END__
+                let start = self.pos;
+                while self.pos < self.source.len() && {
+                    let ch = self.source[self.pos];
+                    ch.is_ascii_alphanumeric() || first == b'_' || first >= 0x80
+                } {
+                    self.pos += 1;
+                }
+                let ident = self.source[start..self.pos].as_bstr();
+                if let Some(kind) = KEYWORDS.get(ident) {
+                    kind.clone()
+                } else {
+                    TokenKind::Ident(ident.to_owned())
                 }
             }
+            _ => todo!("character {:?}", first as char),
         };
         Token {
             kind,
