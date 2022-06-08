@@ -10,5 +10,6 @@ async-trait = "0.1.53"
 parking_lot = "0.12.1"
 tokio = { version = "1.18.2", features = ["macros", "rt-multi-thread", "io-std"] }
 tower-lsp = "0.17.0"
+rbbardiche = { path = ".." }
 
 [dev-dependencies]
