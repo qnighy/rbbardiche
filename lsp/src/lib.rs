@@ -104,7 +104,8 @@ async fn parse_and_report(
     text: String,
     text_document: VersionedTextDocumentIdentifier,
 ) {
-    let task = spawn_blocking(move || parse(text.as_bytes()));
+    let text2 = text.clone();
+    let task = spawn_blocking(move || parse(text2.as_bytes()));
     let (_, errors) = match task.await {
         Ok(x) => x,
         Err(e) => {
@@ -154,14 +155,8 @@ async fn parse_and_report(
         .iter()
         .map(|error| Diagnostic {
             range: Range {
-                start: Position {
-                    line: 0,
-                    character: error.range().0 as u32,
-                },
-                end: Position {
-                    line: 0,
-                    character: error.range().1 as u32,
-                },
+                start: pos(&text, error.range().0),
+                end: pos(&text, error.range().1),
             },
             severity: Some(if error.is_error() {
                 DiagnosticSeverity::ERROR
@@ -184,4 +179,31 @@ async fn parse_and_report(
             Some(text_document.version),
         )
         .await;
+}
+
+// TODO: switch to more efficient implementation
+fn pos(s: &str, at: usize) -> Position {
+    let mut pos = Position {
+        line: 0,
+        character: 0,
+    };
+    let at = {
+        let mut at = at;
+        while !s.is_char_boundary(at) && at < s.len() {
+            at += 1;
+        }
+        at
+    };
+    for ch in s[..at].chars() {
+        if ch == '\n' {
+            pos.line += 1;
+            pos.character = 0;
+        } else if (ch as u32) < 0x10000 {
+            pos.character += 1;
+        } else {
+            pos.character += 2;
+        }
+    }
+
+    pos
 }
