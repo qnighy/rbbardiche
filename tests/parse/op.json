@@ -2371,11 +2371,67 @@
         ]
       },
       {
+        "type": "Ident",
+        "name": "foo",
+        "range": [
+          1076,
+          1079
+        ]
+      },
+      {
+        "type": "CIdent",
+        "name": "Foo",
+        "range": [
+          1080,
+          1083
+        ]
+      },
+      {
+        "type": "RootIdent",
+        "name": "Foo",
+        "range": [
+          1084,
+          1089
+        ]
+      },
+      {
+        "type": "RelativeConstant",
+        "base": {
+          "type": "CIdent",
+          "name": "Foo",
+          "range": [
+            1090,
+            1093
+          ]
+        },
+        "name": "Bar",
+        "range": [
+          1090,
+          1098
+        ]
+      },
+      {
+        "type": "RelativeConstant",
+        "base": {
+          "type": "Ident",
+          "name": "foo",
+          "range": [
+            1099,
+            1102
+          ]
+        },
+        "name": "Bar",
+        "range": [
+          1099,
+          1107
+        ]
+      },
+      {
         "type": "Numeric",
         "numval": 123,
         "range": [
-          1076,
-          1080
+          1109,
+          1113
         ]
       },
       {
@@ -2385,21 +2441,21 @@
           "type": "Numeric",
           "numval": 123,
           "range": [
-            1093,
-            1096
+            1126,
+            1129
           ]
         },
         "range": [
-          1091,
-          1096
+          1124,
+          1129
         ]
       },
       {
         "type": "Numeric",
         "numval": -123,
         "range": [
-          1112,
-          1116
+          1145,
+          1149
         ]
       },
       {
@@ -2409,19 +2465,19 @@
           "type": "Numeric",
           "numval": 123,
           "range": [
-            1129,
-            1132
+            1162,
+            1165
           ]
         },
         "range": [
-          1127,
-          1132
+          1160,
+          1165
         ]
       }
     ],
     "range": [
       0,
-      1148
+      1181
     ]
   },
   "errors": []

@@ -647,6 +647,45 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Expr {
+        let mut expr = self.parse_primary_inner();
+        loop {
+            match &self.next_token.kind {
+                TokenKind::DColon => {
+                    let dcolon_token = self.bump(true);
+                    if let TokenKind::CIdent(name) = &self.next_token.kind {
+                        let name = name.to_string();
+                        let token = self.bump(false);
+                        let range = expr.range | token.range;
+                        expr = Expr {
+                            kind: ExprKind::RelativeConstant {
+                                base: Box::new(expr),
+                                name,
+                            },
+                            range,
+                            node_id: 0,
+                        };
+                    } else {
+                        self.errors.push(ParseError::UnexpectedToken {
+                            range: self.next_token.range,
+                        });
+                        let range = expr.range | dcolon_token.range;
+                        expr = Expr {
+                            kind: ExprKind::RelativeConstant {
+                                base: Box::new(expr),
+                                name: "".to_owned(),
+                            },
+                            range,
+                            node_id: 0,
+                        };
+                    }
+                }
+                _ => break,
+            }
+        }
+        expr
+    }
+
+    fn parse_primary_inner(&mut self) -> Expr {
         match &self.next_token.kind {
             TokenKind::Ident(name) => {
                 let name = name.to_string();
@@ -664,6 +703,31 @@ impl Parser {
                     kind: ExprKind::CIdent { name },
                     range: token.range,
                     node_id: 0,
+                }
+            }
+            TokenKind::DColonBeg => {
+                let dcolon_token = self.bump(true);
+                if let TokenKind::CIdent(name) = &self.next_token.kind {
+                    let name = name.to_string();
+                    let token = self.bump(false);
+                    let range = dcolon_token.range | token.range;
+                    Expr {
+                        kind: ExprKind::RootIdent { name },
+                        range,
+                        node_id: 0,
+                    }
+                } else {
+                    self.errors.push(ParseError::UnexpectedToken {
+                        range: self.next_token.range,
+                    });
+                    let range = dcolon_token.range;
+                    Expr {
+                        kind: ExprKind::RootIdent {
+                            name: "".to_owned(),
+                        },
+                        range,
+                        node_id: 0,
+                    }
                 }
             }
             TokenKind::NilKeyword => {

@@ -29,10 +29,21 @@ pub enum ExprKind {
     Compound {
         stmts: Vec<Expr>,
     },
+    // `foo`
     Ident {
         name: String,
     },
+    // `Foo`
     CIdent {
+        name: String,
+    },
+    // `::Foo`
+    RootIdent {
+        name: String,
+    },
+    // `Foo::Bar`
+    RelativeConstant {
+        base: Box<Expr>,
         name: String,
     },
     // TODO: bigint, float, etc.

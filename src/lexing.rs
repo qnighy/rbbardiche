@@ -99,6 +99,10 @@ pub(crate) enum TokenKind {
     Equal,
     /// `;`
     Semi,
+    // `::` at the beginning of the expression
+    DColonBeg,
+    // `::`
+    DColon,
     NewLine,
     Eof,
 }
@@ -391,7 +395,11 @@ impl Parser {
                 self.pos += 1;
                 if self.next() == Some(b':') {
                     self.pos += 1;
-                    todo!("::");
+                    if beg {
+                        TokenKind::DColonBeg
+                    } else {
+                        TokenKind::DColon
+                    }
                     // TODO: end_any condition
                 } else if self
                     .next()

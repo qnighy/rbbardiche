@@ -83,6 +83,12 @@ foo ** bar ** baz
 -foo
 !! ~+~!!foo
 
+foo
+Foo
+::Foo
+Foo::Bar
+foo::Bar
+
 +123 # literal
 + 123 # op + literal
 -123 # literal
