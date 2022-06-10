@@ -37,6 +37,7 @@ impl Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum TokenKind {
     Ident(BString),
+    CIdent(BString),
     UnderscoreEncodingKeyword,
     UnderscoreLineKeyword,
     UnderscoreFileKeyword,
@@ -461,6 +462,9 @@ impl Parser {
                 let ident = self.source[start..self.pos].as_bstr();
                 if let Some(kind) = KEYWORDS.get(ident) {
                     kind.clone()
+                } else if ident.chars().next().is_some_and_(|ch| ch.is_uppercase()) {
+                    // TODO: handle titlecase letters
+                    TokenKind::CIdent(ident.to_owned())
                 } else {
                     TokenKind::Ident(ident.to_owned())
                 }

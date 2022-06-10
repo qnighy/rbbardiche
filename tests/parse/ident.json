@@ -1,10 +1,27 @@
 {
   "ast": {
-    "type": "Ident",
-    "name": "foo",
+    "type": "Compound",
+    "stmts": [
+      {
+        "type": "Ident",
+        "name": "foo",
+        "range": [
+          0,
+          3
+        ]
+      },
+      {
+        "type": "CIdent",
+        "name": "Foo",
+        "range": [
+          4,
+          7
+        ]
+      }
+    ],
     "range": [
       0,
-      3
+      8
     ]
   },
   "errors": []

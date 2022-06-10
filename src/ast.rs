@@ -32,6 +32,9 @@ pub enum ExprKind {
     Ident {
         name: String,
     },
+    CIdent {
+        name: String,
+    },
     // TODO: bigint, float, etc.
     Numeric {
         numval: i32,

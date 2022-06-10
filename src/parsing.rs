@@ -657,6 +657,15 @@ impl Parser {
                     node_id: 0,
                 }
             }
+            TokenKind::CIdent(name) => {
+                let name = name.to_string();
+                let token = self.bump(false);
+                Expr {
+                    kind: ExprKind::CIdent { name },
+                    range: token.range,
+                    node_id: 0,
+                }
+            }
             TokenKind::NilKeyword => {
                 let token = self.bump(false);
                 Expr {
