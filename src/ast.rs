@@ -73,6 +73,10 @@ pub enum ExprKind {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    Module {
+        cpath: Box<Expr>,
+        body: Box<Expr>,
+    },
     Errored,
 }
 

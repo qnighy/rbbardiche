@@ -1,1 +1,1 @@
-s(:begin)
+nil

@@ -9,6 +9,12 @@ pub struct PgemDisplay<'a> {
 }
 
 impl<'a> PgemDisplay<'a> {
+    fn same(&self, expr: &'a Expr) -> Self {
+        PgemDisplay {
+            expr,
+            nest: self.nest,
+        }
+    }
     fn sub(&self, expr: &'a Expr) -> Self {
         PgemDisplay {
             expr,
@@ -27,6 +33,12 @@ impl<'a> Display for PgemDisplay<'a> {
                     write!(f, ",\n{}{}", indent, self.sub(stmt))?;
                 }
                 write!(f, ")")?;
+            }
+            ExprKind::Compound { stmts } if stmts.is_empty() => {
+                write!(f, "nil")?;
+            }
+            ExprKind::Compound { stmts } if stmts.len() == 1 => {
+                write!(f, "{}", self.same(&stmts[0]))?;
             }
             ExprKind::Compound { stmts } => {
                 write!(f, "s(:begin")?;
@@ -129,6 +141,16 @@ impl<'a> Display for PgemDisplay<'a> {
                     write!(f, "s(:lvasgn, <invalid>,\n{}{})", indent, self.sub(rhs))?;
                 }
             },
+            ExprKind::Module { cpath, body } => {
+                write!(
+                    f,
+                    "s(:module,\n{}{},\n{}{})",
+                    indent,
+                    self.sub(cpath),
+                    indent,
+                    self.sub(body)
+                )?;
+            }
             ExprKind::Errored => {
                 write!(f, "<invalid>")?;
             }

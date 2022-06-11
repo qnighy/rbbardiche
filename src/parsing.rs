@@ -39,12 +39,30 @@ impl Parser {
         }
     }
 
+    fn parse_compstmt_(&mut self) -> Expr {
+        let stmts = self.parse_compstmt();
+        let range = if stmts.is_empty() {
+            // TODO: empty range?
+            Range(self.next_token.range.0, self.next_token.range.0)
+        } else {
+            stmts.first().unwrap().range | stmts.last().unwrap().range
+        };
+        Expr {
+            kind: ExprKind::Compound { stmts },
+            range,
+            node_id: 0,
+        }
+    }
+
     fn parse_compstmt(&mut self) -> Vec<Expr> {
         while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
             self.bump(true);
         }
         let mut stmts = Vec::new();
-        while !matches!(self.next_token.kind, TokenKind::Eof | TokenKind::RParen) {
+        while !matches!(
+            self.next_token.kind,
+            TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword
+        ) {
             stmts.push(self.parse_stmt());
             while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 self.bump(true);
@@ -787,6 +805,30 @@ impl Parser {
                 let range = lparen_token.range | rparen_token.range;
                 Expr {
                     kind: ExprKind::Parenthesized { stmts },
+                    range,
+                    node_id: 0,
+                }
+            }
+            // primary : k_module cpath bodystmt k_end
+            TokenKind::ModuleKeyword => {
+                let module_token = self.bump(true);
+                // TODO: check cpath condition
+                let cpath = self.parse_primary();
+                // TODO: bodystmt
+                let body = self.parse_compstmt_();
+                if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                    todo!(
+                        "error recovery on unmatched module-end: {:?}",
+                        self.next_token
+                    );
+                }
+                let end_token = self.bump(false);
+                let range = module_token.range | end_token.range;
+                Expr {
+                    kind: ExprKind::Module {
+                        cpath: Box::new(cpath),
+                        body: Box::new(body),
+                    },
                     range,
                     node_id: 0,
                 }
