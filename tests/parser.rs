@@ -1,16 +1,8 @@
-use rbbardiche::{
-    ast::{Expr, Range},
-    pgem_ast::display_pgem,
-    pos::SourceLocator,
-};
+use rbbardiche::ast::Range;
+use rbbardiche::pgem_ast::display_pgem;
+use rbbardiche::pos::SourceLocator;
 use serde::Serialize;
 use testfiles::{test_files, InputFile, OutputFile};
-
-#[derive(Debug, Clone, Serialize)]
-struct ParseResult {
-    ast: Expr,
-    errors: Vec<SerializedParseError>,
-}
 
 #[derive(Debug, Clone, Serialize)]
 struct SerializedParseError {
@@ -22,7 +14,6 @@ struct SerializedParseError {
 #[test]
 fn test_parser(
     #[suffix = ".rb"] input: InputFile,
-    #[suffix = ".json"] output: OutputFile,
     #[suffix = ".pgem.txt"] output_pgem: OutputFile,
     #[suffix = ".errors.txt"] output_errors: OutputFile,
 ) {
@@ -30,17 +21,6 @@ fn test_parser(
     let source_locator = SourceLocator::new(&source);
     let (ast, errors) = rbbardiche::parse(&source);
     let pgem_result = format!("{}\n", display_pgem(&ast));
-    let result = ParseResult {
-        ast,
-        errors: errors
-            .iter()
-            .map(|e| SerializedParseError {
-                message: e.to_string(),
-                range: e.range(),
-            })
-            .collect::<Vec<_>>(),
-    };
-    output.compare_json(&result);
     output_pgem.compare_string(&pgem_result);
     if errors.is_empty() {
         output_errors.remove();
