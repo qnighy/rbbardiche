@@ -1,3 +1,5 @@
 s(:begin,
   s(:send, nil, :foo),
-  s(:const, nil, :Foo))
+  s(:const, nil, :Foo),
+  s(:send, nil, :_foo_bar),
+  s(:send, nil, :あいう))

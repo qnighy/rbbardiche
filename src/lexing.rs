@@ -546,7 +546,7 @@ impl Parser {
                 let start = self.pos;
                 while self.pos < self.source.len() && {
                     let ch = self.source[self.pos];
-                    ch.is_ascii_alphanumeric() || first == b'_' || first >= 0x80
+                    ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80
                 } {
                     self.pos += 1;
                 }

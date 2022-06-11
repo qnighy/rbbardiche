@@ -17,11 +17,27 @@
           4,
           7
         ]
+      },
+      {
+        "type": "Ident",
+        "name": "_foo_bar",
+        "range": [
+          8,
+          16
+        ]
+      },
+      {
+        "type": "Ident",
+        "name": "あいう",
+        "range": [
+          17,
+          26
+        ]
       }
     ],
     "range": [
       0,
-      8
+      27
     ]
   },
   "errors": []
