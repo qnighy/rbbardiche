@@ -2,160 +2,186 @@ use std::fmt::Display;
 
 use crate::ast::{BinaryOp, Expr, ExprKind, PostfixUnaryOp, UnaryOp};
 
+#[derive(Debug, Clone)]
+pub enum SExp {
+    Tagged { tag: String, args: Vec<SExp> },
+    Nil,
+    Symbol { name: String },
+    Number { value: i32 },
+    Invalid,
+}
+
+impl Display for SExp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            SExpIndent {
+                sexp: self,
+                nest: 0,
+            }
+        )
+    }
+}
+
 #[derive(Debug)]
-pub struct PgemDisplay<'a> {
-    expr: &'a Expr,
+pub struct SExpIndent<'a> {
+    sexp: &'a SExp,
     nest: u32,
 }
 
-impl<'a> PgemDisplay<'a> {
-    fn same(&self, expr: &'a Expr) -> Self {
-        PgemDisplay {
-            expr,
-            nest: self.nest,
-        }
-    }
-    fn sub(&self, expr: &'a Expr) -> Self {
-        PgemDisplay {
-            expr,
-            nest: self.nest + 1,
-        }
-    }
-}
-
-impl<'a> Display for PgemDisplay<'a> {
+impl<'a> Display for SExpIndent<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let indent = Indent(self.nest + 1);
-        match &self.expr.kind {
-            ExprKind::Parenthesized { stmts } => {
-                write!(f, "s(:begin")?;
-                for stmt in stmts {
-                    write!(f, ",\n{}{}", indent, self.sub(stmt))?;
+        match self.sexp {
+            SExp::Tagged { tag, args } => {
+                write!(f, "s(:{}", tag)?;
+                for arg in args {
+                    if matches!(arg, SExp::Tagged { .. }) {
+                        write!(f, ",\n{}", Indent(self.nest + 1))?;
+                    } else {
+                        write!(f, ", ")?;
+                    }
+                    write!(
+                        f,
+                        "{}",
+                        SExpIndent {
+                            sexp: arg,
+                            nest: self.nest + 1,
+                        }
+                    )?;
                 }
                 write!(f, ")")?;
             }
-            ExprKind::Compound { stmts } if stmts.is_empty() => {
-                write!(f, "nil")?;
+            SExp::Nil => {
+                f.write_str("nil")?;
             }
-            ExprKind::Compound { stmts } if stmts.len() == 1 => {
-                write!(f, "{}", self.same(&stmts[0]))?;
+            SExp::Symbol { name } => {
+                write!(f, ":{}", name)?;
             }
-            ExprKind::Compound { stmts } => {
-                write!(f, "s(:begin")?;
-                for stmt in stmts {
-                    write!(f, ",\n{}{}", indent, self.sub(stmt))?;
-                }
-                write!(f, ")")?;
+            SExp::Number { value } => {
+                write!(f, "{}", value)?;
             }
-            ExprKind::Ident { name } => {
-                write!(f, "s(:send, nil, :{})", name)?;
-            }
-            ExprKind::CIdent { name } => {
-                write!(f, "s(:const, nil, :{})", name)?;
-            }
-            ExprKind::RootIdent { name } => {
-                write!(f, "s(:const,\n{}s(:cbase), :{})", indent, name)?;
-            }
-            ExprKind::RelativeConstant { base, name } => {
-                write!(f, "s(:const,\n{}{}, :{})", indent, self.sub(base), name,)?;
-            }
-            ExprKind::Numeric { numval } => {
-                write!(f, "s(:int, {})", numval)?;
-            }
-            ExprKind::TernaryCond {
-                cond,
-                consequence,
-                alternate,
-            } => {
-                write!(
-                    f,
-                    "s(:if,\n{}{},\n{}{},\n{}{})",
-                    indent,
-                    self.sub(cond),
-                    indent,
-                    self.sub(consequence),
-                    indent,
-                    self.sub(alternate),
-                )?;
-            }
-            ExprKind::Binary { lhs, op, rhs } => match op {
-                BinaryOp::RangeIncl
-                | BinaryOp::RangeExcl
-                | BinaryOp::LogicalOr
-                | BinaryOp::LogicalAnd => {
-                    write!(
-                        f,
-                        "s(:{},\n{}{},\n{}{})",
-                        binop_node_name(*op),
-                        indent,
-                        self.sub(lhs),
-                        indent,
-                        self.sub(rhs)
-                    )?;
-                }
-                _ => {
-                    write!(
-                        f,
-                        "s(:send,\n{}{}, :{},\n{}{})",
-                        indent,
-                        self.sub(lhs),
-                        binop_send_name(*op),
-                        indent,
-                        self.sub(rhs)
-                    )?;
-                }
-            },
-            ExprKind::Unary { op, expr } => match op {
-                UnaryOp::RangeIncl => {
-                    write!(f, "s(:irange, nil,\n{}{})", indent, self.sub(expr))?;
-                }
-                UnaryOp::RangeExcl => {
-                    write!(f, "s(:erange, nil,\n{}{})", indent, self.sub(expr))?;
-                }
-                _ => {
-                    write!(
-                        f,
-                        "s(:send,\n{}{}, :{})",
-                        indent,
-                        self.sub(expr),
-                        unop_send_name(*op),
-                    )?;
-                }
-            },
-            ExprKind::PostfixUnary { expr, op } => match op {
-                PostfixUnaryOp::RangeIncl => {
-                    write!(f, "s(:irange,\n{}{}, nil)", indent, self.sub(expr))?;
-                }
-                PostfixUnaryOp::RangeExcl => {
-                    write!(f, "s(:erange,\n{}{}, nil)", indent, self.sub(expr))?;
-                }
-            },
-            ExprKind::Nil => {
-                write!(f, "s(:nil)")?;
-            }
-            ExprKind::Assign { lhs, rhs } => match &lhs.kind {
-                ExprKind::Ident { name } => {
-                    write!(f, "s(:lvasgn, :{},\n{}{})", name, indent, self.sub(rhs))?;
-                }
-                _ => {
-                    write!(f, "s(:lvasgn, <invalid>,\n{}{})", indent, self.sub(rhs))?;
-                }
-            },
-            ExprKind::Module { cpath, body } => {
-                write!(
-                    f,
-                    "s(:module,\n{}{},\n{}{})",
-                    indent,
-                    self.sub(cpath),
-                    indent,
-                    self.sub(body)
-                )?;
-            }
-            ExprKind::Errored => {
-                write!(f, "<invalid>")?;
+            SExp::Invalid => {
+                f.write_str("<invalid>")?;
             }
         }
         Ok(())
+    }
+}
+
+fn to_sexp(expr: &Expr) -> SExp {
+    match &expr.kind {
+        ExprKind::Parenthesized { stmts } => SExp::Tagged {
+            tag: "begin".to_owned(),
+            args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+        },
+        ExprKind::Compound { stmts } if stmts.is_empty() => SExp::Nil,
+        ExprKind::Compound { stmts } if stmts.len() == 1 => to_sexp(&stmts[0]),
+        ExprKind::Compound { stmts } => SExp::Tagged {
+            tag: "begin".to_owned(),
+            args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+        },
+        ExprKind::Ident { name } => SExp::Tagged {
+            tag: "send".to_owned(),
+            args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
+        },
+        ExprKind::CIdent { name } => SExp::Tagged {
+            tag: "const".to_owned(),
+            args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
+        },
+        ExprKind::RootIdent { name } => SExp::Tagged {
+            tag: "const".to_owned(),
+            args: vec![
+                SExp::Tagged {
+                    tag: "cbase".to_owned(),
+                    args: vec![],
+                },
+                SExp::Symbol { name: name.clone() },
+            ],
+        },
+        ExprKind::RelativeConstant { base, name } => SExp::Tagged {
+            tag: "const".to_owned(),
+            args: vec![to_sexp(base), SExp::Symbol { name: name.clone() }],
+        },
+        ExprKind::Numeric { numval } => SExp::Tagged {
+            tag: "int".to_string(),
+            args: vec![SExp::Number { value: *numval }],
+        },
+        ExprKind::TernaryCond {
+            cond,
+            consequence,
+            alternate,
+        } => SExp::Tagged {
+            tag: "if".to_string(),
+            args: vec![to_sexp(cond), to_sexp(consequence), to_sexp(alternate)],
+        },
+        ExprKind::Binary { lhs, op, rhs } => match op {
+            BinaryOp::RangeIncl
+            | BinaryOp::RangeExcl
+            | BinaryOp::LogicalOr
+            | BinaryOp::LogicalAnd => SExp::Tagged {
+                tag: binop_node_name(*op).to_owned(),
+                args: vec![to_sexp(lhs), to_sexp(rhs)],
+            },
+            _ => SExp::Tagged {
+                tag: "send".to_owned(),
+                args: vec![
+                    to_sexp(lhs),
+                    SExp::Symbol {
+                        name: binop_send_name(*op).to_owned(),
+                    },
+                    to_sexp(rhs),
+                ],
+            },
+        },
+        ExprKind::Unary { op, expr } => match op {
+            UnaryOp::RangeIncl => SExp::Tagged {
+                tag: "irange".to_owned(),
+                args: vec![SExp::Nil, to_sexp(expr)],
+            },
+            UnaryOp::RangeExcl => SExp::Tagged {
+                tag: "erange".to_owned(),
+                args: vec![SExp::Nil, to_sexp(expr)],
+            },
+            _ => SExp::Tagged {
+                tag: "send".to_owned(),
+                args: vec![
+                    to_sexp(expr),
+                    SExp::Symbol {
+                        name: unop_send_name(*op).to_owned(),
+                    },
+                ],
+            },
+        },
+        ExprKind::PostfixUnary { expr, op } => match op {
+            PostfixUnaryOp::RangeIncl => SExp::Tagged {
+                tag: "irange".to_owned(),
+                args: vec![to_sexp(expr), SExp::Nil],
+            },
+            PostfixUnaryOp::RangeExcl => SExp::Tagged {
+                tag: "erange".to_owned(),
+                args: vec![to_sexp(expr), SExp::Nil],
+            },
+        },
+        ExprKind::Nil => SExp::Tagged {
+            tag: "nil".to_owned(),
+            args: vec![],
+        },
+        ExprKind::Assign { lhs, rhs } => match &lhs.kind {
+            ExprKind::Ident { name } => SExp::Tagged {
+                tag: "lvasgn".to_owned(),
+                args: vec![SExp::Symbol { name: name.clone() }, to_sexp(rhs)],
+            },
+            _ => SExp::Tagged {
+                tag: "lvasgn".to_owned(),
+                args: vec![SExp::Invalid, to_sexp(rhs)],
+            },
+        },
+        ExprKind::Module { cpath, body } => SExp::Tagged {
+            tag: "module".to_owned(),
+            args: vec![to_sexp(cpath), to_sexp(body)],
+        },
+        ExprKind::Errored => SExp::Invalid,
     }
 }
 
@@ -219,6 +245,6 @@ impl Display for Indent {
     }
 }
 
-pub fn display_pgem<'a>(expr: &'a Expr) -> PgemDisplay<'a> {
-    PgemDisplay { expr, nest: 0 }
+pub fn display_pgem(expr: &Expr) -> SExp {
+    to_sexp(expr)
 }
