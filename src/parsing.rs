@@ -646,11 +646,20 @@ impl Parser {
         }
     }
 
+    // primary : primary_value tCOLON2 tCONSTANT
+    //
+    /// Parses a primary expression. Primary expressions are those enclosed with
+    /// delimiters from both sides, with a few exceptions.
+    ///
+    /// These are the exceptions (which are directly parsed in this `parse_primary`):
+    ///
+    /// - `foo::Bar`
     fn parse_primary(&mut self) -> Expr {
         let mut expr = self.parse_primary_inner();
         loop {
             match &self.next_token.kind {
                 TokenKind::DColon => {
+                    // TODO: handle primary_value condition
                     let dcolon_token = self.bump(true);
                     if let TokenKind::CIdent(name) = &self.next_token.kind {
                         let name = name.to_string();
@@ -685,8 +694,12 @@ impl Parser {
         expr
     }
 
+    /// Parses a primary expression, with a few exceptions (which are parsed in `parse_primary`)
     fn parse_primary_inner(&mut self) -> Expr {
         match &self.next_token.kind {
+            // primary : var_ref
+            // var_ref : user_variable
+            // user_variable : tIDENTIFIER
             TokenKind::Ident(name) => {
                 let name = name.to_string();
                 let token = self.bump(false);
@@ -696,6 +709,9 @@ impl Parser {
                     node_id: 0,
                 }
             }
+            // primary : var_ref
+            // var_ref : user_variable
+            // user_variable : tCONSTANT
             TokenKind::CIdent(name) => {
                 let name = name.to_string();
                 let token = self.bump(false);
@@ -705,6 +721,7 @@ impl Parser {
                     node_id: 0,
                 }
             }
+            // primary : tCOLON3 tCONSTANT
             TokenKind::DColonBeg => {
                 let dcolon_token = self.bump(true);
                 if let TokenKind::CIdent(name) = &self.next_token.kind {
@@ -730,6 +747,9 @@ impl Parser {
                     }
                 }
             }
+            // primary : var_ref
+            // var_ref : keyword_variable
+            // keyword_variable : keyword_nil
             TokenKind::NilKeyword => {
                 let token = self.bump(false);
                 Expr {
@@ -738,6 +758,12 @@ impl Parser {
                     node_id: 0,
                 }
             }
+            // primary : literal
+            // literal : numeric
+            // numeric : simple_numeric
+            //         | tMINUS_NUM simple_numeric %prec tLOWEST
+            //
+            // Note that tMINUS_NUM is handled in lexer in this parer
             TokenKind::Numeric(numval) => {
                 let numval = *numval;
                 let token = self.bump(false);
@@ -747,6 +773,7 @@ impl Parser {
                     node_id: 0,
                 }
             }
+            // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
                 let lparen_token = self.bump(true);
                 let stmts = self.parse_compstmt();
