@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use rbbardiche::parse;
+use rbbardiche::pos::SourceLocator;
 use tokio::task::spawn_blocking;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -104,6 +105,7 @@ async fn parse_and_report(
     text: String,
     text_document: VersionedTextDocumentIdentifier,
 ) {
+    let source_locator = SourceLocator::new(text.as_bytes());
     let text2 = text.clone();
     let task = spawn_blocking(move || parse(text2.as_bytes()));
     let (_, errors) = match task.await {
@@ -155,8 +157,8 @@ async fn parse_and_report(
         .iter()
         .map(|error| Diagnostic {
             range: Range {
-                start: pos(&text, error.range().0),
-                end: pos(&text, error.range().1),
+                start: pos(&source_locator, &text, error.range().0),
+                end: pos(&source_locator, &text, error.range().1),
             },
             severity: Some(if error.is_error() {
                 DiagnosticSeverity::ERROR
@@ -181,29 +183,10 @@ async fn parse_and_report(
         .await;
 }
 
-// TODO: switch to more efficient implementation
-fn pos(s: &str, at: usize) -> Position {
-    let mut pos = Position {
-        line: 0,
-        character: 0,
-    };
-    let at = {
-        let mut at = at;
-        while !s.is_char_boundary(at) && at < s.len() {
-            at += 1;
-        }
-        at
-    };
-    for ch in s[..at].chars() {
-        if ch == '\n' {
-            pos.line += 1;
-            pos.character = 0;
-        } else if (ch as u32) < 0x10000 {
-            pos.character += 1;
-        } else {
-            pos.character += 2;
-        }
+fn pos(sl: &SourceLocator, s: &str, at: usize) -> Position {
+    let pos = sl.position_utf16(s.as_bytes(), at);
+    Position {
+        line: pos.line,
+        character: pos.character,
     }
-
-    pos
 }

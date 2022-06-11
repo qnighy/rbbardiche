@@ -1,5 +1,6 @@
 use clap::Parser;
 use rbbardiche::parse;
+use rbbardiche::pos::SourceLocator;
 use std::panic::catch_unwind;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -21,6 +22,7 @@ fn main() -> Result<(), CommandError> {
     let mut has_error = false;
     for file in &cli.files {
         let source = std::fs::read_to_string(file)?;
+        let source_locator = SourceLocator::new(source.as_bytes());
         let result = catch_unwind(|| parse(source.as_bytes()));
         let result = match result {
             Ok(result) => result,
@@ -40,14 +42,14 @@ fn main() -> Result<(), CommandError> {
         let (_, errors) = result;
         for error in &errors {
             has_error = true;
-            let start = pos(&source, error.range().0);
-            let end = pos(&source, error.range().1);
+            let start = source_locator.position_utf8(source.as_bytes(), error.range().0);
+            let end = source_locator.position_utf8(source.as_bytes(), error.range().1);
             eprintln!(
                 "{}:{}:{}-{}:{}: {}",
                 file.display(),
-                start.line,
+                start.line + 1,
                 start.character,
-                end.line,
+                end.line + 1,
                 end.character,
                 error
             );
@@ -57,39 +59,6 @@ fn main() -> Result<(), CommandError> {
         return Err(CommandError::HasError);
     }
     Ok(())
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Position {
-    line: u32,
-    character: u32,
-}
-
-// TODO: switch to more efficient implementation
-fn pos(s: &str, at: usize) -> Position {
-    let mut pos = Position {
-        line: 0,
-        character: 0,
-    };
-    let at = {
-        let mut at = at;
-        while !s.is_char_boundary(at) && at < s.len() {
-            at += 1;
-        }
-        at
-    };
-    for ch in s[..at].chars() {
-        if ch == '\n' {
-            pos.line += 1;
-            pos.character = 0;
-        } else if (ch as u32) < 0x10000 {
-            pos.character += 1;
-        } else {
-            pos.character += 2;
-        }
-    }
-
-    pos
 }
 
 #[derive(Debug, Parser)]
