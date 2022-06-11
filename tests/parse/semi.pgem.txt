@@ -1,0 +1,4 @@
+s(:begin,
+  s(:int, 1),
+  s(:int, 2),
+  s(:int, 3))

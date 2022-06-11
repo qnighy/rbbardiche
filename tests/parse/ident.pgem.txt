@@ -1,0 +1,3 @@
+s(:begin,
+  s(:send, nil, :foo),
+  s(:const, nil, :Foo))

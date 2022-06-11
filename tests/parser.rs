@@ -1,4 +1,7 @@
-use rbbardiche::ast::{Expr, Range};
+use rbbardiche::{
+    ast::{Expr, Range},
+    pgem_ast::display_pgem,
+};
 use serde::Serialize;
 use testfiles::{test_files, InputFile, OutputFile};
 
@@ -16,9 +19,14 @@ struct SerializedParseError {
 
 #[test_files(dir = "tests/parse")]
 #[test]
-fn test_parser(#[suffix = ".rb"] input: InputFile, #[suffix = ".json"] output: OutputFile) {
+fn test_parser(
+    #[suffix = ".rb"] input: InputFile,
+    #[suffix = ".json"] output: OutputFile,
+    #[suffix = ".pgem.txt"] output_pgem: OutputFile,
+) {
     let source = input.read_bytes();
     let (ast, errors) = rbbardiche::parse(&source);
+    let pgem_result = format!("{}\n", display_pgem(&ast));
     let result = ParseResult {
         ast,
         errors: errors
@@ -30,4 +38,5 @@ fn test_parser(#[suffix = ".rb"] input: InputFile, #[suffix = ".json"] output: O
             .collect::<Vec<_>>(),
     };
     output.compare_json(&result);
+    output_pgem.compare_string(&pgem_result);
 }

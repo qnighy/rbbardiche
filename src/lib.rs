@@ -6,4 +6,5 @@ pub(crate) mod lexing;
 pub(crate) mod parser;
 pub mod parser_diagnostics;
 pub mod parsing;
+pub mod pgem_ast;
 pub(crate) mod util;

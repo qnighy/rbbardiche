@@ -1,0 +1,2 @@
+s(:lvasgn, :x,
+  s(:nil))
