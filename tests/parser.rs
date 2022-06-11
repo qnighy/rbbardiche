@@ -1,6 +1,7 @@
 use rbbardiche::{
     ast::{Expr, Range},
     pgem_ast::display_pgem,
+    pos::SourceLocator,
 };
 use serde::Serialize;
 use testfiles::{test_files, InputFile, OutputFile};
@@ -26,6 +27,7 @@ fn test_parser(
     #[suffix = ".errors.txt"] output_errors: OutputFile,
 ) {
     let source = input.read_bytes();
+    let source_locator = SourceLocator::new(&source);
     let (ast, errors) = rbbardiche::parse(&source);
     let pgem_result = format!("{}\n", display_pgem(&ast));
     let result = ParseResult {
@@ -45,7 +47,18 @@ fn test_parser(
     } else {
         let errors_txt = errors
             .iter()
-            .map(|e| format!("{}\n", e))
+            .map(|e| {
+                let start = source_locator.position_utf8(&source, e.range().0);
+                let end = source_locator.position_utf8(&source, e.range().1);
+                format!(
+                    "{}:{}-{}-{}: {}\n",
+                    start.line + 1,
+                    start.character,
+                    end.line + 1,
+                    end.character,
+                    e
+                )
+            })
             .collect::<Vec<_>>()
             .join("");
         output_errors.compare_string(&errors_txt);

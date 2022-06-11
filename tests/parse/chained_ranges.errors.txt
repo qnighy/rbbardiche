@@ -1,8 +1,8 @@
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
-Unexpected chained range operator
+1:11-1-13: Unexpected chained range operator
+2:11-2-14: Unexpected chained range operator
+3:12-3-14: Unexpected chained range operator
+4:12-4-15: Unexpected chained range operator
+5:7-5-9: Unexpected chained range operator
+6:7-6-10: Unexpected chained range operator
+7:8-7-10: Unexpected chained range operator
+8:8-8-11: Unexpected chained range operator

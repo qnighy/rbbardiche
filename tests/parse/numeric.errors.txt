@@ -1,2 +1,2 @@
-Trailing `_' in number
-Consecutive `__' in number
+20:0-20-5: Trailing `_' in number
+22:0-22-6: Consecutive `__' in number
