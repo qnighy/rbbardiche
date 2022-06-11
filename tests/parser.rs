@@ -23,6 +23,7 @@ fn test_parser(
     #[suffix = ".rb"] input: InputFile,
     #[suffix = ".json"] output: OutputFile,
     #[suffix = ".pgem.txt"] output_pgem: OutputFile,
+    #[suffix = ".errors.txt"] output_errors: OutputFile,
 ) {
     let source = input.read_bytes();
     let (ast, errors) = rbbardiche::parse(&source);
@@ -39,4 +40,14 @@ fn test_parser(
     };
     output.compare_json(&result);
     output_pgem.compare_string(&pgem_result);
+    if errors.is_empty() {
+        output_errors.remove();
+    } else {
+        let errors_txt = errors
+            .iter()
+            .map(|e| format!("{}\n", e))
+            .collect::<Vec<_>>()
+            .join("");
+        output_errors.compare_string(&errors_txt);
+    }
 }

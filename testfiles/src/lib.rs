@@ -106,6 +106,25 @@ impl OutputFile {
     pub fn compare_json<T: Serialize>(&self, actual: &T) {
         self.compare_json_with_mode(actual, SnapshotMode::current());
     }
+
+    pub fn remove_with_mode(&self, mode: SnapshotMode) {
+        if self.path.exists() {
+            if mode == SnapshotMode::All {
+                std::fs::remove_file(&self.path).unwrap_or_else(|e| {
+                    panic!("Error removing {}: {}", self.path.display(), e);
+                });
+            } else {
+                panic!(
+                    "Snapshot {} should not exist\n\nUse UPDATE_SNAPSHOTS=true to remove the unnecessary snapshot",
+                    self.path.display()
+                );
+            }
+        }
+    }
+
+    pub fn remove(&self) {
+        self.remove_with_mode(SnapshotMode::current());
+    }
 }
 
 #[derive(Debug, Clone)]
