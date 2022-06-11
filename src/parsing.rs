@@ -664,6 +664,22 @@ impl Parser {
         }
     }
 
+    // paren_args : '(' opt_call_args rparen
+    //            | '(' args ',' args_forward rparen
+    //            | '(' args_forward rparen
+    /// Parses a parenthesized argument list like `(42, 80)` as in `foo(42, 80)`.
+    fn parse_paren_args(&mut self) -> (Vec<Expr>, Range) {
+        assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
+        let lparen_token = self.bump(true);
+        if !matches!(self.next_token.kind, TokenKind::RParen) {
+            // TODO: actual argument contents
+            todo!("arguments in paren_args");
+        }
+        // TODO: handle opt_nl
+        let rparen_token = self.bump(false);
+        (vec![], lparen_token.range | rparen_token.range)
+    }
+
     // primary : primary_value tCOLON2 tCONSTANT
     //
     /// Parses a primary expression. Primary expressions are those enclosed with
@@ -716,11 +732,27 @@ impl Parser {
     fn parse_primary_inner(&mut self) -> Expr {
         match &self.next_token.kind {
             // primary : var_ref
+            //         | method_call
+            // method_call : fcall paren_args
             // var_ref : user_variable
             // user_variable : tIDENTIFIER
             TokenKind::Ident(name) => {
                 let name = name.to_string();
                 let token = self.bump(false);
+                if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                    let (args, args_range) = self.parse_paren_args();
+                    let range = token.range | args_range;
+                    return Expr {
+                        kind: ExprKind::Send {
+                            optional: false,
+                            recv: None,
+                            name,
+                            args,
+                        },
+                        range,
+                        node_id: 0,
+                    };
+                }
                 Expr {
                     kind: ExprKind::Ident { name },
                     range: token.range,

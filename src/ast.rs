@@ -73,6 +73,12 @@ pub enum ExprKind {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    Send {
+        optional: bool,
+        recv: Option<Box<Expr>>,
+        name: String,
+        args: Vec<Expr>,
+    },
     Module {
         cpath: Box<Expr>,
         body: Box<Expr>,

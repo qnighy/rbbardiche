@@ -177,6 +177,29 @@ fn to_sexp(expr: &Expr) -> SExp {
                 args: vec![SExp::Invalid, to_sexp(rhs)],
             },
         },
+        ExprKind::Send {
+            optional,
+            recv,
+            name,
+            args,
+        } => SExp::Tagged {
+            tag: if *optional {
+                "csend".to_owned()
+            } else {
+                "send".to_owned()
+            },
+            args: vec![
+                if let Some(recv) = recv {
+                    to_sexp(recv)
+                } else {
+                    SExp::Nil
+                },
+                SExp::Symbol { name: name.clone() },
+            ]
+            .into_iter()
+            .chain(args.iter().map(|arg| to_sexp(arg)))
+            .collect::<Vec<_>>(),
+        },
         ExprKind::Module { cpath, body } => SExp::Tagged {
             tag: "module".to_owned(),
             args: vec![to_sexp(cpath), to_sexp(body)],

@@ -171,6 +171,8 @@ pub(crate) enum TokenKind {
     UnOp(UnaryOp),
     /// `(` at the beginning of the expression (a.k.a. tLPAREN)
     LParenBeg,
+    /// `(` after the expression, usually without preceding spaces (a.k.a. '(')
+    LParenCall,
     /// `)`
     RParen,
     /// `?`
@@ -245,7 +247,7 @@ impl Parser {
     }
 
     fn lex_token(&mut self, beg: bool) -> Token {
-        self.skip_whitespace(beg);
+        let space_seen = self.skip_whitespace(beg);
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -525,6 +527,8 @@ impl Parser {
                 self.pos += 1;
                 if beg {
                     TokenKind::LParenBeg
+                } else if !space_seen {
+                    TokenKind::LParenCall
                 } else {
                     todo!("(")
                 }
@@ -623,11 +627,12 @@ impl Parser {
     //     self.source.get(self.pos + off).copied()
     // }
 
-    fn skip_whitespace(&mut self, beg: bool) {
+    fn skip_whitespace(&mut self, beg: bool) -> bool {
+        let start = self.pos;
         while self.pos < self.source.len() {
             let ch = self.source[self.pos];
             if ch == b'\n' && !beg {
-                return;
+                break;
             } else if ch.is_ascii_whitespace() || ch == b'\x0B' {
                 self.pos += 1;
             } else if ch == b'#' {
@@ -636,8 +641,9 @@ impl Parser {
                     self.pos += 1;
                 }
             } else {
-                return;
+                break;
             }
         }
+        start < self.pos
     }
 }
