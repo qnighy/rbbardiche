@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use crate::ast::{BinaryOp, Expr, ExprKind, PostfixUnaryOp, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, PostfixUnaryOp, UnaryOp};
+use crate::delegate_expr;
 
 #[derive(Debug, Clone)]
 pub enum SExp {
@@ -69,27 +70,56 @@ impl<'a> Display for SExpIndent<'a> {
     }
 }
 
-fn to_sexp(expr: &Expr) -> SExp {
-    match &expr.kind {
-        ExprKind::Parenthesized { stmts } => SExp::Tagged {
+impl From<&ast::Parenthesized> for SExp {
+    fn from(expr: &ast::Parenthesized) -> Self {
+        let ast::Parenthesized { stmts, meta: _ } = expr;
+        SExp::Tagged {
             tag: "begin".to_owned(),
             args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
-        },
-        ExprKind::Compound { stmts } if stmts.is_empty() => SExp::Nil,
-        ExprKind::Compound { stmts } if stmts.len() == 1 => to_sexp(&stmts[0]),
-        ExprKind::Compound { stmts } => SExp::Tagged {
-            tag: "begin".to_owned(),
-            args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
-        },
-        ExprKind::Ident { name } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::Compound> for SExp {
+    fn from(expr: &ast::Compound) -> Self {
+        let ast::Compound { stmts, meta: _ } = expr;
+        if stmts.is_empty() {
+            SExp::Nil
+        } else if stmts.len() == 1 {
+            to_sexp(&stmts[0])
+        } else {
+            SExp::Tagged {
+                tag: "begin".to_owned(),
+                args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+            }
+        }
+    }
+}
+
+impl From<&ast::Ident> for SExp {
+    fn from(expr: &ast::Ident) -> Self {
+        let ast::Ident { name, meta: _ } = expr;
+        SExp::Tagged {
             tag: "send".to_owned(),
             args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
-        },
-        ExprKind::CIdent { name } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::CIdent> for SExp {
+    fn from(expr: &ast::CIdent) -> Self {
+        let ast::CIdent { name, meta: _ } = expr;
+        SExp::Tagged {
             tag: "const".to_owned(),
             args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
-        },
-        ExprKind::RootIdent { name } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::RootIdent> for SExp {
+    fn from(expr: &ast::RootIdent) -> Self {
+        let ast::RootIdent { name, meta: _ } = expr;
+        SExp::Tagged {
             tag: "const".to_owned(),
             args: vec![
                 SExp::Tagged {
@@ -98,24 +128,58 @@ fn to_sexp(expr: &Expr) -> SExp {
                 },
                 SExp::Symbol { name: name.clone() },
             ],
-        },
-        ExprKind::RelativeConstant { base, name } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::RelativeConstant> for SExp {
+    fn from(expr: &ast::RelativeConstant) -> Self {
+        let ast::RelativeConstant {
+            base,
+            name,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
             tag: "const".to_owned(),
             args: vec![to_sexp(base), SExp::Symbol { name: name.clone() }],
-        },
-        ExprKind::Numeric { numval } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::Numeric> for SExp {
+    fn from(expr: &ast::Numeric) -> Self {
+        let ast::Numeric { numval, meta: _ } = expr;
+        SExp::Tagged {
             tag: "int".to_string(),
             args: vec![SExp::Number { value: *numval }],
-        },
-        ExprKind::TernaryCond {
+        }
+    }
+}
+
+impl From<&ast::TernaryCond> for SExp {
+    fn from(expr: &ast::TernaryCond) -> Self {
+        let ast::TernaryCond {
             cond,
             consequence,
             alternate,
-        } => SExp::Tagged {
+            meta: _,
+        } = expr;
+        SExp::Tagged {
             tag: "if".to_string(),
             args: vec![to_sexp(cond), to_sexp(consequence), to_sexp(alternate)],
-        },
-        ExprKind::Binary { lhs, op, rhs } => match op {
+        }
+    }
+}
+
+impl From<&ast::Binary> for SExp {
+    fn from(expr: &ast::Binary) -> Self {
+        let ast::Binary {
+            lhs,
+            op,
+            rhs,
+            meta: _,
+        } = expr;
+        match op {
             BinaryOp::RangeIncl
             | BinaryOp::RangeExcl
             | BinaryOp::LogicalOr
@@ -133,8 +197,14 @@ fn to_sexp(expr: &Expr) -> SExp {
                     to_sexp(rhs),
                 ],
             },
-        },
-        ExprKind::Unary { op, expr } => match op {
+        }
+    }
+}
+
+impl From<&ast::Unary> for SExp {
+    fn from(expr: &ast::Unary) -> Self {
+        let ast::Unary { op, expr, meta: _ } = expr;
+        match op {
             UnaryOp::RangeIncl => SExp::Tagged {
                 tag: "irange".to_owned(),
                 args: vec![SExp::Nil, to_sexp(expr)],
@@ -152,8 +222,14 @@ fn to_sexp(expr: &Expr) -> SExp {
                     },
                 ],
             },
-        },
-        ExprKind::PostfixUnary { expr, op } => match op {
+        }
+    }
+}
+
+impl From<&ast::PostfixUnary> for SExp {
+    fn from(expr: &ast::PostfixUnary) -> Self {
+        let ast::PostfixUnary { expr, op, meta: _ } = expr;
+        match op {
             PostfixUnaryOp::RangeIncl => SExp::Tagged {
                 tag: "irange".to_owned(),
                 args: vec![to_sexp(expr), SExp::Nil],
@@ -162,13 +238,25 @@ fn to_sexp(expr: &Expr) -> SExp {
                 tag: "erange".to_owned(),
                 args: vec![to_sexp(expr), SExp::Nil],
             },
-        },
-        ExprKind::Nil => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::Nil> for SExp {
+    fn from(expr: &ast::Nil) -> Self {
+        let ast::Nil { meta: _ } = expr;
+        SExp::Tagged {
             tag: "nil".to_owned(),
             args: vec![],
-        },
-        ExprKind::Assign { lhs, rhs } => match &lhs.kind {
-            ExprKind::Ident { name } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::Assign> for SExp {
+    fn from(expr: &ast::Assign) -> Self {
+        let ast::Assign { lhs, rhs, meta: _ } = expr;
+        match &**lhs {
+            Expr::Ident(ast::Ident { name, meta: _ }) => SExp::Tagged {
                 tag: "lvasgn".to_owned(),
                 args: vec![SExp::Symbol { name: name.clone() }, to_sexp(rhs)],
             },
@@ -176,13 +264,20 @@ fn to_sexp(expr: &Expr) -> SExp {
                 tag: "lvasgn".to_owned(),
                 args: vec![SExp::Invalid, to_sexp(rhs)],
             },
-        },
-        ExprKind::Send {
+        }
+    }
+}
+
+impl From<&ast::Send> for SExp {
+    fn from(expr: &ast::Send) -> Self {
+        let ast::Send {
             optional,
             recv,
             name,
             args,
-        } => SExp::Tagged {
+            meta: _,
+        } = expr;
+        SExp::Tagged {
             tag: if *optional {
                 "csend".to_owned()
             } else {
@@ -199,13 +294,39 @@ fn to_sexp(expr: &Expr) -> SExp {
             .into_iter()
             .chain(args.iter().map(|arg| to_sexp(arg)))
             .collect::<Vec<_>>(),
-        },
-        ExprKind::Module { cpath, body } => SExp::Tagged {
+        }
+    }
+}
+
+impl From<&ast::Module> for SExp {
+    fn from(expr: &ast::Module) -> Self {
+        let ast::Module {
+            cpath,
+            body,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
             tag: "module".to_owned(),
             args: vec![to_sexp(cpath), to_sexp(body)],
-        },
-        ExprKind::Errored => SExp::Invalid,
+        }
     }
+}
+
+impl From<&ast::Errored> for SExp {
+    fn from(expr: &ast::Errored) -> Self {
+        let ast::Errored { meta: _ } = expr;
+        SExp::Invalid
+    }
+}
+
+impl From<&Expr> for SExp {
+    fn from(expr: &Expr) -> Self {
+        delegate_expr!(expr, expr => SExp::from(expr))
+    }
+}
+
+fn to_sexp(expr: &Expr) -> SExp {
+    SExp::from(expr)
 }
 
 fn binop_node_name(op: BinaryOp) -> &'static str {

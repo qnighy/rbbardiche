@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOp, Expr, ExprKind, Range, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, NodeMeta, Range, UnaryOp};
 use crate::lexing::{Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -31,11 +31,14 @@ impl Parser {
             let mut stmts = stmts;
             stmts.pop().unwrap()
         } else {
-            Expr {
-                kind: ExprKind::Compound { stmts },
-                range: Range(0, self.source.len()),
-                node_id: 0,
+            ast::Compound {
+                stmts,
+                meta: NodeMeta {
+                    range: Range(0, self.source.len()),
+                    node_id: 0,
+                },
             }
+            .into()
         }
     }
 
@@ -45,13 +48,13 @@ impl Parser {
             // TODO: empty range?
             Range(self.next_token.range.0, self.next_token.range.0)
         } else {
-            stmts.first().unwrap().range | stmts.last().unwrap().range
+            stmts.first().unwrap().range() | stmts.last().unwrap().range()
         };
-        Expr {
-            kind: ExprKind::Compound { stmts },
-            range,
-            node_id: 0,
+        ast::Compound {
+            stmts,
+            meta: NodeMeta { range, node_id: 0 },
         }
+        .into()
     }
 
     fn parse_compstmt(&mut self) -> Vec<Expr> {
@@ -78,15 +81,13 @@ impl Parser {
                 TokenKind::Equal => {
                     self.bump(true);
                     let rhs = self.parse_expr();
-                    let range = e.range | rhs.range;
-                    e = Expr {
-                        kind: ExprKind::Assign {
-                            lhs: Box::new(e),
-                            rhs: Box::new(rhs),
-                        },
-                        range,
-                        node_id: 0,
-                    };
+                    let range = e.range() | rhs.range();
+                    e = ast::Assign {
+                        lhs: Box::new(e),
+                        rhs: Box::new(rhs),
+                        meta: NodeMeta { range, node_id: 0 },
+                    }
+                    .into();
                 }
                 _ => break,
             }
@@ -122,16 +123,14 @@ impl Parser {
                 todo!("error handling for missing colon");
             }
             let alternate = self.parse_ternary_cond();
-            let range = expr.range | alternate.range;
-            Expr {
-                kind: ExprKind::TernaryCond {
-                    cond: Box::new(expr),
-                    consequence: Box::new(consequence),
-                    alternate: Box::new(alternate),
-                },
-                range,
-                node_id: 0,
+            let range = expr.range() | alternate.range();
+            ast::TernaryCond {
+                cond: Box::new(expr),
+                consequence: Box::new(consequence),
+                alternate: Box::new(alternate),
+                meta: NodeMeta { range, node_id: 0 },
             }
+            .into()
         } else {
             expr
         }
@@ -168,16 +167,14 @@ impl Parser {
             }
             // TODO: parse endless ranges (like `42..`)
             let rhs = self.parse_logical_or();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
             chaining = true;
         }
         expr
@@ -203,16 +200,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_logical_and();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -237,16 +232,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_equality();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -289,16 +282,14 @@ impl Parser {
                 });
             }
             let rhs = self.parse_inequality();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
             chaining = true;
         }
         expr
@@ -338,16 +329,14 @@ impl Parser {
                 });
             }
             let rhs = self.parse_bitwise_or();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
             chaining = true;
         }
         expr
@@ -374,16 +363,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_bitwise_and();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -408,16 +395,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_shift();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -443,16 +428,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_additive();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -478,16 +461,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_multiplicative();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -514,16 +495,14 @@ impl Parser {
             };
             self.bump(true);
             let rhs = self.parse_pow();
-            let range = expr.range | rhs.range;
-            expr = Expr {
-                kind: ExprKind::Binary {
-                    lhs: Box::new(expr),
-                    op,
-                    rhs: Box::new(rhs),
-                },
-                range,
-                node_id: 0,
-            };
+            let range = expr.range() | rhs.range();
+            expr = ast::Binary {
+                lhs: Box::new(expr),
+                op,
+                rhs: Box::new(rhs),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
         }
         expr
     }
@@ -548,36 +527,35 @@ impl Parser {
             Ok((uminus_range, expr)) => {
                 // Special case for `-e ** e`
                 // In this case, we reinterpret `(-e) ** e` as `-(e ** e)`.
-                let pow_range = expr.range | rhs.range;
-                let range = uminus_range | expr.range;
-                Expr {
-                    kind: ExprKind::Unary {
-                        op: UnaryOp::Neg,
-                        expr: Box::new(Expr {
-                            kind: ExprKind::Binary {
-                                lhs: Box::new(expr),
-                                op: BinaryOp::Pow,
-                                rhs: Box::new(rhs),
+                let pow_range = expr.range() | rhs.range();
+                let range = uminus_range | expr.range();
+                ast::Unary {
+                    op: UnaryOp::Neg,
+                    expr: Box::new(
+                        ast::Binary {
+                            lhs: Box::new(expr),
+                            op: BinaryOp::Pow,
+                            rhs: Box::new(rhs),
+                            meta: NodeMeta {
+                                range: pow_range,
+                                node_id: 0,
                             },
-                            range: pow_range,
-                            node_id: 0,
-                        }),
-                    },
-                    range,
-                    node_id: 0,
+                        }
+                        .into(),
+                    ),
+                    meta: NodeMeta { range, node_id: 0 },
                 }
+                .into()
             }
             Err(expr) => {
-                let range = expr.range | rhs.range;
-                Expr {
-                    kind: ExprKind::Binary {
-                        lhs: Box::new(expr),
-                        op: BinaryOp::Pow,
-                        rhs: Box::new(rhs),
-                    },
-                    range,
-                    node_id: 0,
+                let range = expr.range() | rhs.range();
+                ast::Binary {
+                    lhs: Box::new(expr),
+                    op: BinaryOp::Pow,
+                    rhs: Box::new(rhs),
+                    meta: NodeMeta { range, node_id: 0 },
                 }
+                .into()
             }
         }
     }
@@ -586,26 +564,26 @@ impl Parser {
     /// Handles negative literals like `-123` as well.
     fn decompose_uminus(&self, expr: Expr) -> Result<(Range, Expr), Expr> {
         match expr {
-            Expr {
-                kind:
-                    ExprKind::Unary {
-                        op: UnaryOp::Neg,
-                        expr,
-                    },
-                range,
+            Expr::Unary(ast::Unary {
+                op: UnaryOp::Neg,
+                expr,
+                meta: NodeMeta { range, .. },
                 ..
-            } => Ok((Range(range.0, range.0 + 1), *expr)),
-            Expr {
-                kind: ExprKind::Numeric { numval },
-                range,
+            }) => Ok((Range(range.0, range.0 + 1), *expr)),
+            Expr::Numeric(ast::Numeric {
+                numval,
+                meta: NodeMeta { range, .. },
                 ..
-            } if self.source.get(range.0).copied() == Some(b'-') => Ok((
+            }) if self.source.get(range.0).copied() == Some(b'-') => Ok((
                 Range(range.0, range.0 + 1),
-                Expr {
-                    kind: ExprKind::Numeric { numval: -numval },
-                    range: Range(range.0 + 1, range.1),
-                    node_id: 0,
-                },
+                ast::Numeric {
+                    numval: -numval,
+                    meta: NodeMeta {
+                        range: Range(range.0 + 1, range.1),
+                        node_id: 0,
+                    },
+                }
+                .into(),
             )),
             _ => Err(expr),
         }
@@ -653,15 +631,13 @@ impl Parser {
         } else {
             self.parse_unary()
         };
-        let range = op_token.range | expr.range;
-        Expr {
-            kind: ExprKind::Unary {
-                op,
-                expr: Box::new(expr),
-            },
-            range,
-            node_id: 0,
+        let range = op_token.range | expr.range();
+        ast::Unary {
+            op,
+            expr: Box::new(expr),
+            meta: NodeMeta { range, node_id: 0 },
         }
+        .into()
     }
 
     // paren_args : '(' opt_call_args rparen
@@ -698,28 +674,24 @@ impl Parser {
                     if let TokenKind::CIdent(name) = &self.next_token.kind {
                         let name = name.to_string();
                         let token = self.bump(false);
-                        let range = expr.range | token.range;
-                        expr = Expr {
-                            kind: ExprKind::RelativeConstant {
-                                base: Box::new(expr),
-                                name,
-                            },
-                            range,
-                            node_id: 0,
-                        };
+                        let range = expr.range() | token.range;
+                        expr = ast::RelativeConstant {
+                            base: Box::new(expr),
+                            name,
+                            meta: NodeMeta { range, node_id: 0 },
+                        }
+                        .into();
                     } else {
                         self.errors.push(ParseError::UnexpectedToken {
                             range: self.next_token.range,
                         });
-                        let range = expr.range | dcolon_token.range;
-                        expr = Expr {
-                            kind: ExprKind::RelativeConstant {
-                                base: Box::new(expr),
-                                name: "".to_owned(),
-                            },
-                            range,
-                            node_id: 0,
-                        };
+                        let range = expr.range() | dcolon_token.range;
+                        expr = ast::RelativeConstant {
+                            base: Box::new(expr),
+                            name: "".to_owned(),
+                            meta: NodeMeta { range, node_id: 0 },
+                        }
+                        .into();
                     }
                 }
                 _ => break,
@@ -742,22 +714,23 @@ impl Parser {
                 if matches!(self.next_token.kind, TokenKind::LParenCall) {
                     let (args, args_range) = self.parse_paren_args();
                     let range = token.range | args_range;
-                    return Expr {
-                        kind: ExprKind::Send {
-                            optional: false,
-                            recv: None,
-                            name,
-                            args,
-                        },
-                        range,
+                    return ast::Send {
+                        optional: false,
+                        recv: None,
+                        name,
+                        args,
+                        meta: NodeMeta { range, node_id: 0 },
+                    }
+                    .into();
+                }
+                ast::Ident {
+                    name,
+                    meta: NodeMeta {
+                        range: token.range,
                         node_id: 0,
-                    };
+                    },
                 }
-                Expr {
-                    kind: ExprKind::Ident { name },
-                    range: token.range,
-                    node_id: 0,
-                }
+                .into()
             }
             // primary : var_ref
             // var_ref : user_variable
@@ -765,11 +738,14 @@ impl Parser {
             TokenKind::CIdent(name) => {
                 let name = name.to_string();
                 let token = self.bump(false);
-                Expr {
-                    kind: ExprKind::CIdent { name },
-                    range: token.range,
-                    node_id: 0,
+                ast::CIdent {
+                    name,
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
                 }
+                .into()
             }
             // primary : tCOLON3 tCONSTANT
             TokenKind::DColonBeg => {
@@ -778,23 +754,21 @@ impl Parser {
                     let name = name.to_string();
                     let token = self.bump(false);
                     let range = dcolon_token.range | token.range;
-                    Expr {
-                        kind: ExprKind::RootIdent { name },
-                        range,
-                        node_id: 0,
+                    ast::RootIdent {
+                        name,
+                        meta: NodeMeta { range, node_id: 0 },
                     }
+                    .into()
                 } else {
                     self.errors.push(ParseError::UnexpectedToken {
                         range: self.next_token.range,
                     });
                     let range = dcolon_token.range;
-                    Expr {
-                        kind: ExprKind::RootIdent {
-                            name: "".to_owned(),
-                        },
-                        range,
-                        node_id: 0,
+                    ast::RootIdent {
+                        name: "".to_owned(),
+                        meta: NodeMeta { range, node_id: 0 },
                     }
+                    .into()
                 }
             }
             // primary : var_ref
@@ -802,11 +776,13 @@ impl Parser {
             // keyword_variable : keyword_nil
             TokenKind::NilKeyword => {
                 let token = self.bump(false);
-                Expr {
-                    kind: ExprKind::Nil,
-                    range: token.range,
-                    node_id: 0,
+                ast::Nil {
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
                 }
+                .into()
             }
             // primary : literal
             // literal : numeric
@@ -817,11 +793,14 @@ impl Parser {
             TokenKind::Numeric(numval) => {
                 let numval = *numval;
                 let token = self.bump(false);
-                Expr {
-                    kind: ExprKind::Numeric { numval },
-                    range: token.range,
-                    node_id: 0,
+                ast::Numeric {
+                    numval,
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
                 }
+                .into()
             }
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
@@ -835,11 +814,11 @@ impl Parser {
                 }
                 let rparen_token = self.bump(false);
                 let range = lparen_token.range | rparen_token.range;
-                Expr {
-                    kind: ExprKind::Parenthesized { stmts },
-                    range,
-                    node_id: 0,
+                ast::Parenthesized {
+                    stmts,
+                    meta: NodeMeta { range, node_id: 0 },
                 }
+                .into()
             }
             // primary : k_module cpath bodystmt k_end
             TokenKind::ModuleKeyword => {
@@ -856,34 +835,36 @@ impl Parser {
                 }
                 let end_token = self.bump(false);
                 let range = module_token.range | end_token.range;
-                Expr {
-                    kind: ExprKind::Module {
-                        cpath: Box::new(cpath),
-                        body: Box::new(body),
-                    },
-                    range,
-                    node_id: 0,
+                ast::Module {
+                    cpath: Box::new(cpath),
+                    body: Box::new(body),
+                    meta: NodeMeta { range, node_id: 0 },
                 }
+                .into()
             }
             TokenKind::Eof => {
                 self.errors.push(ParseError::UnexpectedEof {
                     range: self.next_token.range,
                 });
-                Expr {
-                    kind: ExprKind::Errored,
-                    range: self.next_token.range,
-                    node_id: 0,
+                ast::Errored {
+                    meta: NodeMeta {
+                        range: self.next_token.range,
+                        node_id: 0,
+                    },
                 }
+                .into()
             }
             _ => {
                 let token = self.bump(false);
                 self.errors
                     .push(ParseError::UnexpectedToken { range: token.range });
-                Expr {
-                    kind: ExprKind::Errored,
-                    range: token.range,
-                    node_id: 0,
+                ast::Errored {
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
                 }
+                .into()
             }
         }
     }
