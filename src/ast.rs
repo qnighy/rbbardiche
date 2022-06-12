@@ -16,6 +16,24 @@ pub struct NodeMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Program {
+    pub stmts: Vec<Expr>,
+    pub meta: NodeMeta,
+}
+
+impl AsRef<NodeMeta> for Program {
+    fn as_ref(&self) -> &NodeMeta {
+        &self.meta
+    }
+}
+
+impl AsMut<NodeMeta> for Program {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        &mut self.meta
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Parenthesized(ParenthesizedExpr),
     Compound(CompoundExpr),

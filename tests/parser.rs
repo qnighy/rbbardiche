@@ -1,4 +1,4 @@
-use rbbardiche::pgem_ast::display_pgem;
+use rbbardiche::pgem_ast::SExp;
 use rbbardiche::pos::SourceLocator;
 use testfiles::{test_files, InputFile, OutputFile};
 
@@ -12,7 +12,7 @@ fn test_parser(
     let source = input.read_bytes();
     let source_locator = SourceLocator::new(&source);
     let (ast, errors) = rbbardiche::parse(&source);
-    let pgem_result = format!("{}\n", display_pgem(&ast));
+    let pgem_result = format!("{}\n", SExp::from(&ast));
     output_pgem.compare_string(&pgem_result);
     if errors.is_empty() {
         output_errors.remove();

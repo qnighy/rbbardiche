@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::ast::{self, BinaryOp, Expr, RangeType, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, Program, RangeType, UnaryOp};
 use crate::delegate_expr;
 
 #[derive(Debug, Clone)]
@@ -67,6 +67,22 @@ impl<'a> Display for SExpIndent<'a> {
             }
         }
         Ok(())
+    }
+}
+
+impl From<&Program> for SExp {
+    fn from(expr: &Program) -> Self {
+        let Program { stmts, meta: _ } = expr;
+        if stmts.is_empty() {
+            SExp::Nil
+        } else if stmts.len() == 1 {
+            to_sexp(&stmts[0])
+        } else {
+            SExp::Tagged {
+                tag: "begin".to_owned(),
+                args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+            }
+        }
     }
 }
 
@@ -385,8 +401,4 @@ impl Display for Indent {
         }
         Ok(())
     }
-}
-
-pub fn display_pgem(expr: &Expr) -> SExp {
-    to_sexp(expr)
 }

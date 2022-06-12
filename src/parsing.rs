@@ -1,9 +1,9 @@
-use crate::ast::{self, BinaryOp, Expr, NodeMeta, Range, RangeType, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, NodeMeta, Program, Range, RangeType, UnaryOp};
 use crate::lexing::{Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 
-pub fn parse(source: &[u8]) -> (Expr, Vec<ParseError>) {
+pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
     let mut parser = Parser::new(source);
     let program = parser.parse_program();
     (program, parser.errors)
@@ -25,20 +25,14 @@ impl Parser {
         parser
     }
 
-    fn parse_program(&mut self) -> Expr {
+    fn parse_program(&mut self) -> Program {
         let stmts = self.parse_compstmt();
-        if stmts.len() == 1 {
-            let mut stmts = stmts;
-            stmts.pop().unwrap()
-        } else {
-            ast::CompoundExpr {
-                stmts,
-                meta: NodeMeta {
-                    range: Range(0, self.source.len()),
-                    node_id: 0,
-                },
-            }
-            .into()
+        Program {
+            stmts,
+            meta: NodeMeta {
+                range: Range(0, self.source.len()),
+                node_id: 0,
+            },
         }
     }
 
