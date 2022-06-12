@@ -1,7 +1,8 @@
 use crate::ast::{self, BinaryOp, Debri, Expr, NodeMeta, Program, Range, RangeType, UnaryOp};
-use crate::lexing::{LexerMode, StringLexerMode, StringType, Token, TokenKind};
+use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
+use crate::token::{StringType, Token, TokenKind};
 
 pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
     let mut parser = Parser::new(source);

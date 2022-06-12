@@ -1,5 +1,5 @@
-use crate::lexing::Token;
 use crate::parser_diagnostics::ParseError;
+use crate::token::Token;
 
 use bstr::BString;
 

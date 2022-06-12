@@ -1,4 +1,4 @@
-use crate::lexing::Token;
+use crate::token::Token;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range(pub usize, pub usize);
