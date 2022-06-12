@@ -1,6 +1,4 @@
-use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range(pub usize, pub usize);
 
 impl std::ops::BitOr for Range {
@@ -11,17 +9,14 @@ impl std::ops::BitOr for Range {
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expr {
-    #[serde(flatten)]
     pub kind: ExprKind,
     pub range: Range,
-    #[serde(skip_serializing_if = "is_zero")]
     pub node_id: usize,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-#[serde(tag = "type")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprKind {
     Parenthesized {
         stmts: Vec<Expr>,
@@ -86,7 +81,7 @@ pub enum ExprKind {
     Errored,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOp {
     /// `..`
     RangeIncl,
@@ -140,7 +135,7 @@ pub enum BinaryOp {
     Pow,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOp {
     /// `..`
     RangeIncl,
@@ -156,14 +151,10 @@ pub enum UnaryOp {
     BitwiseNot,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PostfixUnaryOp {
     /// `..`
     RangeIncl,
     /// `...`
     RangeExcl,
-}
-
-fn is_zero<T: PartialEq + Default>(x: &T) -> bool {
-    *x == T::default()
 }

@@ -1,14 +1,6 @@
-use rbbardiche::ast::Range;
 use rbbardiche::pgem_ast::display_pgem;
 use rbbardiche::pos::SourceLocator;
-use serde::Serialize;
 use testfiles::{test_files, InputFile, OutputFile};
-
-#[derive(Debug, Clone, Serialize)]
-struct SerializedParseError {
-    message: String,
-    range: Range,
-}
 
 #[test_files(dir = "tests/parse")]
 #[test]
