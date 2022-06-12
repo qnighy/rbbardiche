@@ -70,9 +70,9 @@ impl<'a> Display for SExpIndent<'a> {
     }
 }
 
-impl From<&ast::Parenthesized> for SExp {
-    fn from(expr: &ast::Parenthesized) -> Self {
-        let ast::Parenthesized { stmts, meta: _ } = expr;
+impl From<&ast::ParenthesizedExpr> for SExp {
+    fn from(expr: &ast::ParenthesizedExpr) -> Self {
+        let ast::ParenthesizedExpr { stmts, meta: _ } = expr;
         SExp::Tagged {
             tag: "begin".to_owned(),
             args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
@@ -80,9 +80,9 @@ impl From<&ast::Parenthesized> for SExp {
     }
 }
 
-impl From<&ast::Compound> for SExp {
-    fn from(expr: &ast::Compound) -> Self {
-        let ast::Compound { stmts, meta: _ } = expr;
+impl From<&ast::CompoundExpr> for SExp {
+    fn from(expr: &ast::CompoundExpr) -> Self {
+        let ast::CompoundExpr { stmts, meta: _ } = expr;
         if stmts.is_empty() {
             SExp::Nil
         } else if stmts.len() == 1 {
@@ -96,9 +96,9 @@ impl From<&ast::Compound> for SExp {
     }
 }
 
-impl From<&ast::Ident> for SExp {
-    fn from(expr: &ast::Ident) -> Self {
-        let ast::Ident { name, meta: _ } = expr;
+impl From<&ast::IdentExpr> for SExp {
+    fn from(expr: &ast::IdentExpr) -> Self {
+        let ast::IdentExpr { name, meta: _ } = expr;
         SExp::Tagged {
             tag: "send".to_owned(),
             args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
@@ -106,9 +106,9 @@ impl From<&ast::Ident> for SExp {
     }
 }
 
-impl From<&ast::CIdent> for SExp {
-    fn from(expr: &ast::CIdent) -> Self {
-        let ast::CIdent { name, meta: _ } = expr;
+impl From<&ast::CIdentExpr> for SExp {
+    fn from(expr: &ast::CIdentExpr) -> Self {
+        let ast::CIdentExpr { name, meta: _ } = expr;
         SExp::Tagged {
             tag: "const".to_owned(),
             args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
@@ -116,9 +116,9 @@ impl From<&ast::CIdent> for SExp {
     }
 }
 
-impl From<&ast::RootIdent> for SExp {
-    fn from(expr: &ast::RootIdent) -> Self {
-        let ast::RootIdent { name, meta: _ } = expr;
+impl From<&ast::RootIdentExpr> for SExp {
+    fn from(expr: &ast::RootIdentExpr) -> Self {
+        let ast::RootIdentExpr { name, meta: _ } = expr;
         SExp::Tagged {
             tag: "const".to_owned(),
             args: vec![
@@ -132,9 +132,9 @@ impl From<&ast::RootIdent> for SExp {
     }
 }
 
-impl From<&ast::RelativeConstant> for SExp {
-    fn from(expr: &ast::RelativeConstant) -> Self {
-        let ast::RelativeConstant {
+impl From<&ast::RelativeConstantExpr> for SExp {
+    fn from(expr: &ast::RelativeConstantExpr) -> Self {
+        let ast::RelativeConstantExpr {
             base,
             name,
             meta: _,
@@ -146,9 +146,9 @@ impl From<&ast::RelativeConstant> for SExp {
     }
 }
 
-impl From<&ast::Numeric> for SExp {
-    fn from(expr: &ast::Numeric) -> Self {
-        let ast::Numeric { numval, meta: _ } = expr;
+impl From<&ast::NumericExpr> for SExp {
+    fn from(expr: &ast::NumericExpr) -> Self {
+        let ast::NumericExpr { numval, meta: _ } = expr;
         SExp::Tagged {
             tag: "int".to_string(),
             args: vec![SExp::Number { value: *numval }],
@@ -156,9 +156,9 @@ impl From<&ast::Numeric> for SExp {
     }
 }
 
-impl From<&ast::TernaryCond> for SExp {
-    fn from(expr: &ast::TernaryCond) -> Self {
-        let ast::TernaryCond {
+impl From<&ast::TernaryCondExpr> for SExp {
+    fn from(expr: &ast::TernaryCondExpr) -> Self {
+        let ast::TernaryCondExpr {
             cond,
             consequence,
             alternate,
@@ -171,9 +171,9 @@ impl From<&ast::TernaryCond> for SExp {
     }
 }
 
-impl From<&ast::Binary> for SExp {
-    fn from(expr: &ast::Binary) -> Self {
-        let ast::Binary {
+impl From<&ast::BinaryExpr> for SExp {
+    fn from(expr: &ast::BinaryExpr) -> Self {
+        let ast::BinaryExpr {
             lhs,
             op,
             rhs,
@@ -201,9 +201,9 @@ impl From<&ast::Binary> for SExp {
     }
 }
 
-impl From<&ast::Unary> for SExp {
-    fn from(expr: &ast::Unary) -> Self {
-        let ast::Unary { op, expr, meta: _ } = expr;
+impl From<&ast::UnaryExpr> for SExp {
+    fn from(expr: &ast::UnaryExpr) -> Self {
+        let ast::UnaryExpr { op, expr, meta: _ } = expr;
         match op {
             UnaryOp::RangeIncl => SExp::Tagged {
                 tag: "irange".to_owned(),
@@ -226,9 +226,9 @@ impl From<&ast::Unary> for SExp {
     }
 }
 
-impl From<&ast::PostfixUnary> for SExp {
-    fn from(expr: &ast::PostfixUnary) -> Self {
-        let ast::PostfixUnary { expr, op, meta: _ } = expr;
+impl From<&ast::PostfixUnaryExpr> for SExp {
+    fn from(expr: &ast::PostfixUnaryExpr) -> Self {
+        let ast::PostfixUnaryExpr { expr, op, meta: _ } = expr;
         match op {
             PostfixUnaryOp::RangeIncl => SExp::Tagged {
                 tag: "irange".to_owned(),
@@ -242,9 +242,9 @@ impl From<&ast::PostfixUnary> for SExp {
     }
 }
 
-impl From<&ast::Nil> for SExp {
-    fn from(expr: &ast::Nil) -> Self {
-        let ast::Nil { meta: _ } = expr;
+impl From<&ast::NilExpr> for SExp {
+    fn from(expr: &ast::NilExpr) -> Self {
+        let ast::NilExpr { meta: _ } = expr;
         SExp::Tagged {
             tag: "nil".to_owned(),
             args: vec![],
@@ -252,11 +252,11 @@ impl From<&ast::Nil> for SExp {
     }
 }
 
-impl From<&ast::Assign> for SExp {
-    fn from(expr: &ast::Assign) -> Self {
-        let ast::Assign { lhs, rhs, meta: _ } = expr;
+impl From<&ast::AssignExpr> for SExp {
+    fn from(expr: &ast::AssignExpr) -> Self {
+        let ast::AssignExpr { lhs, rhs, meta: _ } = expr;
         match &**lhs {
-            Expr::Ident(ast::Ident { name, meta: _ }) => SExp::Tagged {
+            Expr::Ident(ast::IdentExpr { name, meta: _ }) => SExp::Tagged {
                 tag: "lvasgn".to_owned(),
                 args: vec![SExp::Symbol { name: name.clone() }, to_sexp(rhs)],
             },
@@ -268,9 +268,9 @@ impl From<&ast::Assign> for SExp {
     }
 }
 
-impl From<&ast::Send> for SExp {
-    fn from(expr: &ast::Send) -> Self {
-        let ast::Send {
+impl From<&ast::SendExpr> for SExp {
+    fn from(expr: &ast::SendExpr) -> Self {
+        let ast::SendExpr {
             optional,
             recv,
             name,
@@ -298,9 +298,9 @@ impl From<&ast::Send> for SExp {
     }
 }
 
-impl From<&ast::Module> for SExp {
-    fn from(expr: &ast::Module) -> Self {
-        let ast::Module {
+impl From<&ast::ModuleExpr> for SExp {
+    fn from(expr: &ast::ModuleExpr) -> Self {
+        let ast::ModuleExpr {
             cpath,
             body,
             meta: _,
@@ -312,9 +312,9 @@ impl From<&ast::Module> for SExp {
     }
 }
 
-impl From<&ast::Errored> for SExp {
-    fn from(expr: &ast::Errored) -> Self {
-        let ast::Errored { meta: _ } = expr;
+impl From<&ast::ErroredExpr> for SExp {
+    fn from(expr: &ast::ErroredExpr) -> Self {
+        let ast::ErroredExpr { meta: _ } = expr;
         SExp::Invalid
     }
 }

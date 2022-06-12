@@ -17,27 +17,27 @@ pub struct NodeMeta {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
-    Parenthesized(Parenthesized),
-    Compound(Compound),
+    Parenthesized(ParenthesizedExpr),
+    Compound(CompoundExpr),
     // `foo`
-    Ident(Ident),
+    Ident(IdentExpr),
     // `Foo`
-    CIdent(CIdent),
+    CIdent(CIdentExpr),
     // `::Foo`
-    RootIdent(RootIdent),
+    RootIdent(RootIdentExpr),
     // `Foo::Bar`
-    RelativeConstant(RelativeConstant),
+    RelativeConstant(RelativeConstantExpr),
     // TODO: bigint, float, etc.
-    Numeric(Numeric),
-    TernaryCond(TernaryCond),
-    Binary(Binary),
-    Unary(Unary),
-    PostfixUnary(PostfixUnary),
-    Nil(Nil),
-    Assign(Assign),
-    Send(Send),
-    Module(Module),
-    Errored(Errored),
+    Numeric(NumericExpr),
+    TernaryCond(TernaryCondExpr),
+    Binary(BinaryExpr),
+    Unary(UnaryExpr),
+    PostfixUnary(PostfixUnaryExpr),
+    Nil(NilExpr),
+    Assign(AssignExpr),
+    Send(SendExpr),
+    Module(ModuleExpr),
+    Errored(ErroredExpr),
 }
 
 #[macro_export]
@@ -90,138 +90,138 @@ impl AsMut<NodeMeta> for Expr {
     }
 }
 
-impl From<Parenthesized> for Expr {
-    fn from(e: Parenthesized) -> Self {
+impl From<ParenthesizedExpr> for Expr {
+    fn from(e: ParenthesizedExpr) -> Self {
         Expr::Parenthesized(e)
     }
 }
 
-impl From<Compound> for Expr {
-    fn from(e: Compound) -> Self {
+impl From<CompoundExpr> for Expr {
+    fn from(e: CompoundExpr) -> Self {
         Expr::Compound(e)
     }
 }
 
-impl From<Ident> for Expr {
-    fn from(e: Ident) -> Self {
+impl From<IdentExpr> for Expr {
+    fn from(e: IdentExpr) -> Self {
         Expr::Ident(e)
     }
 }
 
-impl From<CIdent> for Expr {
-    fn from(e: CIdent) -> Self {
+impl From<CIdentExpr> for Expr {
+    fn from(e: CIdentExpr) -> Self {
         Expr::CIdent(e)
     }
 }
 
-impl From<RootIdent> for Expr {
-    fn from(e: RootIdent) -> Self {
+impl From<RootIdentExpr> for Expr {
+    fn from(e: RootIdentExpr) -> Self {
         Expr::RootIdent(e)
     }
 }
 
-impl From<RelativeConstant> for Expr {
-    fn from(e: RelativeConstant) -> Self {
+impl From<RelativeConstantExpr> for Expr {
+    fn from(e: RelativeConstantExpr) -> Self {
         Expr::RelativeConstant(e)
     }
 }
 
-impl From<Numeric> for Expr {
-    fn from(e: Numeric) -> Self {
+impl From<NumericExpr> for Expr {
+    fn from(e: NumericExpr) -> Self {
         Expr::Numeric(e)
     }
 }
 
-impl From<TernaryCond> for Expr {
-    fn from(e: TernaryCond) -> Self {
+impl From<TernaryCondExpr> for Expr {
+    fn from(e: TernaryCondExpr) -> Self {
         Expr::TernaryCond(e)
     }
 }
 
-impl From<Binary> for Expr {
-    fn from(e: Binary) -> Self {
+impl From<BinaryExpr> for Expr {
+    fn from(e: BinaryExpr) -> Self {
         Expr::Binary(e)
     }
 }
 
-impl From<Unary> for Expr {
-    fn from(e: Unary) -> Self {
+impl From<UnaryExpr> for Expr {
+    fn from(e: UnaryExpr) -> Self {
         Expr::Unary(e)
     }
 }
 
-impl From<PostfixUnary> for Expr {
-    fn from(e: PostfixUnary) -> Self {
+impl From<PostfixUnaryExpr> for Expr {
+    fn from(e: PostfixUnaryExpr) -> Self {
         Expr::PostfixUnary(e)
     }
 }
 
-impl From<Nil> for Expr {
-    fn from(e: Nil) -> Self {
+impl From<NilExpr> for Expr {
+    fn from(e: NilExpr) -> Self {
         Expr::Nil(e)
     }
 }
 
-impl From<Assign> for Expr {
-    fn from(e: Assign) -> Self {
+impl From<AssignExpr> for Expr {
+    fn from(e: AssignExpr) -> Self {
         Expr::Assign(e)
     }
 }
 
-impl From<Send> for Expr {
-    fn from(e: Send) -> Self {
+impl From<SendExpr> for Expr {
+    fn from(e: SendExpr) -> Self {
         Expr::Send(e)
     }
 }
 
-impl From<Module> for Expr {
-    fn from(e: Module) -> Self {
+impl From<ModuleExpr> for Expr {
+    fn from(e: ModuleExpr) -> Self {
         Expr::Module(e)
     }
 }
 
-impl From<Errored> for Expr {
-    fn from(e: Errored) -> Self {
+impl From<ErroredExpr> for Expr {
+    fn from(e: ErroredExpr) -> Self {
         Expr::Errored(e)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Parenthesized {
+pub struct ParenthesizedExpr {
     pub stmts: Vec<Expr>,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Compound {
+pub struct CompoundExpr {
     pub stmts: Vec<Expr>,
     pub meta: NodeMeta,
 }
 
 // `foo`
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ident {
+pub struct IdentExpr {
     pub name: String,
     pub meta: NodeMeta,
 }
 
 // `Foo`
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CIdent {
+pub struct CIdentExpr {
     pub name: String,
     pub meta: NodeMeta,
 }
 
 // `::Foo`
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RootIdent {
+pub struct RootIdentExpr {
     pub name: String,
     pub meta: NodeMeta,
 }
 
 // `Foo::Bar`
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RelativeConstant {
+pub struct RelativeConstantExpr {
     pub base: Box<Expr>,
     pub name: String,
     pub meta: NodeMeta,
@@ -229,13 +229,13 @@ pub struct RelativeConstant {
 
 // TODO: bigint, float, etc.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Numeric {
+pub struct NumericExpr {
     pub numval: i32,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TernaryCond {
+pub struct TernaryCondExpr {
     pub cond: Box<Expr>,
     pub consequence: Box<Expr>,
     pub alternate: Box<Expr>,
@@ -243,7 +243,7 @@ pub struct TernaryCond {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Binary {
+pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: BinaryOp,
     pub rhs: Box<Expr>,
@@ -251,33 +251,33 @@ pub struct Binary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Unary {
+pub struct UnaryExpr {
     pub op: UnaryOp,
     pub expr: Box<Expr>,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PostfixUnary {
+pub struct PostfixUnaryExpr {
     pub expr: Box<Expr>,
     pub op: PostfixUnaryOp,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Nil {
+pub struct NilExpr {
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Assign {
+pub struct AssignExpr {
     pub lhs: Box<Expr>,
     pub rhs: Box<Expr>,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Send {
+pub struct SendExpr {
     pub optional: bool,
     pub recv: Option<Box<Expr>>,
     pub name: String,
@@ -286,14 +286,14 @@ pub struct Send {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Module {
+pub struct ModuleExpr {
     pub cpath: Box<Expr>,
     pub body: Box<Expr>,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Errored {
+pub struct ErroredExpr {
     pub meta: NodeMeta,
 }
 
