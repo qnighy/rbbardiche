@@ -1,4 +1,4 @@
-use crate::ast::{self, BinaryOp, Expr, NodeMeta, Program, Range, RangeType, UnaryOp};
+use crate::ast::{self, BinaryOp, Debri, Expr, NodeMeta, Program, Range, RangeType, UnaryOp};
 use crate::lexing::{LexerMode, StringLexerMode, StringType, Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -26,7 +26,7 @@ impl Parser {
     }
 
     fn parse_program(&mut self) -> Program {
-        let stmts = self.parse_compstmt();
+        let stmts = self.parse_compstmt(|token| matches!(token.kind, TokenKind::Eof));
         Program {
             stmts,
             meta: NodeMeta {
@@ -36,8 +36,11 @@ impl Parser {
         }
     }
 
-    fn parse_compstmt_(&mut self) -> Expr {
-        let stmts = self.parse_compstmt();
+    fn parse_compstmt_<F>(&mut self, is_end_token: F) -> Expr
+    where
+        F: Fn(&Token) -> bool,
+    {
+        let stmts = self.parse_compstmt(is_end_token);
         let range = if stmts.is_empty() {
             // TODO: empty range?
             Range(self.next_token.range.0, self.next_token.range.0)
@@ -51,16 +54,26 @@ impl Parser {
         .into()
     }
 
-    fn parse_compstmt(&mut self) -> Vec<Expr> {
+    fn parse_compstmt<F>(&mut self, is_end_token: F) -> Vec<Expr>
+    where
+        F: Fn(&Token) -> bool,
+    {
         while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
             self.bump(LexerMode::BEG);
         }
         let mut stmts = Vec::new();
-        while !matches!(
-            self.next_token.kind,
-            TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword
-        ) {
+        while !is_end_token(&self.next_token) {
             stmts.push(self.parse_stmt());
+            if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine)
+                && !is_end_token(&self.next_token)
+            {
+                if let Some(stmt) = self.skip_debris(|token| {
+                    matches!(token.kind, TokenKind::Semi | TokenKind::NewLine)
+                        || is_end_token(token)
+                }) {
+                    stmts.push(stmt)
+                }
+            }
             while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 self.bump(LexerMode::BEG);
             }
@@ -834,7 +847,12 @@ impl Parser {
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
                 let lparen_token = self.bump(LexerMode::BEG);
-                let stmts = self.parse_compstmt();
+                let stmts = self.parse_compstmt(|token| {
+                    matches!(
+                        token.kind,
+                        TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword
+                    )
+                });
                 if !matches!(self.next_token.kind, TokenKind::RParen) {
                     todo!(
                         "error recovery on unmatched parentheses: {:?}",
@@ -855,7 +873,9 @@ impl Parser {
                 // TODO: check cpath condition
                 let cpath = self.parse_primary();
                 // TODO: bodystmt
-                let body = self.parse_compstmt_();
+                let body = self.parse_compstmt_(|token| {
+                    matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                });
                 if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
                     todo!(
                         "error recovery on unmatched module-end: {:?}",
@@ -871,11 +891,12 @@ impl Parser {
                 }
                 .into()
             }
-            TokenKind::Eof => {
+            TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword => {
                 self.errors.push(ParseError::UnexpectedEof {
                     range: self.next_token.range,
                 });
                 ast::ErroredExpr {
+                    debris: vec![],
                     meta: NodeMeta {
                         range: self.next_token.range,
                         node_id: 0,
@@ -883,15 +904,23 @@ impl Parser {
                 }
                 .into()
             }
+            TokenKind::BeginKeyword => todo!("begin .. end"),
+            TokenKind::CapitalBeginKeyword => todo!("BEGIN {{ .. }}"),
+            TokenKind::CapitalEndKeyword => todo!("END {{ .. }}"),
+            TokenKind::ClassKeyword => todo!("class .. end"),
+            TokenKind::DefKeyword => todo!("def .. end"),
+            TokenKind::DoKeyword => todo!("do .. end"),
+            TokenKind::ForKeyword => todo!("for .. end"),
+            TokenKind::IfKeyword => todo!("if .. end"),
+            TokenKind::WhileKeyword => todo!("while .. end"),
             _ => {
                 let token = self.bump(LexerMode::MID);
                 self.errors
                     .push(ParseError::UnexpectedToken { range: token.range });
+                let range = token.range;
                 ast::ErroredExpr {
-                    meta: NodeMeta {
-                        range: token.range,
-                        node_id: 0,
-                    },
+                    debris: vec![Debri::Token(token)],
+                    meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
             }
@@ -902,5 +931,108 @@ impl Parser {
         if matches!(self.next_token.kind, TokenKind::NewLine) {
             self.bump(LexerMode::BEG);
         }
+    }
+
+    fn skip_debris<F>(&mut self, is_end_token: F) -> Option<Expr>
+    where
+        F: Fn(&Token) -> bool,
+    {
+        let first_range = self.next_token.range;
+        let mut debris = Vec::new();
+        while !is_end_token(&self.next_token) {
+            match self.next_token.kind {
+                // Those which likely starts an expression
+                TokenKind::Ident(_)
+                | TokenKind::CIdent(_)
+                | TokenKind::UnderscoreEncodingKeyword
+                | TokenKind::UnderscoreLineKeyword
+                | TokenKind::UnderscoreFileKeyword
+                | TokenKind::CapitalBeginKeyword
+                | TokenKind::CapitalEndKeyword
+                | TokenKind::AliasKeyword
+                | TokenKind::BeginKeyword
+                | TokenKind::BreakKeyword
+                | TokenKind::CaseKeyword
+                | TokenKind::ClassKeyword
+                | TokenKind::DefKeyword
+                | TokenKind::DefinedQKeyword
+                | TokenKind::FalseKeyword
+                | TokenKind::ForKeyword
+                | TokenKind::IfKeyword
+                | TokenKind::ModuleKeyword
+                | TokenKind::NextKeyword
+                | TokenKind::NilKeyword
+                | TokenKind::NotKeyword
+                | TokenKind::RedoKeyword
+                | TokenKind::RetryKeyword
+                | TokenKind::ReturnKeyword
+                | TokenKind::SelfKeyword
+                | TokenKind::SuperKeyword
+                | TokenKind::TrueKeyword
+                | TokenKind::UndefKeyword
+                | TokenKind::UnlessKeyword
+                | TokenKind::UntilKeyword
+                | TokenKind::WhileKeyword
+                | TokenKind::YieldKeyword
+                | TokenKind::Numeric(_)
+                | TokenKind::StringBeg(_)
+                | TokenKind::Dot2Beg
+                | TokenKind::Dot3Beg
+                | TokenKind::UnOp(_)
+                | TokenKind::LParenBeg
+                | TokenKind::DColonBeg => {
+                    let expr = self.parse_primary();
+                    debris.push(Debri::ExprLike(expr));
+                }
+
+                // Those which is likely followed by an expression
+                TokenKind::AndKeyword
+                | TokenKind::DoKeyword
+                | TokenKind::ElseKeyword
+                | TokenKind::ElsifKeyword
+                | TokenKind::EnsureKeyword
+                | TokenKind::InKeyword
+                | TokenKind::OrKeyword
+                | TokenKind::RescueKeyword
+                | TokenKind::ThenKeyword
+                | TokenKind::WhenKeyword
+                | TokenKind::Dot2Mid
+                | TokenKind::Dot3Mid
+                | TokenKind::BinOp(_)
+                | TokenKind::LParenCall
+                | TokenKind::Question
+                | TokenKind::Colon
+                | TokenKind::Equal
+                | TokenKind::Semi
+                | TokenKind::DColon
+                | TokenKind::NewLine => {
+                    let token = self.bump(LexerMode::BEG);
+                    debris.push(Debri::Token(token));
+                }
+
+                // Those which usually closes an expression
+                TokenKind::EndKeyword | TokenKind::RParen => {
+                    let token = self.bump(LexerMode::MID);
+                    debris.push(Debri::Token(token));
+                }
+
+                TokenKind::StringContent(_) | TokenKind::StringEnd | TokenKind::Eof => {
+                    unreachable!()
+                }
+            }
+        }
+        if debris.is_empty() {
+            return None;
+        }
+        self.errors
+            .push(ParseError::UnexpectedToken { range: first_range });
+        let range = debris.first().unwrap().range() | debris.last().unwrap().range();
+        Some(
+            ast::ErroredExpr {
+                debris,
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into(),
+        )
     }
 }

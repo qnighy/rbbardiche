@@ -348,7 +348,7 @@ impl From<&ast::ModuleExpr> for SExp {
 
 impl From<&ast::ErroredExpr> for SExp {
     fn from(expr: &ast::ErroredExpr) -> Self {
-        let ast::ErroredExpr { meta: _ } = expr;
+        let ast::ErroredExpr { debris: _, meta: _ } = expr;
         SExp::Invalid
     }
 }

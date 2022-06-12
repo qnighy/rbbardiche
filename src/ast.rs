@@ -1,3 +1,5 @@
+use crate::lexing::Token;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range(pub usize, pub usize);
 
@@ -327,6 +329,7 @@ pub struct ModuleExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ErroredExpr {
+    pub debris: Vec<Debri>,
     pub meta: NodeMeta,
 }
 
@@ -398,4 +401,19 @@ pub enum UnaryOp {
     Not,
     /// `~`
     BitwiseNot,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Debri {
+    Token(Token),
+    ExprLike(Expr),
+}
+
+impl Debri {
+    pub fn range(&self) -> Range {
+        match self {
+            Debri::Token(token) => token.range,
+            Debri::ExprLike(expr) => expr.range(),
+        }
+    }
 }

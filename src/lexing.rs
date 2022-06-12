@@ -7,9 +7,9 @@ use once_cell::sync::Lazy;
 use std::{borrow::Cow, collections::HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Token {
-    pub(crate) kind: TokenKind,
-    pub(crate) range: Range,
+pub struct Token {
+    pub kind: TokenKind,
+    pub range: Range,
 }
 
 impl Token {
@@ -35,7 +35,7 @@ impl Token {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum TokenKind {
+pub enum TokenKind {
     /// `foo` (a.k.a. tIDENTIFIER)
     Ident(BString),
     /// `Foo` (a.k.a. tCONSTANT)
@@ -206,7 +206,7 @@ pub(crate) enum TokenKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum StringType {
+pub enum StringType {
     /// `'`
     SQuote,
     // /// `"`
