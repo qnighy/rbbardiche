@@ -125,6 +125,14 @@ pub(crate) enum TokenKind {
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `..` at the beginning of the expression (a.k.a. tBDOT2)
+    Dot2Beg,
+    /// `..` after the expression (a.k.a. tDOT2)
+    Dot2Mid,
+    /// `...` at the beginning of the expression (a.k.a. tBDOT3)
+    Dot3Beg,
+    /// `...` after the expression (a.k.a. tBDOT3)
+    Dot3Mid,
     /// Binary operator
     /// Note: some operators have overloaded meanings.
     ///
@@ -456,14 +464,14 @@ impl Parser {
                         // TODO: EOF warning
                         // TODO: lpar_beg condition
                         if beg {
-                            TokenKind::UnOp(UnaryOp::RangeExcl)
+                            TokenKind::Dot3Beg
                         } else {
-                            TokenKind::BinOp(BinaryOp::RangeExcl)
+                            TokenKind::Dot3Mid
                         }
                     } else if beg {
-                        TokenKind::UnOp(UnaryOp::RangeIncl)
+                        TokenKind::Dot2Beg
                     } else {
-                        TokenKind::BinOp(BinaryOp::RangeIncl)
+                        TokenKind::Dot2Mid
                     }
                 } else {
                     // TODO: digit case

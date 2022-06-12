@@ -1,4 +1,4 @@
-use crate::ast::{self, BinaryOp, Expr, NodeMeta, Range, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, NodeMeta, Range, RangeType, UnaryOp};
 use crate::lexing::{Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -151,13 +151,10 @@ impl Parser {
     fn parse_range(&mut self, mut chaining: bool) -> Expr {
         let mut expr = self.parse_logical_or();
         loop {
-            let op = if let Some(op) = self
-                .next_token
-                .to_binop(|op| matches!(op, BinaryOp::RangeIncl | BinaryOp::RangeExcl))
-            {
-                op
-            } else {
-                break;
+            let range_type = match self.next_token.kind {
+                TokenKind::Dot2Mid => RangeType::Inclusive,
+                TokenKind::Dot3Mid => RangeType::Exclusive,
+                _ => break,
             };
             let op_token = self.bump(true);
             if chaining {
@@ -168,10 +165,10 @@ impl Parser {
             // TODO: parse endless ranges (like `42..`)
             let rhs = self.parse_logical_or();
             let range = expr.range() | rhs.range();
-            expr = ast::BinaryExpr {
-                lhs: Box::new(expr),
-                op,
-                rhs: Box::new(rhs),
+            expr = ast::RangeExpr {
+                begin: Some(Box::new(expr)),
+                range_type,
+                end: Some(Box::new(rhs)),
                 meta: NodeMeta { range, node_id: 0 },
             }
             .into();
@@ -608,29 +605,37 @@ impl Parser {
     //
     /// Parses `+e`, `-e`, `!e`, `~e`, and higher.
     fn parse_unary(&mut self) -> Expr {
+        let range_type = match self.next_token.kind {
+            TokenKind::Dot2Beg => Some(RangeType::Inclusive),
+            TokenKind::Dot3Beg => Some(RangeType::Exclusive),
+            _ => None,
+        };
+        if let Some(range_type) = range_type {
+            let op_token = self.bump(true);
+            // Within these rules, shift takes precedence over reduce
+            // E.g. `..1 + 2` is interpreted as being `..(1 + 2)`
+            let expr = self.parse_range(true);
+            let range = op_token.range | expr.range();
+            return ast::RangeExpr {
+                begin: None,
+                range_type,
+                end: Some(Box::new(expr)),
+                meta: NodeMeta { range, node_id: 0 },
+            }
+            .into();
+        }
+
         let op = if let Some(op) = self.next_token.to_unop(|op| {
-            matches!(
-                op,
-                UnaryOp::RangeIncl
-                    | UnaryOp::RangeExcl
-                    | UnaryOp::Plus
-                    | UnaryOp::Neg
-                    | UnaryOp::Not
-                    | UnaryOp::BitwiseNot
-            )
+            matches!(op, |UnaryOp::Plus| UnaryOp::Neg
+                | UnaryOp::Not
+                | UnaryOp::BitwiseNot)
         }) {
             op
         } else {
             return self.parse_primary();
         };
         let op_token = self.bump(true);
-        let expr = if matches!(op, UnaryOp::RangeIncl | UnaryOp::RangeExcl) {
-            // Within these rules, shift takes precedence over reduce
-            // E.g. `..1 + 2` is interpreted as being `..(1 + 2)`
-            self.parse_range(true)
-        } else {
-            self.parse_unary()
-        };
+        let expr = self.parse_unary();
         let range = op_token.range | expr.range();
         ast::UnaryExpr {
             op,

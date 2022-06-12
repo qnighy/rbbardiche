@@ -30,9 +30,9 @@ pub enum Expr {
     // TODO: bigint, float, etc.
     Numeric(NumericExpr),
     TernaryCond(TernaryCondExpr),
+    Range(RangeExpr),
     Binary(BinaryExpr),
     Unary(UnaryExpr),
-    PostfixUnary(PostfixUnaryExpr),
     Nil(NilExpr),
     Assign(AssignExpr),
     Send(SendExpr),
@@ -52,9 +52,9 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::RelativeConstant($x) => $arm,
             $crate::ast::Expr::Numeric($x) => $arm,
             $crate::ast::Expr::TernaryCond($x) => $arm,
+            $crate::ast::Expr::Range($x) => $arm,
             $crate::ast::Expr::Binary($x) => $arm,
             $crate::ast::Expr::Unary($x) => $arm,
-            $crate::ast::Expr::PostfixUnary($x) => $arm,
             $crate::ast::Expr::Nil($x) => $arm,
             $crate::ast::Expr::Assign($x) => $arm,
             $crate::ast::Expr::Send($x) => $arm,
@@ -138,6 +138,12 @@ impl From<TernaryCondExpr> for Expr {
     }
 }
 
+impl From<RangeExpr> for Expr {
+    fn from(e: RangeExpr) -> Self {
+        Expr::Range(e)
+    }
+}
+
 impl From<BinaryExpr> for Expr {
     fn from(e: BinaryExpr) -> Self {
         Expr::Binary(e)
@@ -147,12 +153,6 @@ impl From<BinaryExpr> for Expr {
 impl From<UnaryExpr> for Expr {
     fn from(e: UnaryExpr) -> Self {
         Expr::Unary(e)
-    }
-}
-
-impl From<PostfixUnaryExpr> for Expr {
-    fn from(e: PostfixUnaryExpr) -> Self {
-        Expr::PostfixUnary(e)
     }
 }
 
@@ -243,6 +243,14 @@ pub struct TernaryCondExpr {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RangeExpr {
+    pub begin: Option<Box<Expr>>,
+    pub range_type: RangeType,
+    pub end: Option<Box<Expr>>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: BinaryOp,
@@ -254,13 +262,6 @@ pub struct BinaryExpr {
 pub struct UnaryExpr {
     pub op: UnaryOp,
     pub expr: Box<Expr>,
-    pub meta: NodeMeta,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PostfixUnaryExpr {
-    pub expr: Box<Expr>,
-    pub op: PostfixUnaryOp,
     pub meta: NodeMeta,
 }
 
@@ -298,11 +299,15 @@ pub struct ErroredExpr {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BinaryOp {
+pub enum RangeType {
     /// `..`
-    RangeIncl,
+    Inclusive,
     /// `...`
-    RangeExcl,
+    Exclusive,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BinaryOp {
     /// `||`
     LogicalOr,
     /// `&&`
@@ -353,10 +358,6 @@ pub enum BinaryOp {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOp {
-    /// `..`
-    RangeIncl,
-    /// `...`
-    RangeExcl,
     /// `+`
     Plus,
     /// `-`
@@ -365,12 +366,4 @@ pub enum UnaryOp {
     Not,
     /// `~`
     BitwiseNot,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PostfixUnaryOp {
-    /// `..`
-    RangeIncl,
-    /// `...`
-    RangeExcl,
 }

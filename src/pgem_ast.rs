@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::ast::{self, BinaryOp, Expr, PostfixUnaryOp, UnaryOp};
+use crate::ast::{self, BinaryOp, Expr, RangeType, UnaryOp};
 use crate::delegate_expr;
 
 #[derive(Debug, Clone)]
@@ -171,6 +171,36 @@ impl From<&ast::TernaryCondExpr> for SExp {
     }
 }
 
+impl From<&ast::RangeExpr> for SExp {
+    fn from(expr: &ast::RangeExpr) -> Self {
+        let ast::RangeExpr {
+            begin,
+            range_type,
+            end,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
+            tag: match range_type {
+                RangeType::Inclusive => "irange",
+                RangeType::Exclusive => "erange",
+            }
+            .to_owned(),
+            args: vec![
+                if let Some(begin) = begin {
+                    to_sexp(begin)
+                } else {
+                    SExp::Nil
+                },
+                if let Some(end) = end {
+                    to_sexp(end)
+                } else {
+                    SExp::Nil
+                },
+            ],
+        }
+    }
+}
+
 impl From<&ast::BinaryExpr> for SExp {
     fn from(expr: &ast::BinaryExpr) -> Self {
         let ast::BinaryExpr {
@@ -180,10 +210,7 @@ impl From<&ast::BinaryExpr> for SExp {
             meta: _,
         } = expr;
         match op {
-            BinaryOp::RangeIncl
-            | BinaryOp::RangeExcl
-            | BinaryOp::LogicalOr
-            | BinaryOp::LogicalAnd => SExp::Tagged {
+            BinaryOp::LogicalOr | BinaryOp::LogicalAnd => SExp::Tagged {
                 tag: binop_node_name(*op).to_owned(),
                 args: vec![to_sexp(lhs), to_sexp(rhs)],
             },
@@ -204,40 +231,14 @@ impl From<&ast::BinaryExpr> for SExp {
 impl From<&ast::UnaryExpr> for SExp {
     fn from(expr: &ast::UnaryExpr) -> Self {
         let ast::UnaryExpr { op, expr, meta: _ } = expr;
-        match op {
-            UnaryOp::RangeIncl => SExp::Tagged {
-                tag: "irange".to_owned(),
-                args: vec![SExp::Nil, to_sexp(expr)],
-            },
-            UnaryOp::RangeExcl => SExp::Tagged {
-                tag: "erange".to_owned(),
-                args: vec![SExp::Nil, to_sexp(expr)],
-            },
-            _ => SExp::Tagged {
-                tag: "send".to_owned(),
-                args: vec![
-                    to_sexp(expr),
-                    SExp::Symbol {
-                        name: unop_send_name(*op).to_owned(),
-                    },
-                ],
-            },
-        }
-    }
-}
-
-impl From<&ast::PostfixUnaryExpr> for SExp {
-    fn from(expr: &ast::PostfixUnaryExpr) -> Self {
-        let ast::PostfixUnaryExpr { expr, op, meta: _ } = expr;
-        match op {
-            PostfixUnaryOp::RangeIncl => SExp::Tagged {
-                tag: "irange".to_owned(),
-                args: vec![to_sexp(expr), SExp::Nil],
-            },
-            PostfixUnaryOp::RangeExcl => SExp::Tagged {
-                tag: "erange".to_owned(),
-                args: vec![to_sexp(expr), SExp::Nil],
-            },
+        SExp::Tagged {
+            tag: "send".to_owned(),
+            args: vec![
+                to_sexp(expr),
+                SExp::Symbol {
+                    name: unop_send_name(*op).to_owned(),
+                },
+            ],
         }
     }
 }
@@ -331,8 +332,6 @@ fn to_sexp(expr: &Expr) -> SExp {
 
 fn binop_node_name(op: BinaryOp) -> &'static str {
     match op {
-        BinaryOp::RangeIncl => "irange",
-        BinaryOp::RangeExcl => "erange",
         BinaryOp::LogicalOr => "or",
         BinaryOp::LogicalAnd => "and",
         _ => unreachable!(),
@@ -341,7 +340,7 @@ fn binop_node_name(op: BinaryOp) -> &'static str {
 
 fn binop_send_name(op: BinaryOp) -> &'static str {
     match op {
-        BinaryOp::RangeIncl | BinaryOp::RangeExcl | BinaryOp::LogicalOr | BinaryOp::LogicalAnd => {
+        BinaryOp::LogicalOr | BinaryOp::LogicalAnd => {
             unreachable!()
         }
         BinaryOp::Cmp => "<=>",
@@ -370,7 +369,6 @@ fn binop_send_name(op: BinaryOp) -> &'static str {
 
 fn unop_send_name(op: UnaryOp) -> &'static str {
     match op {
-        UnaryOp::RangeIncl | UnaryOp::RangeExcl => unreachable!(),
         UnaryOp::Plus => "+@",
         UnaryOp::Neg => "-@",
         UnaryOp::Not => "!",
