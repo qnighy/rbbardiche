@@ -64,15 +64,10 @@ impl Parser {
         let mut stmts = Vec::new();
         while !is_end_token(&self.next_token) {
             stmts.push(self.parse_stmt());
-            if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine)
-                && !is_end_token(&self.next_token)
-            {
-                if let Some(stmt) = self.skip_debris(|token| {
-                    matches!(token.kind, TokenKind::Semi | TokenKind::NewLine)
-                        || is_end_token(token)
-                }) {
-                    stmts.push(stmt)
-                }
+            if let Some(stmt) = self.skip_debris(|token| {
+                matches!(token.kind, TokenKind::Semi | TokenKind::NewLine) || is_end_token(token)
+            }) {
+                stmts.push(stmt)
             }
             while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 self.bump(LexerMode::BEG);
