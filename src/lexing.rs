@@ -125,6 +125,12 @@ pub(crate) enum TokenKind {
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING or tXSTRING)
+    StringBeg(StringType),
+    /// Text in a string literal
+    StringContent(String),
+    /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING_END)
+    StringEnd,
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
     Dot2Beg,
     /// `..` after the expression (a.k.a. tDOT2)
@@ -199,6 +205,16 @@ pub(crate) enum TokenKind {
     Eof,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StringType {
+    /// `'`
+    SQuote,
+    // /// `"`
+    // DQuote,
+    // /// <code>`</code>
+    // BQuote,
+}
+
 static KEYWORDS: Lazy<HashMap<&BStr, TokenKind>> = Lazy::new(|| {
     vec![
         ("__ENCODING__", TokenKind::UnderscoreEncodingKeyword),
@@ -248,14 +264,42 @@ static KEYWORDS: Lazy<HashMap<&BStr, TokenKind>> = Lazy::new(|| {
     .collect::<HashMap<_, _>>()
 });
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LexerMode {
+    Normal(NormalLexerMode),
+    String(StringLexerMode),
+}
+
+impl LexerMode {
+    pub(crate) const BEG: LexerMode = LexerMode::Normal(NormalLexerMode { beg: true });
+    pub(crate) const MID: LexerMode = LexerMode::Normal(NormalLexerMode { beg: false });
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct NormalLexerMode {
+    pub(crate) beg: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StringLexerMode {
+    SingleQuoted,
+}
+
 impl Parser {
-    pub(crate) fn bump(&mut self, beg: bool) -> Token {
-        let next_token = self.lex_token(beg);
+    pub(crate) fn bump(&mut self, mode: LexerMode) -> Token {
+        let next_token = self.lex_token(mode);
         std::mem::replace(&mut self.next_token, next_token)
     }
 
-    fn lex_token(&mut self, beg: bool) -> Token {
-        let space_seen = self.skip_whitespace(beg);
+    fn lex_token(&mut self, mode: LexerMode) -> Token {
+        match mode {
+            LexerMode::Normal(mode) => self.lex_token_normal(mode),
+            LexerMode::String(mode) => self.lex_token_string(mode),
+        }
+    }
+
+    fn lex_token_normal(&mut self, mode: NormalLexerMode) -> Token {
+        let space_seen = self.skip_whitespace(mode.beg);
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -270,7 +314,7 @@ impl Parser {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
                     self.pos += 1;
-                    if beg {
+                    if mode.beg {
                         todo!("** as tDStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Pow)
@@ -279,7 +323,7 @@ impl Parser {
                     todo!("*=");
                 } else {
                     // TODO: spcarg condition
-                    if beg {
+                    if mode.beg {
                         todo!("* as tStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Mul)
@@ -353,6 +397,10 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Gt)
                 }
             }
+            b'\'' => {
+                self.pos += 1;
+                TokenKind::StringBeg(StringType::SQuote)
+            }
             b'?' => {
                 self.pos += 1;
                 // TODO: end_any condition
@@ -388,7 +436,7 @@ impl Parser {
                     self.pos += 1;
                     todo!("&.");
                 // TODO: spcarg condition
-                } else if beg {
+                } else if mode.beg {
                     todo!("& as tAMPER");
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseAnd)
@@ -401,7 +449,7 @@ impl Parser {
                     if self.next() == Some(b'=') {
                         self.pos += 1;
                         todo!("||=");
-                    } else if beg {
+                    } else if mode.beg {
                         // Split `||` into two `|`s
                         self.pos = start + 1;
                         TokenKind::BinOp(BinaryOp::BitwiseOr)
@@ -422,7 +470,7 @@ impl Parser {
                     todo!("+=");
                 }
                 // TODO: spcarg condition
-                if beg {
+                if mode.beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -443,7 +491,7 @@ impl Parser {
                     todo!("->");
                 }
                 // TODO: spcarg condition
-                if beg {
+                if mode.beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -463,12 +511,12 @@ impl Parser {
                         // TODO: in_argdef condition
                         // TODO: EOF warning
                         // TODO: lpar_beg condition
-                        if beg {
+                        if mode.beg {
                             TokenKind::Dot3Beg
                         } else {
                             TokenKind::Dot3Mid
                         }
-                    } else if beg {
+                    } else if mode.beg {
                         TokenKind::Dot2Beg
                     } else {
                         TokenKind::Dot2Mid
@@ -488,7 +536,7 @@ impl Parser {
                 if self.next() == Some(b':') {
                     self.pos += 1;
                     // TODO: EXPR_CLASS and spcarg conditions
-                    if beg {
+                    if mode.beg {
                         TokenKind::DColonBeg
                     } else {
                         TokenKind::DColon
@@ -505,7 +553,7 @@ impl Parser {
             }
             b'/' => {
                 self.pos += 1;
-                if beg {
+                if mode.beg {
                     todo!("regexp");
                 }
                 if self.next() == Some(b'=') {
@@ -533,7 +581,7 @@ impl Parser {
             }
             b'(' => {
                 self.pos += 1;
-                if beg {
+                if mode.beg {
                     TokenKind::LParenBeg
                 } else if !space_seen {
                     TokenKind::LParenCall
@@ -543,7 +591,7 @@ impl Parser {
             }
             b'%' => {
                 self.pos += 1;
-                if beg {
+                if mode.beg {
                     todo!("%q()");
                 }
                 if self.next() == Some(b'=') {
@@ -576,6 +624,29 @@ impl Parser {
         };
         Token {
             kind,
+            range: Range(start, self.pos),
+        }
+    }
+
+    fn lex_token_string(&mut self, mode: StringLexerMode) -> Token {
+        let StringLexerMode::SingleQuoted = mode;
+        let start = self.pos;
+        if self.next() == Some(b'\'') {
+            self.pos += 1;
+            return Token {
+                kind: TokenKind::StringEnd,
+                range: Range(start, self.pos),
+            };
+        }
+        while self.next().is_some_and_(|&ch| ch != b'\'') {
+            if self.next() == Some(b'\\') {
+                todo!("escapes in string");
+            }
+            self.pos += 1;
+        }
+        let content = self.source[start..self.pos].as_bstr();
+        Token {
+            kind: TokenKind::StringContent(content.to_string()),
             range: Range(start, self.pos),
         }
     }

@@ -9,6 +9,7 @@ pub enum SExp {
     Nil,
     Symbol { name: String },
     Number { value: i32 },
+    String { value: String },
     Invalid,
 }
 
@@ -61,6 +62,10 @@ impl<'a> Display for SExpIndent<'a> {
             }
             SExp::Number { value } => {
                 write!(f, "{}", value)?;
+            }
+            SExp::String { value } => {
+                // TODO: escaping
+                write!(f, "\"{}\"", value)?;
             }
             SExp::Invalid => {
                 f.write_str("<invalid>")?;
@@ -168,6 +173,18 @@ impl From<&ast::NumericExpr> for SExp {
         SExp::Tagged {
             tag: "int".to_string(),
             args: vec![SExp::Number { value: *numval }],
+        }
+    }
+}
+
+impl From<&ast::StringLiteralExpr> for SExp {
+    fn from(expr: &ast::StringLiteralExpr) -> Self {
+        let ast::StringLiteralExpr { strval, meta: _ } = expr;
+        SExp::Tagged {
+            tag: "str".to_string(),
+            args: vec![SExp::String {
+                value: strval.clone(),
+            }],
         }
     }
 }

@@ -47,6 +47,7 @@ pub enum Expr {
     RelativeConstant(RelativeConstantExpr),
     // TODO: bigint, float, etc.
     Numeric(NumericExpr),
+    StringLiteral(StringLiteralExpr),
     TernaryCond(TernaryCondExpr),
     Range(RangeExpr),
     Binary(BinaryExpr),
@@ -69,6 +70,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::RootIdent($x) => $arm,
             $crate::ast::Expr::RelativeConstant($x) => $arm,
             $crate::ast::Expr::Numeric($x) => $arm,
+            $crate::ast::Expr::StringLiteral($x) => $arm,
             $crate::ast::Expr::TernaryCond($x) => $arm,
             $crate::ast::Expr::Range($x) => $arm,
             $crate::ast::Expr::Binary($x) => $arm,
@@ -147,6 +149,12 @@ impl From<RelativeConstantExpr> for Expr {
 impl From<NumericExpr> for Expr {
     fn from(e: NumericExpr) -> Self {
         Expr::Numeric(e)
+    }
+}
+
+impl From<StringLiteralExpr> for Expr {
+    fn from(e: StringLiteralExpr) -> Self {
+        Expr::StringLiteral(e)
     }
 }
 
@@ -249,6 +257,12 @@ pub struct RelativeConstantExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NumericExpr {
     pub numval: i32,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StringLiteralExpr {
+    pub strval: String,
     pub meta: NodeMeta,
 }
 
