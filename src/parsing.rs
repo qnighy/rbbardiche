@@ -1,4 +1,6 @@
-use crate::ast::{self, BinaryOp, Debri, Expr, NodeMeta, Program, Range, RangeType, UnaryOp};
+use crate::ast::{
+    self, Args, BinaryOp, Debri, Expr, NodeMeta, ParenArgs, Program, Range, RangeType, UnaryOp,
+};
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
@@ -652,7 +654,7 @@ impl Parser {
     //            | '(' args ',' args_forward rparen
     //            | '(' args_forward rparen
     /// Parses a parenthesized argument list like `(42, 80)` as in `foo(42, 80)`.
-    fn parse_paren_args(&mut self) -> (Vec<Expr>, Range) {
+    fn parse_paren_args(&mut self) -> Args {
         assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
         let lparen_token = self.bump(LexerMode::BEG);
         if !matches!(self.next_token.kind, TokenKind::RParen) {
@@ -661,7 +663,14 @@ impl Parser {
         }
         // TODO: handle opt_nl
         let rparen_token = self.bump(LexerMode::MID);
-        (vec![], lparen_token.range | rparen_token.range)
+        let range = lparen_token.range | rparen_token.range;
+        // (vec![], lparen_token.range | rparen_token.range)
+        Args::Paren(ParenArgs {
+            open_token: lparen_token,
+            list: vec![],
+            meta: NodeMeta { range, node_id: 0 },
+            close_token: Some(rparen_token),
+        })
     }
 
     // primary : primary_value tCOLON2 tCONSTANT
@@ -750,13 +759,13 @@ impl Parser {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
                 if matches!(self.next_token.kind, TokenKind::LParenCall) {
-                    let (args, args_range) = self.parse_paren_args();
-                    let range = token.range | args_range;
+                    let args = self.parse_paren_args();
+                    let range = token.range | args.range();
                     return ast::SendExpr {
                         optional: false,
                         recv: None,
                         name,
-                        args,
+                        args: Some(args),
                         meta: NodeMeta { range, node_id: 0 },
                     }
                     .into();

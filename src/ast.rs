@@ -316,9 +316,71 @@ pub struct SendExpr {
     pub optional: bool,
     pub recv: Option<Box<Expr>>,
     pub name: String,
-    pub args: Vec<Expr>,
+    pub args: Option<Args>,
     pub meta: NodeMeta,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Args {
+    Paren(ParenArgs),
+    // Command(CommandArgs),
+}
+
+impl Args {
+    pub fn list(&self) -> &Vec<Expr> {
+        match self {
+            Args::Paren(e) => &e.list,
+        }
+    }
+
+    pub fn list_mut(&mut self) -> &mut Vec<Expr> {
+        match self {
+            Args::Paren(e) => &mut e.list,
+        }
+    }
+
+    pub fn meta(&self) -> &NodeMeta {
+        self.as_ref()
+    }
+
+    pub fn meta_mut(&mut self) -> &mut NodeMeta {
+        self.as_mut()
+    }
+
+    pub fn range(&self) -> Range {
+        self.meta().range
+    }
+}
+
+impl AsRef<NodeMeta> for Args {
+    fn as_ref(&self) -> &NodeMeta {
+        match self {
+            Args::Paren(e) => &e.meta,
+        }
+    }
+}
+
+impl AsMut<NodeMeta> for Args {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            Args::Paren(e) => &mut e.meta,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParenArgs {
+    pub open_token: Token,
+    pub list: Vec<Expr>,
+    pub meta: NodeMeta,
+    pub close_token: Option<Token>,
+}
+
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct CommandArgs {
+//     pub list: Vec<Expr>,
+//     pub meta: NodeMeta,
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModuleExpr {

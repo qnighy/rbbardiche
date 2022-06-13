@@ -326,7 +326,13 @@ impl From<&ast::SendExpr> for SExp {
                 SExp::Symbol { name: name.clone() },
             ]
             .into_iter()
-            .chain(args.iter().map(|arg| to_sexp(arg)))
+            .chain(
+                args.as_ref()
+                    .map(|x| x.list().as_slice())
+                    .unwrap_or_else(|| &[])
+                    .iter()
+                    .map(|arg| to_sexp(arg)),
+            )
             .collect::<Vec<_>>(),
         }
     }
