@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use crate::ast::{self, BinaryOp, EmptyStmt, Expr, ExprStmt, Program, RangeType, Stmt, UnaryOp};
+use crate::ast::{
+    self, Arg, BinaryOp, DelimitedArg, EmptyStmt, Expr, ExprStmt, Program, RangeType, Stmt, UnaryOp,
+};
 use crate::delegate_expr;
 
 #[derive(Debug, Clone)]
@@ -348,9 +350,23 @@ impl From<&ast::SendExpr> for SExp {
                     .map(|x| x.list().as_slice())
                     .unwrap_or_else(|| &[])
                     .iter()
-                    .map(|arg| to_sexp(arg)),
+                    .map(|arg| SExp::from(arg)),
             )
             .collect::<Vec<_>>(),
+        }
+    }
+}
+
+impl From<&DelimitedArg> for SExp {
+    fn from(arg: &DelimitedArg) -> Self {
+        SExp::from(&arg.arg)
+    }
+}
+
+impl From<&Arg> for SExp {
+    fn from(arg: &Arg) -> Self {
+        match arg {
+            Arg::Simple(arg) => SExp::from(arg),
         }
     }
 }

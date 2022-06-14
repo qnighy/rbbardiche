@@ -1,0 +1,4 @@
+3:2-3-3: Unexpected token
+4:2-4-3: Unexpected token
+5:2-5-3: Unexpected token
+5:3-5-4: Unexpected token

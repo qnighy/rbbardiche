@@ -126,6 +126,8 @@ pub enum TokenKind {
     StringContent(String),
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING_END)
     StringEnd,
+    /// `,`
+    Comma,
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
     Dot2Beg,
     /// `..` after the expression (a.k.a. tDOT2)

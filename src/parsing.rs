@@ -1,6 +1,6 @@
 use crate::ast::{
-    self, Args, BinaryOp, Debri, EmptyStmt, Expr, ExprStmt, NodeMeta, ParenArgs, Program, Range,
-    RangeType, Stmt, UnaryOp,
+    self, Arg, Args, BinaryOp, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt, NodeMeta, ParenArgs,
+    Program, Range, RangeType, Stmt, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -675,6 +675,58 @@ impl Parser {
     fn parse_paren_args(&mut self) -> Args {
         assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
         let lparen_token = self.bump(LexerMode::BEG);
+        let mut list = Vec::new();
+        while !matches!(
+            self.next_token.kind,
+            TokenKind::Eof | TokenKind::EndKeyword | TokenKind::Semi | TokenKind::RParen
+        ) {
+            // TODO: argument splat `f(*a)`
+            // if matches!(self.next_token.kind, TokenKind::Star) {}
+            // TODO: kwargs splat `f(**options)`
+            // if matches!(self.next_token.kind, TokenKind::DStar) {}
+            // TODO: label assoc `f(foo: bar)`
+            // if matches!(self.next_token.kind, TokenKind::Label) {}
+            // TODO: block arg `f(&block)`
+            // if matches!(self.next_token.kind, TokenKind::Amper) {}
+
+            // TODO: arg_value check `f(foo => bar)`
+            let expr = self.parse_arg();
+
+            // TODO: assoc arg
+            // if matches!(self.next_token.kind, TokenKind::Assoc) {}
+
+            // TODO: command in call_args `f(g h)`
+            // if list.is_empty() && is_eligible_for_command(&expr) && is_beginning {}
+
+            let debris = self.skip_debris(|token| {
+                matches!(
+                    token.kind,
+                    TokenKind::Eof
+                        | TokenKind::EndKeyword
+                        | TokenKind::Semi
+                        | TokenKind::RParen
+                        | TokenKind::Comma
+                )
+            });
+
+            // TODO: the condition below should exclude block args
+            let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
+                Some(self.bump(LexerMode::BEG))
+            } else {
+                None
+            };
+            let range = if let Some(delim) = &delim {
+                expr.range() | delim.range
+            } else {
+                expr.range()
+            };
+            list.push(DelimitedArg {
+                arg: Arg::Simple(expr),
+                debris,
+                delim,
+                meta: NodeMeta { range, node_id: 0 },
+            })
+        }
         if !matches!(self.next_token.kind, TokenKind::RParen) {
             // TODO: actual argument contents
             todo!("arguments in paren_args");
@@ -685,7 +737,7 @@ impl Parser {
         // (vec![], lparen_token.range | rparen_token.range)
         Args::Paren(ParenArgs {
             open_token: lparen_token,
-            list: vec![],
+            list,
             meta: NodeMeta { range, node_id: 0 },
             close_token: Some(rparen_token),
         })
@@ -1019,6 +1071,7 @@ impl Parser {
                 | TokenKind::RescueKeyword
                 | TokenKind::ThenKeyword
                 | TokenKind::WhenKeyword
+                | TokenKind::Comma
                 | TokenKind::Dot2Mid
                 | TokenKind::Dot3Mid
                 | TokenKind::BinOp(_)

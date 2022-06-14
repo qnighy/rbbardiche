@@ -334,13 +334,13 @@ pub enum Args {
 }
 
 impl Args {
-    pub fn list(&self) -> &Vec<Expr> {
+    pub fn list(&self) -> &Vec<DelimitedArg> {
         match self {
             Args::Paren(e) => &e.list,
         }
     }
 
-    pub fn list_mut(&mut self) -> &mut Vec<Expr> {
+    pub fn list_mut(&mut self) -> &mut Vec<DelimitedArg> {
         match self {
             Args::Paren(e) => &mut e.list,
         }
@@ -378,16 +378,34 @@ impl AsMut<NodeMeta> for Args {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParenArgs {
     pub open_token: Token,
-    pub list: Vec<Expr>,
-    pub meta: NodeMeta,
+    pub list: Vec<DelimitedArg>,
     pub close_token: Option<Token>,
+    pub meta: NodeMeta,
 }
 
 // #[derive(Debug, Clone, PartialEq, Eq)]
 // pub struct CommandArgs {
-//     pub list: Vec<Expr>,
+//     pub list: Vec<DelimitedArg>,
 //     pub meta: NodeMeta,
 // }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DelimitedArg {
+    pub arg: Arg,
+    pub debris: Vec<Debri>,
+    pub delim: Option<Token>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Arg {
+    Simple(Expr),
+    // Splat(SplatArg),
+    // KeywordSplat(KeywordSplatArg),
+    // Assoc(AssocArg),
+    // Labeled(LabeledArg),
+    // Block(BlockArg),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModuleExpr {

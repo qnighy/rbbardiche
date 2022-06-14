@@ -366,6 +366,10 @@ impl Parser {
                 self.pos += 1;
                 TokenKind::Semi
             }
+            b',' => {
+                self.pos += 1;
+                TokenKind::Comma
+            }
             b'~' => {
                 self.pos += 1;
                 // TODO: after_operator condition
