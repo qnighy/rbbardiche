@@ -18,8 +18,15 @@ pub struct NodeMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DelimitedElement<T, D> {
+    pub inner: T,
+    pub delimiter: Option<D>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Program {
-    pub stmts: Vec<Expr>,
+    pub stmts: Vec<Stmt>,
     pub meta: NodeMeta,
 }
 
@@ -216,13 +223,13 @@ impl From<ErroredExpr> for Expr {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParenthesizedExpr {
-    pub stmts: Vec<Expr>,
+    pub stmts: Vec<Stmt>,
     pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompoundExpr {
-    pub stmts: Vec<Expr>,
+    pub stmts: Vec<Stmt>,
     pub meta: NodeMeta,
 }
 
@@ -392,6 +399,58 @@ pub struct ModuleExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ErroredExpr {
     pub debris: Vec<Debri>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Stmt {
+    Expr(ExprStmt),
+    Empty(EmptyStmt),
+}
+
+impl Stmt {
+    pub fn meta(&self) -> &NodeMeta {
+        match self {
+            Stmt::Expr(s) => &s.meta,
+            Stmt::Empty(s) => &s.meta,
+        }
+    }
+
+    pub fn meta_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            Stmt::Expr(s) => &mut s.meta,
+            Stmt::Empty(s) => &mut s.meta,
+        }
+    }
+
+    pub fn range(&self) -> Range {
+        self.meta().range
+    }
+}
+
+impl From<ExprStmt> for Stmt {
+    fn from(s: ExprStmt) -> Self {
+        Stmt::Expr(s)
+    }
+}
+
+impl From<EmptyStmt> for Stmt {
+    fn from(s: EmptyStmt) -> Self {
+        Stmt::Empty(s)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExprStmt {
+    pub expr: Expr,
+    pub debris: Vec<Debri>,
+    pub delim: Option<Token>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmptyStmt {
+    pub delim: Token,
     pub meta: NodeMeta,
 }
 

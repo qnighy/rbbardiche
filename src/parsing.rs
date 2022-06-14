@@ -1,5 +1,6 @@
 use crate::ast::{
-    self, Args, BinaryOp, Debri, Expr, NodeMeta, ParenArgs, Program, Range, RangeType, UnaryOp,
+    self, Args, BinaryOp, Debri, EmptyStmt, Expr, ExprStmt, NodeMeta, ParenArgs, Program, Range,
+    RangeType, Stmt, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -57,24 +58,41 @@ impl Parser {
         .into()
     }
 
-    fn parse_compstmt<F>(&mut self, is_end_token: F) -> Vec<Expr>
+    fn parse_compstmt<F>(&mut self, is_end_token: F) -> Vec<Stmt>
     where
         F: Fn(&Token) -> bool,
     {
-        while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
-            self.bump(LexerMode::BEG);
-        }
         let mut stmts = Vec::new();
         while !is_end_token(&self.next_token) {
-            stmts.push(self.parse_stmt());
-            if let Some(stmt) = self.skip_debris(|token| {
+            if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+                let delim = self.bump(LexerMode::BEG);
+                let range = delim.range;
+                stmts.push(Stmt::Empty(EmptyStmt {
+                    delim,
+                    meta: NodeMeta { range, node_id: 0 },
+                }));
+                continue;
+            }
+            let expr = self.parse_stmt();
+            let debris = self.skip_debris(|token| {
                 matches!(token.kind, TokenKind::Semi | TokenKind::NewLine) || is_end_token(token)
-            }) {
-                stmts.push(stmt)
-            }
-            while matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
-                self.bump(LexerMode::BEG);
-            }
+            });
+            let delim = if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+                Some(self.bump(LexerMode::BEG))
+            } else {
+                None
+            };
+            let range = if let Some(delim) = &delim {
+                expr.range() | delim.range
+            } else {
+                expr.range()
+            };
+            stmts.push(Stmt::Expr(ExprStmt {
+                expr,
+                debris,
+                delim,
+                meta: NodeMeta { range, node_id: 0 },
+            }));
         }
         stmts
     }
@@ -938,7 +956,7 @@ impl Parser {
         }
     }
 
-    fn skip_debris<F>(&mut self, is_end_token: F) -> Option<Expr>
+    fn skip_debris<F>(&mut self, is_end_token: F) -> Vec<Debri>
     where
         F: Fn(&Token) -> bool,
     {
@@ -1026,18 +1044,10 @@ impl Parser {
                 }
             }
         }
-        if debris.is_empty() {
-            return None;
+        if !debris.is_empty() {
+            self.errors
+                .push(ParseError::UnexpectedToken { range: first_range });
         }
-        self.errors
-            .push(ParseError::UnexpectedToken { range: first_range });
-        let range = debris.first().unwrap().range() | debris.last().unwrap().range();
-        Some(
-            ast::ErroredExpr {
-                debris,
-                meta: NodeMeta { range, node_id: 0 },
-            }
-            .into(),
-        )
+        debris
     }
 }

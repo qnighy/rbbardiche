@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::ast::{self, BinaryOp, Expr, Program, RangeType, UnaryOp};
+use crate::ast::{self, BinaryOp, EmptyStmt, Expr, ExprStmt, Program, RangeType, Stmt, UnaryOp};
 use crate::delegate_expr;
 
 #[derive(Debug, Clone)]
@@ -78,14 +78,20 @@ impl<'a> Display for SExpIndent<'a> {
 impl From<&Program> for SExp {
     fn from(expr: &Program) -> Self {
         let Program { stmts, meta: _ } = expr;
+        let stmts = stmts
+            .iter()
+            .filter(|&stmt| !matches!(stmt, Stmt::Empty(_)))
+            .map(|stmt| SExp::from(stmt))
+            .collect::<Vec<_>>();
         if stmts.is_empty() {
             SExp::Nil
         } else if stmts.len() == 1 {
-            to_sexp(&stmts[0])
+            // stmts[0]
+            stmts.into_iter().next().unwrap()
         } else {
             SExp::Tagged {
                 tag: "begin".to_owned(),
-                args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+                args: stmts,
             }
         }
     }
@@ -94,9 +100,14 @@ impl From<&Program> for SExp {
 impl From<&ast::ParenthesizedExpr> for SExp {
     fn from(expr: &ast::ParenthesizedExpr) -> Self {
         let ast::ParenthesizedExpr { stmts, meta: _ } = expr;
+        let stmts = stmts
+            .iter()
+            .filter(|&stmt| !matches!(stmt, Stmt::Empty(_)))
+            .map(|stmt| SExp::from(stmt))
+            .collect::<Vec<_>>();
         SExp::Tagged {
             tag: "begin".to_owned(),
-            args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+            args: stmts,
         }
     }
 }
@@ -104,14 +115,20 @@ impl From<&ast::ParenthesizedExpr> for SExp {
 impl From<&ast::CompoundExpr> for SExp {
     fn from(expr: &ast::CompoundExpr) -> Self {
         let ast::CompoundExpr { stmts, meta: _ } = expr;
+        let stmts = stmts
+            .iter()
+            .filter(|&stmt| !matches!(stmt, Stmt::Empty(_)))
+            .map(|stmt| SExp::from(stmt))
+            .collect::<Vec<_>>();
         if stmts.is_empty() {
             SExp::Nil
         } else if stmts.len() == 1 {
-            to_sexp(&stmts[0])
+            // stmts[0]
+            stmts.into_iter().next().unwrap()
         } else {
             SExp::Tagged {
                 tag: "begin".to_owned(),
-                args: stmts.iter().map(|stmt| to_sexp(stmt)).collect::<Vec<_>>(),
+                args: stmts,
             }
         }
     }
@@ -362,6 +379,27 @@ impl From<&ast::ErroredExpr> for SExp {
 impl From<&Expr> for SExp {
     fn from(expr: &Expr) -> Self {
         delegate_expr!(expr, expr => SExp::from(expr))
+    }
+}
+
+impl From<&Stmt> for SExp {
+    fn from(stmt: &Stmt) -> Self {
+        match stmt {
+            Stmt::Expr(stmt) => SExp::from(stmt),
+            Stmt::Empty(stmt) => SExp::from(stmt),
+        }
+    }
+}
+
+impl From<&ExprStmt> for SExp {
+    fn from(stmt: &ExprStmt) -> Self {
+        SExp::from(&stmt.expr)
+    }
+}
+
+impl From<&EmptyStmt> for SExp {
+    fn from(_: &EmptyStmt) -> Self {
+        SExp::Nil
     }
 }
 

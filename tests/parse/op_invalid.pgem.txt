@@ -4,4 +4,4 @@ s(:begin,
   s(:const,
     s(:cbase), :),
   s(:const,
-    s(:const, nil, :Foo), :), <invalid>)
+    s(:const, nil, :Foo), :))
