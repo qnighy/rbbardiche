@@ -330,19 +330,21 @@ pub struct SendExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Args {
     Paren(ParenArgs),
-    // Command(CommandArgs),
+    Command(CommandArgs),
 }
 
 impl Args {
     pub fn list(&self) -> &Vec<DelimitedArg> {
         match self {
             Args::Paren(e) => &e.list,
+            Args::Command(e) => &e.list,
         }
     }
 
     pub fn list_mut(&mut self) -> &mut Vec<DelimitedArg> {
         match self {
             Args::Paren(e) => &mut e.list,
+            Args::Command(e) => &mut e.list,
         }
     }
 
@@ -363,6 +365,7 @@ impl AsRef<NodeMeta> for Args {
     fn as_ref(&self) -> &NodeMeta {
         match self {
             Args::Paren(e) => &e.meta,
+            Args::Command(e) => &e.meta,
         }
     }
 }
@@ -371,6 +374,7 @@ impl AsMut<NodeMeta> for Args {
     fn as_mut(&mut self) -> &mut NodeMeta {
         match self {
             Args::Paren(e) => &mut e.meta,
+            Args::Command(e) => &mut e.meta,
         }
     }
 }
@@ -383,11 +387,11 @@ pub struct ParenArgs {
     pub meta: NodeMeta,
 }
 
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct CommandArgs {
-//     pub list: Vec<DelimitedArg>,
-//     pub meta: NodeMeta,
-// }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommandArgs {
+    pub list: Vec<DelimitedArg>,
+    pub meta: NodeMeta,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DelimitedArg {
@@ -395,6 +399,12 @@ pub struct DelimitedArg {
     pub debris: Vec<Debri>,
     pub delim: Option<Token>,
     pub meta: NodeMeta,
+}
+
+impl DelimitedArg {
+    pub fn range(&self) -> Range {
+        self.meta.range
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -405,6 +415,24 @@ pub enum Arg {
     // Assoc(AssocArg),
     // Labeled(LabeledArg),
     // Block(BlockArg),
+}
+
+impl Arg {
+    pub fn meta(&self) -> &NodeMeta {
+        match self {
+            Arg::Simple(a) => a.meta(),
+        }
+    }
+
+    pub fn meta_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            Arg::Simple(a) => a.meta_mut(),
+        }
+    }
+
+    pub fn range(&self) -> Range {
+        self.meta().range
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

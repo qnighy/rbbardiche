@@ -1,6 +1,6 @@
 use crate::ast::{
-    self, Arg, Args, BinaryOp, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt, NodeMeta, ParenArgs,
-    Program, Range, RangeType, Stmt, UnaryOp,
+    self, Arg, Args, BinaryOp, CommandArgs, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt,
+    NodeMeta, ParenArgs, Program, Range, RangeType, SendExpr, Stmt, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -118,11 +118,27 @@ impl Parser {
         e
     }
 
+    // expr : command_call
+    //      | expr keyword_and expr
+    //      | expr keyword_or expr
+    //      | keyword_not opt_nl expr
+    //      | '!' command_call
+    //      | arg tASSOC p_top_expr_body
+    //      | arg keyword_in p_top_expr_body
+    //      | arg  %prec tLBRACE_ARG
     fn parse_expr(&mut self) -> Expr {
-        self.parse_arg()
+        let mut expr = self.parse_arg_expr();
+
+        if starts_arg(&self.next_token) {
+            if let Some(args_hole) = command_head(&mut expr) {
+                let args = self.parse_command_args();
+                *args_hole = Some(Args::Command(args));
+            }
+        }
+        expr
     }
 
-    fn parse_arg(&mut self) -> Expr {
+    fn parse_arg_expr(&mut self) -> Expr {
         self.parse_ternary_cond()
     }
 
@@ -138,7 +154,7 @@ impl Parser {
         if matches!(self.next_token.kind, TokenKind::Question) {
             self.bump(LexerMode::BEG);
             // This is delimited by `?` and `:` so the full `arg` can come here
-            let consequence = self.parse_arg();
+            let consequence = self.parse_arg_expr();
             self.parse_opt_nl();
             if matches!(self.next_token.kind, TokenKind::Colon) {
                 self.bump(LexerMode::BEG);
@@ -680,23 +696,7 @@ impl Parser {
             self.next_token.kind,
             TokenKind::Eof | TokenKind::EndKeyword | TokenKind::Semi | TokenKind::RParen
         ) {
-            // TODO: argument splat `f(*a)`
-            // if matches!(self.next_token.kind, TokenKind::Star) {}
-            // TODO: kwargs splat `f(**options)`
-            // if matches!(self.next_token.kind, TokenKind::DStar) {}
-            // TODO: label assoc `f(foo: bar)`
-            // if matches!(self.next_token.kind, TokenKind::Label) {}
-            // TODO: block arg `f(&block)`
-            // if matches!(self.next_token.kind, TokenKind::Amper) {}
-
-            // TODO: arg_value check `f(foo => bar)`
-            let expr = self.parse_arg();
-
-            // TODO: assoc arg
-            // if matches!(self.next_token.kind, TokenKind::Assoc) {}
-
-            // TODO: command in call_args `f(g h)`
-            // if list.is_empty() && is_eligible_for_command(&expr) && is_beginning {}
+            let arg = self.parse_arg_elem();
 
             let debris = self.skip_debris(|token| {
                 matches!(
@@ -716,12 +716,12 @@ impl Parser {
                 None
             };
             let range = if let Some(delim) = &delim {
-                expr.range() | delim.range
+                arg.range() | delim.range
             } else {
-                expr.range()
+                arg.range()
             };
             list.push(DelimitedArg {
-                arg: Arg::Simple(expr),
+                arg,
                 debris,
                 delim,
                 meta: NodeMeta { range, node_id: 0 },
@@ -741,6 +741,62 @@ impl Parser {
             meta: NodeMeta { range, node_id: 0 },
             close_token: Some(rparen_token),
         })
+    }
+
+    /// Parses a non-parenthesized argument list.
+    fn parse_command_args(&mut self) -> CommandArgs {
+        let mut list = Vec::new();
+        loop {
+            let arg = self.parse_arg_elem();
+
+            // TODO: the condition below should exclude block args
+            let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
+                Some(self.bump(LexerMode::BEG))
+            } else {
+                None
+            };
+            let has_delim = delim.is_some();
+            let range = if let Some(delim) = &delim {
+                arg.range() | delim.range
+            } else {
+                arg.range()
+            };
+            list.push(DelimitedArg {
+                arg,
+                debris: vec![],
+                delim,
+                meta: NodeMeta { range, node_id: 0 },
+            });
+            if !has_delim {
+                break;
+            }
+        }
+        let range = list.first().unwrap().range() | list.last().unwrap().range();
+        CommandArgs {
+            list,
+            meta: NodeMeta { range, node_id: 0 },
+        }
+    }
+
+    fn parse_arg_elem(&mut self) -> Arg {
+        // TODO: argument splat `f(*a)`
+        // if matches!(self.next_token.kind, TokenKind::Star) {}
+        // TODO: kwargs splat `f(**options)`
+        // if matches!(self.next_token.kind, TokenKind::DStar) {}
+        // TODO: label assoc `f(foo: bar)`
+        // if matches!(self.next_token.kind, TokenKind::Label) {}
+        // TODO: block arg `f(&block)`
+        // if matches!(self.next_token.kind, TokenKind::Amper) {}
+
+        // TODO: arg_value check `f(foo => bar)`
+        let expr = self.parse_arg_expr();
+
+        // TODO: assoc arg
+        // if matches!(self.next_token.kind, TokenKind::Assoc) {}
+
+        // TODO: command in call_args `f(g h)`
+        // if list.is_empty() && is_eligible_for_command(&expr) && is_beginning {}
+        Arg::Simple(expr)
     }
 
     // primary : primary_value tCOLON2 tCONSTANT
@@ -1102,5 +1158,73 @@ impl Parser {
                 .push(ParseError::UnexpectedToken { range: first_range });
         }
         debris
+    }
+}
+
+fn starts_arg(token: &Token) -> bool {
+    matches!(
+        token.kind,
+        TokenKind::Ident(_)
+            | TokenKind::CIdent(_)
+            | TokenKind::UnderscoreEncodingKeyword
+            | TokenKind::UnderscoreLineKeyword
+            | TokenKind::UnderscoreFileKeyword
+            | TokenKind::CapitalBeginKeyword
+            | TokenKind::CapitalEndKeyword
+            | TokenKind::AliasKeyword
+            | TokenKind::BeginKeyword
+            | TokenKind::BreakKeyword
+            | TokenKind::CaseKeyword
+            | TokenKind::ClassKeyword
+            | TokenKind::DefKeyword
+            | TokenKind::DefinedQKeyword
+            | TokenKind::FalseKeyword
+            | TokenKind::ForKeyword
+            | TokenKind::IfKeyword
+            | TokenKind::ModuleKeyword
+            | TokenKind::NextKeyword
+            | TokenKind::NilKeyword
+            | TokenKind::RedoKeyword
+            | TokenKind::RetryKeyword
+            | TokenKind::ReturnKeyword
+            | TokenKind::SelfKeyword
+            | TokenKind::SuperKeyword
+            | TokenKind::TrueKeyword
+            | TokenKind::UndefKeyword
+            | TokenKind::UnlessKeyword
+            | TokenKind::UntilKeyword
+            | TokenKind::WhileKeyword
+            | TokenKind::YieldKeyword
+            | TokenKind::Numeric(_)
+            | TokenKind::StringBeg(_)
+            | TokenKind::Dot2Beg
+            | TokenKind::Dot3Beg
+            | TokenKind::UnOp(_)
+            | TokenKind::LParenBeg
+            | TokenKind::DColonBeg
+    )
+}
+
+fn command_head(expr: &mut Expr) -> Option<&mut Option<Args>> {
+    // TODO: detect const too
+    match expr {
+        // TODO: remove Ident and always use Send
+        Expr::Ident(e2) => {
+            let name = e2.name.clone();
+            let range = e2.meta.range;
+            *expr = Expr::Send(SendExpr {
+                optional: false,
+                recv: None,
+                name,
+                args: None,
+                meta: NodeMeta { range, node_id: 0 },
+            });
+            match expr {
+                Expr::Send(expr) => Some(&mut expr.args),
+                _ => unreachable!(),
+            }
+        }
+        Expr::Send(expr) if expr.args.is_none() => Some(&mut expr.args),
+        _ => None,
     }
 }

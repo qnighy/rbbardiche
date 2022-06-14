@@ -1,1 +1,4 @@
-s(:send, nil, :foo)
+s(:begin,
+  s(:send, nil, :foo),
+  s(:send, nil, :foo,
+    s(:int, 42)))
