@@ -136,16 +136,6 @@ impl From<&ast::CompoundExpr> for SExp {
     }
 }
 
-impl From<&ast::IdentExpr> for SExp {
-    fn from(expr: &ast::IdentExpr) -> Self {
-        let ast::IdentExpr { name, meta: _ } = expr;
-        SExp::Tagged {
-            tag: "send".to_owned(),
-            args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
-        }
-    }
-}
-
 impl From<&ast::CIdentExpr> for SExp {
     fn from(expr: &ast::CIdentExpr) -> Self {
         let ast::CIdentExpr { name, meta: _ } = expr;
@@ -309,7 +299,13 @@ impl From<&ast::AssignExpr> for SExp {
     fn from(expr: &ast::AssignExpr) -> Self {
         let ast::AssignExpr { lhs, rhs, meta: _ } = expr;
         match &**lhs {
-            Expr::Ident(ast::IdentExpr { name, meta: _ }) => SExp::Tagged {
+            Expr::Send(ast::SendExpr {
+                optional: false,
+                recv: None,
+                name,
+                args: None,
+                meta: _,
+            }) => SExp::Tagged {
                 tag: "lvasgn".to_owned(),
                 args: vec![SExp::Symbol { name: name.clone() }, to_sexp(rhs)],
             },

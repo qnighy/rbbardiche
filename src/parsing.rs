@@ -1,6 +1,6 @@
 use crate::ast::{
     self, Arg, Args, BinaryOp, CommandArgs, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt,
-    NodeMeta, ParenArgs, Program, Range, RangeType, SendExpr, Stmt, UnaryOp,
+    NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -896,8 +896,11 @@ impl Parser {
                     }
                     .into();
                 }
-                ast::IdentExpr {
+                ast::SendExpr {
+                    optional: false,
+                    recv: None,
                     name,
+                    args: None,
                     meta: NodeMeta {
                         range: token.range,
                         node_id: 0,
@@ -1208,22 +1211,6 @@ fn starts_arg(token: &Token) -> bool {
 fn command_head(expr: &mut Expr) -> Option<&mut Option<Args>> {
     // TODO: detect const too
     match expr {
-        // TODO: remove Ident and always use Send
-        Expr::Ident(e2) => {
-            let name = e2.name.clone();
-            let range = e2.meta.range;
-            *expr = Expr::Send(SendExpr {
-                optional: false,
-                recv: None,
-                name,
-                args: None,
-                meta: NodeMeta { range, node_id: 0 },
-            });
-            match expr {
-                Expr::Send(expr) => Some(&mut expr.args),
-                _ => unreachable!(),
-            }
-        }
         Expr::Send(expr) if expr.args.is_none() => Some(&mut expr.args),
         _ => None,
     }

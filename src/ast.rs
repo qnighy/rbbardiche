@@ -46,8 +46,6 @@ impl AsMut<NodeMeta> for Program {
 pub enum Expr {
     Parenthesized(ParenthesizedExpr),
     Compound(CompoundExpr),
-    // `foo`
-    Ident(IdentExpr),
     // `Foo`
     CIdent(CIdentExpr),
     // `::Foo`
@@ -74,7 +72,6 @@ macro_rules! delegate_expr {
         match $e {
             $crate::ast::Expr::Parenthesized($x) => $arm,
             $crate::ast::Expr::Compound($x) => $arm,
-            $crate::ast::Expr::Ident($x) => $arm,
             $crate::ast::Expr::CIdent($x) => $arm,
             $crate::ast::Expr::RootIdent($x) => $arm,
             $crate::ast::Expr::RelativeConstant($x) => $arm,
@@ -128,12 +125,6 @@ impl From<ParenthesizedExpr> for Expr {
 impl From<CompoundExpr> for Expr {
     fn from(e: CompoundExpr) -> Self {
         Expr::Compound(e)
-    }
-}
-
-impl From<IdentExpr> for Expr {
-    fn from(e: IdentExpr) -> Self {
-        Expr::Ident(e)
     }
 }
 
@@ -230,13 +221,6 @@ pub struct ParenthesizedExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompoundExpr {
     pub stmts: Vec<Stmt>,
-    pub meta: NodeMeta,
-}
-
-// `foo`
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IdentExpr {
-    pub name: String,
     pub meta: NodeMeta,
 }
 
