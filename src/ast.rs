@@ -46,12 +46,6 @@ impl AsMut<NodeMeta> for Program {
 pub enum Expr {
     Parenthesized(ParenthesizedExpr),
     Compound(CompoundExpr),
-    // `Foo`
-    CIdent(CIdentExpr),
-    // `::Foo`
-    RootIdent(RootIdentExpr),
-    // `Foo::Bar`
-    RelativeConstant(RelativeConstantExpr),
     // TODO: bigint, float, etc.
     Numeric(NumericExpr),
     StringLiteral(StringLiteralExpr),
@@ -62,6 +56,7 @@ pub enum Expr {
     Nil(NilExpr),
     Assign(AssignExpr),
     Send(SendExpr),
+    Const(ConstExpr),
     Module(ModuleExpr),
     Errored(ErroredExpr),
 }
@@ -72,9 +67,6 @@ macro_rules! delegate_expr {
         match $e {
             $crate::ast::Expr::Parenthesized($x) => $arm,
             $crate::ast::Expr::Compound($x) => $arm,
-            $crate::ast::Expr::CIdent($x) => $arm,
-            $crate::ast::Expr::RootIdent($x) => $arm,
-            $crate::ast::Expr::RelativeConstant($x) => $arm,
             $crate::ast::Expr::Numeric($x) => $arm,
             $crate::ast::Expr::StringLiteral($x) => $arm,
             $crate::ast::Expr::TernaryCond($x) => $arm,
@@ -84,6 +76,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Nil($x) => $arm,
             $crate::ast::Expr::Assign($x) => $arm,
             $crate::ast::Expr::Send($x) => $arm,
+            $crate::ast::Expr::Const($x) => $arm,
             $crate::ast::Expr::Module($x) => $arm,
             $crate::ast::Expr::Errored($x) => $arm,
         }
@@ -125,24 +118,6 @@ impl From<ParenthesizedExpr> for Expr {
 impl From<CompoundExpr> for Expr {
     fn from(e: CompoundExpr) -> Self {
         Expr::Compound(e)
-    }
-}
-
-impl From<CIdentExpr> for Expr {
-    fn from(e: CIdentExpr) -> Self {
-        Expr::CIdent(e)
-    }
-}
-
-impl From<RootIdentExpr> for Expr {
-    fn from(e: RootIdentExpr) -> Self {
-        Expr::RootIdent(e)
-    }
-}
-
-impl From<RelativeConstantExpr> for Expr {
-    fn from(e: RelativeConstantExpr) -> Self {
-        Expr::RelativeConstant(e)
     }
 }
 
@@ -200,6 +175,12 @@ impl From<SendExpr> for Expr {
     }
 }
 
+impl From<ConstExpr> for Expr {
+    fn from(e: ConstExpr) -> Self {
+        Expr::Const(e)
+    }
+}
+
 impl From<ModuleExpr> for Expr {
     fn from(e: ModuleExpr) -> Self {
         Expr::Module(e)
@@ -221,28 +202,6 @@ pub struct ParenthesizedExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompoundExpr {
     pub stmts: Vec<Stmt>,
-    pub meta: NodeMeta,
-}
-
-// `Foo`
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CIdentExpr {
-    pub name: String,
-    pub meta: NodeMeta,
-}
-
-// `::Foo`
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RootIdentExpr {
-    pub name: String,
-    pub meta: NodeMeta,
-}
-
-// `Foo::Bar`
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RelativeConstantExpr {
-    pub base: Box<Expr>,
-    pub name: String,
     pub meta: NodeMeta,
 }
 
@@ -417,6 +376,17 @@ impl Arg {
     pub fn range(&self) -> Range {
         self.meta().range
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConstExpr {
+    /// If true, this expression starts with `::`.
+    /// Cannot coexist with recv.
+    pub toplevel: bool,
+    /// Expression before the token `::`.
+    pub recv: Option<Box<Expr>>,
+    pub name: String,
+    pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

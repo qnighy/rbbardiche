@@ -136,46 +136,6 @@ impl From<&ast::CompoundExpr> for SExp {
     }
 }
 
-impl From<&ast::CIdentExpr> for SExp {
-    fn from(expr: &ast::CIdentExpr) -> Self {
-        let ast::CIdentExpr { name, meta: _ } = expr;
-        SExp::Tagged {
-            tag: "const".to_owned(),
-            args: vec![SExp::Nil, SExp::Symbol { name: name.clone() }],
-        }
-    }
-}
-
-impl From<&ast::RootIdentExpr> for SExp {
-    fn from(expr: &ast::RootIdentExpr) -> Self {
-        let ast::RootIdentExpr { name, meta: _ } = expr;
-        SExp::Tagged {
-            tag: "const".to_owned(),
-            args: vec![
-                SExp::Tagged {
-                    tag: "cbase".to_owned(),
-                    args: vec![],
-                },
-                SExp::Symbol { name: name.clone() },
-            ],
-        }
-    }
-}
-
-impl From<&ast::RelativeConstantExpr> for SExp {
-    fn from(expr: &ast::RelativeConstantExpr) -> Self {
-        let ast::RelativeConstantExpr {
-            base,
-            name,
-            meta: _,
-        } = expr;
-        SExp::Tagged {
-            tag: "const".to_owned(),
-            args: vec![to_sexp(base), SExp::Symbol { name: name.clone() }],
-        }
-    }
-}
-
 impl From<&ast::NumericExpr> for SExp {
     fn from(expr: &ast::NumericExpr) -> Self {
         let ast::NumericExpr { numval, meta: _ } = expr;
@@ -349,6 +309,33 @@ impl From<&ast::SendExpr> for SExp {
                     .map(|arg| SExp::from(arg)),
             )
             .collect::<Vec<_>>(),
+        }
+    }
+}
+
+impl From<&ast::ConstExpr> for SExp {
+    fn from(expr: &ast::ConstExpr) -> Self {
+        let ast::ConstExpr {
+            toplevel,
+            recv,
+            name,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
+            tag: "const".to_owned(),
+            args: vec![
+                if let Some(recv) = recv {
+                    to_sexp(recv)
+                } else if *toplevel {
+                    SExp::Tagged {
+                        tag: "cbase".to_owned(),
+                        args: vec![],
+                    }
+                } else {
+                    SExp::Nil
+                },
+                SExp::Symbol { name: name.clone() },
+            ],
         }
     }
 }

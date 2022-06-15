@@ -818,8 +818,9 @@ impl Parser {
                         let name = name.to_string();
                         let token = self.bump(LexerMode::MID);
                         let range = expr.range() | token.range;
-                        expr = ast::RelativeConstantExpr {
-                            base: Box::new(expr),
+                        expr = ast::ConstExpr {
+                            toplevel: false,
+                            recv: Some(Box::new(expr)),
                             name,
                             meta: NodeMeta { range, node_id: 0 },
                         }
@@ -829,8 +830,9 @@ impl Parser {
                             range: self.next_token.range,
                         });
                         let range = expr.range() | dcolon_token.range;
-                        expr = ast::RelativeConstantExpr {
-                            base: Box::new(expr),
+                        expr = ast::ConstExpr {
+                            toplevel: false,
+                            recv: Some(Box::new(expr)),
                             name: "".to_owned(),
                             meta: NodeMeta { range, node_id: 0 },
                         }
@@ -914,7 +916,9 @@ impl Parser {
             TokenKind::CIdent(name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
-                ast::CIdentExpr {
+                ast::ConstExpr {
+                    toplevel: false,
+                    recv: None,
                     name,
                     meta: NodeMeta {
                         range: token.range,
@@ -930,7 +934,9 @@ impl Parser {
                     let name = name.to_string();
                     let token = self.bump(LexerMode::MID);
                     let range = dcolon_token.range | token.range;
-                    ast::RootIdentExpr {
+                    ast::ConstExpr {
+                        toplevel: true,
+                        recv: None,
                         name,
                         meta: NodeMeta { range, node_id: 0 },
                     }
@@ -940,7 +946,9 @@ impl Parser {
                         range: self.next_token.range,
                     });
                     let range = dcolon_token.range;
-                    ast::RootIdentExpr {
+                    ast::ConstExpr {
+                        toplevel: true,
+                        recv: None,
                         name: "".to_owned(),
                         meta: NodeMeta { range, node_id: 0 },
                     }
