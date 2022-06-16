@@ -819,7 +819,7 @@ impl Parser {
                 //             | primary_value tCOLON2 operation3
                 //             | primary_value call_op paren_args
                 //             | primary_value tCOLON2 paren_args
-                TokenKind::Dot | TokenKind::DColon => {
+                TokenKind::Dot | TokenKind::AndDot | TokenKind::DColon => {
                     // TODO: handle primary_value condition
                     let op_token = self.bump(LexerMode::BEG);
                     match &self.next_token.kind {
@@ -846,7 +846,7 @@ impl Parser {
                                 };
                             } else {
                                 let mut e = ast::SendExpr {
-                                    optional: false,
+                                    optional: matches!(op_token.kind, TokenKind::AndDot),
                                     recv: Some(Box::new(expr)),
                                     args: None,
                                     name,
@@ -1177,6 +1177,7 @@ impl Parser {
                 | TokenKind::WhenKeyword
                 | TokenKind::Comma
                 | TokenKind::Dot
+                | TokenKind::AndDot
                 | TokenKind::Dot2Mid
                 | TokenKind::Dot3Mid
                 | TokenKind::BinOp(_)

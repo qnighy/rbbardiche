@@ -226,7 +226,7 @@ impl Parser {
                     todo!("&=");
                 } else if self.next() == Some(b'.') {
                     self.pos += 1;
-                    todo!("&.");
+                    TokenKind::AndDot
                 // TODO: spcarg condition
                 } else if mode.beg {
                     todo!("& as tAMPER");

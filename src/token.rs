@@ -130,6 +130,8 @@ pub enum TokenKind {
     Comma,
     /// `.`
     Dot,
+    /// `&.`
+    AndDot,
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
     Dot2Beg,
     /// `..` after the expression (a.k.a. tDOT2)
