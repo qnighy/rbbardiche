@@ -362,12 +362,17 @@ impl From<&ast::ClassExpr> for SExp {
             body,
             meta: _,
         } = expr;
-        if superclass.is_some() {
-            todo!("SExp for superclass");
-        }
         SExp::Tagged {
             tag: "class".to_owned(),
-            args: vec![to_sexp(cpath), SExp::Nil, to_sexp(body)],
+            args: vec![
+                to_sexp(cpath),
+                if let Some(superclass) = superclass {
+                    to_sexp(&superclass.expr)
+                } else {
+                    SExp::Nil
+                },
+                to_sexp(body),
+            ],
         }
     }
 }

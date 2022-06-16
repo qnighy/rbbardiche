@@ -425,9 +425,21 @@ impl ConstExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClassExpr {
     pub cpath: Box<Expr>,
-    pub superclass: Option<()>,
+    pub superclass: Option<SuperclassClause>,
     pub body: Box<Expr>,
     pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SuperclassClause {
+    pub expr: Box<Expr>,
+    pub meta: NodeMeta,
+}
+
+impl SuperclassClause {
+    pub fn range(&self) -> Range {
+        self.meta.range
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

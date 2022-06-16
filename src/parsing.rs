@@ -1,6 +1,6 @@
 use crate::ast::{
     self, Arg, Args, BinaryOp, CommandArgs, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt,
-    NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, UnaryOp,
+    NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -1056,9 +1056,22 @@ impl Parser {
                 }
                 // TODO: check cpath condition
                 let cpath = self.parse_primary();
-                if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::Lt)) {
-                    todo!("class inheritance (class Foo < Bar)");
-                }
+                let superclass = if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::Lt)) {
+                    let op_token = self.bump(LexerMode::BEG);
+                    // TODO: check expr_value condition
+                    let expr = self.parse_expr();
+                    let range = op_token.range | expr.range();
+                    if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+                        todo!("error handling after superclass clause");
+                    }
+                    self.bump(LexerMode::BEG);
+                    Some(SuperclassClause {
+                        expr: Box::new(expr),
+                        meta: NodeMeta { range, node_id: 0 },
+                    })
+                } else {
+                    None
+                };
                 // TODO: bodystmt
                 let body = self.parse_compstmt_(|token| {
                     matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
@@ -1073,7 +1086,7 @@ impl Parser {
                 let range = class_token.range | end_token.range;
                 ast::ClassExpr {
                     cpath: Box::new(cpath),
-                    superclass: None,
+                    superclass,
                     body: Box::new(body),
                     meta: NodeMeta { range, node_id: 0 },
                 }
