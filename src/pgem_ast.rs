@@ -354,6 +354,24 @@ impl From<&Arg> for SExp {
     }
 }
 
+impl From<&ast::ClassExpr> for SExp {
+    fn from(expr: &ast::ClassExpr) -> Self {
+        let ast::ClassExpr {
+            cpath,
+            superclass,
+            body,
+            meta: _,
+        } = expr;
+        if superclass.is_some() {
+            todo!("SExp for superclass");
+        }
+        SExp::Tagged {
+            tag: "class".to_owned(),
+            args: vec![to_sexp(cpath), SExp::Nil, to_sexp(body)],
+        }
+    }
+}
+
 impl From<&ast::ModuleExpr> for SExp {
     fn from(expr: &ast::ModuleExpr) -> Self {
         let ast::ModuleExpr {

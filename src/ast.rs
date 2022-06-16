@@ -57,6 +57,7 @@ pub enum Expr {
     Assign(AssignExpr),
     Send(SendExpr),
     Const(ConstExpr),
+    Class(ClassExpr),
     Module(ModuleExpr),
     Errored(ErroredExpr),
 }
@@ -77,6 +78,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Assign($x) => $arm,
             $crate::ast::Expr::Send($x) => $arm,
             $crate::ast::Expr::Const($x) => $arm,
+            $crate::ast::Expr::Class($x) => $arm,
             $crate::ast::Expr::Module($x) => $arm,
             $crate::ast::Expr::Errored($x) => $arm,
         }
@@ -178,6 +180,12 @@ impl From<SendExpr> for Expr {
 impl From<ConstExpr> for Expr {
     fn from(e: ConstExpr) -> Self {
         Expr::Const(e)
+    }
+}
+
+impl From<ClassExpr> for Expr {
+    fn from(e: ClassExpr) -> Self {
+        Expr::Class(e)
     }
 }
 
@@ -412,6 +420,14 @@ impl ConstExpr {
             meta: self.meta,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClassExpr {
+    pub cpath: Box<Expr>,
+    pub superclass: Option<()>,
+    pub body: Box<Expr>,
+    pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

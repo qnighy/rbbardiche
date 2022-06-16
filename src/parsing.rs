@@ -1046,6 +1046,39 @@ impl Parser {
                 }
                 .into()
             }
+            // primary : k_class cpath superclass bodystmt k_end
+            //         | k_class tLSHFT expr term bodystmt k_end
+            TokenKind::ClassKeyword => {
+                // TODO: class-specific lexer condition (e.g. class<<Foo)
+                let class_token = self.bump(LexerMode::BEG);
+                if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::LShift)) {
+                    todo!("singular class (class << foo)");
+                }
+                // TODO: check cpath condition
+                let cpath = self.parse_primary();
+                if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::Lt)) {
+                    todo!("class inheritance (class Foo < Bar)");
+                }
+                // TODO: bodystmt
+                let body = self.parse_compstmt_(|token| {
+                    matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                });
+                if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                    todo!(
+                        "error recovery on unmatched class-end: {:?}",
+                        self.next_token
+                    );
+                }
+                let end_token = self.bump(LexerMode::MID);
+                let range = class_token.range | end_token.range;
+                ast::ClassExpr {
+                    cpath: Box::new(cpath),
+                    superclass: None,
+                    body: Box::new(body),
+                    meta: NodeMeta { range, node_id: 0 },
+                }
+                .into()
+            }
             // primary : k_module cpath bodystmt k_end
             TokenKind::ModuleKeyword => {
                 let module_token = self.bump(LexerMode::BEG);
@@ -1086,7 +1119,6 @@ impl Parser {
             TokenKind::BeginKeyword => todo!("begin .. end"),
             TokenKind::CapitalBeginKeyword => todo!("BEGIN {{ .. }}"),
             TokenKind::CapitalEndKeyword => todo!("END {{ .. }}"),
-            TokenKind::ClassKeyword => todo!("class .. end"),
             TokenKind::DefKeyword => todo!("def .. end"),
             TokenKind::DoKeyword => todo!("do .. end"),
             TokenKind::ForKeyword => todo!("for .. end"),
