@@ -1,6 +1,6 @@
 use crate::ast::{
     self, Arg, Args, BinaryOp, CommandArgs, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt,
-    NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, UnaryOp,
+    NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -1255,8 +1255,25 @@ fn starts_arg(token: &Token) -> bool {
     )
 }
 
+const SENTINEL_EXPR: Expr = Expr::Nil(NilExpr {
+    meta: NodeMeta {
+        range: Range(0, 0),
+        node_id: 0,
+    },
+});
+
 fn command_head(expr: &mut Expr) -> Option<&mut Option<Args>> {
-    // TODO: detect const too
+    // Convert const as send
+    if let Expr::Const(e) = expr {
+        if e.convertible_to_send() {
+            let e = match std::mem::replace(expr, SENTINEL_EXPR) {
+                Expr::Const(expr) => expr,
+                _ => unreachable!(),
+            };
+            let e = e.convert_to_send();
+            *expr = Expr::Send(e);
+        }
+    }
     match expr {
         Expr::Send(expr) if expr.args.is_none() => Some(&mut expr.args),
         _ => None,

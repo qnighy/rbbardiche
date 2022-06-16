@@ -219,7 +219,7 @@ obj::Foo()
 # callable::()
 
 foo 42
-# Foo 42
+Foo 42
 # foo! 42
 # foo? 42
 # Foo! 42
@@ -295,7 +295,7 @@ obj&.Foo 42
 obj::foo 42
 # obj::foo! 42
 # obj::foo? 42
-# obj::Foo 42
+obj::Foo 42
 # obj::Foo! 42
 # obj::Foo? 42
 # obj::| 42

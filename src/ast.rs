@@ -398,8 +398,12 @@ pub struct ConstExpr {
 }
 
 impl ConstExpr {
+    pub fn convertible_to_send(&self) -> bool {
+        !self.toplevel
+    }
+
     pub fn convert_to_send(self) -> SendExpr {
-        assert!(!self.toplevel);
+        assert!(self.convertible_to_send());
         SendExpr {
             optional: false,
             recv: self.recv,
