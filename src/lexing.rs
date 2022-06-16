@@ -313,9 +313,10 @@ impl Parser {
                     } else {
                         TokenKind::Dot2Mid
                     }
+                } else if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
+                    todo!("error handling for digit after dot");
                 } else {
-                    // TODO: digit case
-                    todo!(".");
+                    TokenKind::Dot
                 }
             }
             _ if first.is_ascii_digit() => self.lex_numeric(),

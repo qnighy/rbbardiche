@@ -1,4 +1,2 @@
 1:5-1-6: Unexpected token
 2:2-2-3: Unexpected token
-3:5-3-8: Unexpected token
-3:5-3-8: Unexpected token

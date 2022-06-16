@@ -807,36 +807,72 @@ impl Parser {
     /// These are the exceptions (which are directly parsed in this `parse_primary`):
     ///
     /// - `foo::Bar`
+    /// - `foo.bar`
     fn parse_primary(&mut self) -> Expr {
         let mut expr = self.parse_primary_inner();
         loop {
             match &self.next_token.kind {
-                TokenKind::DColon => {
+                // primary : primary_value tCOLON2 tCONSTANT
+                //         | method_call
+                // method_call : primary_value call_op operation2 opt_paren_args
+                //             | primary_value tCOLON2 operation2 paren_args
+                //             | primary_value tCOLON2 operation3
+                //             | primary_value call_op paren_args
+                //             | primary_value tCOLON2 paren_args
+                TokenKind::Dot | TokenKind::DColon => {
                     // TODO: handle primary_value condition
-                    let dcolon_token = self.bump(LexerMode::BEG);
-                    if let TokenKind::CIdent(name) = &self.next_token.kind {
-                        let name = name.to_string();
-                        let token = self.bump(LexerMode::MID);
-                        let range = expr.range() | token.range;
-                        expr = ast::ConstExpr {
-                            toplevel: false,
-                            recv: Some(Box::new(expr)),
-                            name,
-                            meta: NodeMeta { range, node_id: 0 },
+                    let op_token = self.bump(LexerMode::BEG);
+                    match &self.next_token.kind {
+                        TokenKind::Ident(name) | TokenKind::CIdent(name) => {
+                            let is_dcolon = matches!(op_token.kind, TokenKind::DColon);
+                            let is_const = matches!(self.next_token.kind, TokenKind::CIdent(_));
+                            let name = name.to_string();
+                            let token = self.bump(LexerMode::MID);
+                            let range = expr.range() | token.range;
+                            if is_dcolon && is_const {
+                                let e = ast::ConstExpr {
+                                    toplevel: false,
+                                    recv: Some(Box::new(expr)),
+                                    name,
+                                    meta: NodeMeta { range, node_id: 0 },
+                                };
+                                expr = if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                                    let mut e = e.convert_to_send();
+                                    let args = self.parse_paren_args();
+                                    e.set_args(args);
+                                    e.into()
+                                } else {
+                                    e.into()
+                                };
+                            } else {
+                                let mut e = ast::SendExpr {
+                                    optional: false,
+                                    recv: Some(Box::new(expr)),
+                                    args: None,
+                                    name,
+                                    meta: NodeMeta { range, node_id: 0 },
+                                };
+                                if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                                    let args = self.parse_paren_args();
+                                    e.set_args(args);
+                                }
+                                expr = e.into();
+                            }
                         }
-                        .into();
-                    } else {
-                        self.errors.push(ParseError::UnexpectedToken {
-                            range: self.next_token.range,
-                        });
-                        let range = expr.range() | dcolon_token.range;
-                        expr = ast::ConstExpr {
-                            toplevel: false,
-                            recv: Some(Box::new(expr)),
-                            name: "".to_owned(),
-                            meta: NodeMeta { range, node_id: 0 },
+                        TokenKind::LParenBeg => todo!("proc call expression"),
+                        _ => {
+                            self.errors.push(ParseError::UnexpectedToken {
+                                range: self.next_token.range,
+                            });
+                            let range = expr.range() | op_token.range;
+                            expr = ast::ConstExpr {
+                                toplevel: false,
+                                recv: Some(Box::new(expr)),
+                                name: "".to_owned(),
+                                meta: NodeMeta { range, node_id: 0 },
+                            }
+                            .into();
                         }
-                        .into();
                     }
                 }
                 _ => break,
@@ -886,19 +922,7 @@ impl Parser {
             TokenKind::Ident(name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
-                if matches!(self.next_token.kind, TokenKind::LParenCall) {
-                    let args = self.parse_paren_args();
-                    let range = token.range | args.range();
-                    return ast::SendExpr {
-                        optional: false,
-                        recv: None,
-                        name,
-                        args: Some(args),
-                        meta: NodeMeta { range, node_id: 0 },
-                    }
-                    .into();
-                }
-                ast::SendExpr {
+                let mut e = ast::SendExpr {
                     optional: false,
                     recv: None,
                     name,
@@ -907,16 +931,22 @@ impl Parser {
                         range: token.range,
                         node_id: 0,
                     },
+                };
+                if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                    let args = self.parse_paren_args();
+                    e.set_args(args);
                 }
-                .into()
+                e.into()
             }
             // primary : var_ref
+            //         | method_call
+            // method_call : fcall paren_args
             // var_ref : user_variable
             // user_variable : tCONSTANT
             TokenKind::CIdent(name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
-                ast::ConstExpr {
+                let e = ast::ConstExpr {
                     toplevel: false,
                     recv: None,
                     name,
@@ -924,8 +954,15 @@ impl Parser {
                         range: token.range,
                         node_id: 0,
                     },
+                };
+                if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                    let mut e = e.convert_to_send();
+                    let args = self.parse_paren_args();
+                    e.set_args(args);
+                    e.into()
+                } else {
+                    e.into()
                 }
-                .into()
             }
             // primary : tCOLON3 tCONSTANT
             TokenKind::DColonBeg => {
@@ -1139,6 +1176,7 @@ impl Parser {
                 | TokenKind::ThenKeyword
                 | TokenKind::WhenKeyword
                 | TokenKind::Comma
+                | TokenKind::Dot
                 | TokenKind::Dot2Mid
                 | TokenKind::Dot3Mid
                 | TokenKind::BinOp(_)

@@ -270,6 +270,14 @@ pub struct SendExpr {
     pub meta: NodeMeta,
 }
 
+impl SendExpr {
+    pub fn set_args(&mut self, args: Args) {
+        assert!(self.args.is_none());
+        self.meta.range = self.meta.range | args.range();
+        self.args = Some(args);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Args {
     Paren(ParenArgs),
@@ -387,6 +395,19 @@ pub struct ConstExpr {
     pub recv: Option<Box<Expr>>,
     pub name: String,
     pub meta: NodeMeta,
+}
+
+impl ConstExpr {
+    pub fn convert_to_send(self) -> SendExpr {
+        assert!(!self.toplevel);
+        SendExpr {
+            optional: false,
+            recv: self.recv,
+            name: self.name,
+            args: None,
+            meta: self.meta,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
