@@ -3,4 +3,9 @@ s(:begin,
     s(:str, "foo"), :+,
     s(:str, "bar")),
   s(:str, "foo
+bar"),
+  s(:send,
+    s(:str, "foo"), :+,
+    s(:str, "bar")),
+  s(:str, "foo
 bar"))

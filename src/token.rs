@@ -210,8 +210,8 @@ pub enum TokenKind {
 pub enum StringType {
     /// `'`
     SQuote,
-    // /// `"`
-    // DQuote,
+    /// `"`
+    DQuote,
     // /// <code>`</code>
     // BQuote,
 }

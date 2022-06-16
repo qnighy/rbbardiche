@@ -75,6 +75,7 @@ pub(crate) struct NormalLexerMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum StringLexerMode {
     SingleQuoted,
+    DoubleQuoted,
 }
 
 impl Parser {
@@ -191,7 +192,13 @@ impl Parser {
             }
             b'\'' => {
                 self.pos += 1;
+                // TODO: check label condition
                 TokenKind::StringBeg(StringType::SQuote)
+            }
+            b'"' => {
+                self.pos += 1;
+                // TODO: check label condition
+                TokenKind::StringBeg(StringType::DQuote)
             }
             b'?' => {
                 self.pos += 1;
@@ -426,18 +433,23 @@ impl Parser {
     }
 
     fn lex_token_string(&mut self, mode: StringLexerMode) -> Token {
-        let StringLexerMode::SingleQuoted = mode;
+        let term = match mode {
+            StringLexerMode::SingleQuoted => b'\'',
+            StringLexerMode::DoubleQuoted => b'"',
+        };
         let start = self.pos;
-        if self.next() == Some(b'\'') {
+        if self.next() == Some(term) {
             self.pos += 1;
             return Token {
                 kind: TokenKind::StringEnd,
                 range: Range(start, self.pos),
             };
         }
-        while self.next().is_some_and_(|&ch| ch != b'\'') {
+        while self.next().is_some_and_(|&ch| ch != term) {
             if self.next() == Some(b'\\') {
                 todo!("escapes in string");
+            } else if self.next() == Some(b'#') && matches!(mode, StringLexerMode::DoubleQuoted) {
+                todo!("# in string");
             }
             self.pos += 1;
         }

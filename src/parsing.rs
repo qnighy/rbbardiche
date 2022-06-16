@@ -891,8 +891,11 @@ impl Parser {
             //        | string string1
             // string1 : tSTRING_BEG string_contents tSTRING_END
             TokenKind::StringBeg(string_type) => {
-                let StringType::SQuote = string_type;
-                let beg_token = self.bump(LexerMode::String(StringLexerMode::SingleQuoted));
+                let mode = match string_type {
+                    StringType::DQuote => StringLexerMode::DoubleQuoted,
+                    StringType::SQuote => StringLexerMode::SingleQuoted,
+                };
+                let beg_token = self.bump(LexerMode::String(mode));
                 let mut contents = Vec::new();
                 loop {
                     if matches!(self.next_token.kind, TokenKind::StringEnd) {
@@ -900,7 +903,7 @@ impl Parser {
                     }
                     if let TokenKind::StringContent(content) = &self.next_token.kind {
                         contents.push(content.clone());
-                        self.bump(LexerMode::String(StringLexerMode::SingleQuoted));
+                        self.bump(LexerMode::String(mode));
                     } else {
                         unreachable!();
                     }
