@@ -77,6 +77,8 @@ pub enum TokenKind {
     ForKeyword,
     /// `if` (a.k.a. keyword_if)
     IfKeyword,
+    /// `if` (a.k.a. modifier_if)
+    IfModifier,
     /// `in` (a.k.a. keyword_in)
     InKeyword,
     /// `module` (a.k.a. keyword_module)
@@ -93,6 +95,8 @@ pub enum TokenKind {
     RedoKeyword,
     /// `rescue` (a.k.a. keyword_rescue)
     RescueKeyword,
+    /// `rescue` (a.k.a. modifier_rescue)
+    RescueModifier,
     /// `retry` (a.k.a. keyword_retry)
     RetryKeyword,
     /// `return` (a.k.a. keyword_return)
@@ -109,12 +113,18 @@ pub enum TokenKind {
     UndefKeyword,
     /// `unless` (a.k.a. keyword_unless)
     UnlessKeyword,
+    /// `unless` (a.k.a. modifier_unless)
+    UnlessModifier,
     /// `until` (a.k.a. keyword_until)
     UntilKeyword,
+    /// `until` (a.k.a. modifier_until)
+    UntilModifier,
     /// `when` (a.k.a. keyword_when)
     WhenKeyword,
     /// `while` (a.k.a. keyword_while)
     WhileKeyword,
+    /// `while` (a.k.a. modifier_while)
+    WhileModifier,
     /// `yield` (a.k.a. keyword_yield)
     YieldKeyword,
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)

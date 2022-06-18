@@ -1218,11 +1218,16 @@ impl Parser {
                 | TokenKind::ElseKeyword
                 | TokenKind::ElsifKeyword
                 | TokenKind::EnsureKeyword
+                | TokenKind::IfModifier
                 | TokenKind::InKeyword
                 | TokenKind::OrKeyword
                 | TokenKind::RescueKeyword
+                | TokenKind::RescueModifier
                 | TokenKind::ThenKeyword
+                | TokenKind::UnlessModifier
+                | TokenKind::UntilModifier
                 | TokenKind::WhenKeyword
+                | TokenKind::WhileModifier
                 | TokenKind::Comma
                 | TokenKind::Dot
                 | TokenKind::AndDot

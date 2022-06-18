@@ -7,49 +7,50 @@ use bstr::{BStr, ByteSlice};
 use once_cell::sync::Lazy;
 use std::{borrow::Cow, collections::HashMap};
 
-static KEYWORDS: Lazy<HashMap<&BStr, TokenKind>> = Lazy::new(|| {
+static KEYWORDS: Lazy<HashMap<&BStr, Option<TokenKind>>> = Lazy::new(|| {
     vec![
-        ("__ENCODING__", TokenKind::UnderscoreEncodingKeyword),
-        ("__LINE__", TokenKind::UnderscoreLineKeyword),
-        ("__FILE__", TokenKind::UnderscoreFileKeyword),
-        ("BEGIN", TokenKind::CapitalBeginKeyword),
-        ("END", TokenKind::CapitalEndKeyword),
-        ("alias", TokenKind::AliasKeyword),
-        ("and", TokenKind::AndKeyword),
-        ("begin", TokenKind::BeginKeyword),
-        ("break", TokenKind::BreakKeyword),
-        ("case", TokenKind::CaseKeyword),
-        ("class", TokenKind::ClassKeyword),
-        ("def", TokenKind::DefKeyword),
-        ("defined?", TokenKind::DefinedQKeyword),
-        ("do", TokenKind::DoKeyword),
-        ("else", TokenKind::ElseKeyword),
-        ("elsif", TokenKind::ElsifKeyword),
-        ("end", TokenKind::EndKeyword),
-        ("ensure", TokenKind::EnsureKeyword),
-        ("false", TokenKind::FalseKeyword),
-        ("for", TokenKind::ForKeyword),
-        ("if", TokenKind::IfKeyword),
-        ("in", TokenKind::InKeyword),
-        ("module", TokenKind::ModuleKeyword),
-        ("next", TokenKind::NextKeyword),
-        ("nil", TokenKind::NilKeyword),
-        ("not", TokenKind::NotKeyword),
-        ("or", TokenKind::OrKeyword),
-        ("redo", TokenKind::RedoKeyword),
-        ("rescue", TokenKind::RescueKeyword),
-        ("retry", TokenKind::RetryKeyword),
-        ("return", TokenKind::ReturnKeyword),
-        ("self", TokenKind::SelfKeyword),
-        ("super", TokenKind::SuperKeyword),
-        ("then", TokenKind::ThenKeyword),
-        ("true", TokenKind::TrueKeyword),
-        ("undef", TokenKind::UndefKeyword),
-        ("unless", TokenKind::UnlessKeyword),
-        ("until", TokenKind::UntilKeyword),
-        ("when", TokenKind::WhenKeyword),
-        ("while", TokenKind::WhileKeyword),
-        ("yield", TokenKind::YieldKeyword),
+        ("__ENCODING__", Some(TokenKind::UnderscoreEncodingKeyword)),
+        ("__END__", None),
+        ("__LINE__", Some(TokenKind::UnderscoreLineKeyword)),
+        ("__FILE__", Some(TokenKind::UnderscoreFileKeyword)),
+        ("BEGIN", Some(TokenKind::CapitalBeginKeyword)),
+        ("END", Some(TokenKind::CapitalEndKeyword)),
+        ("alias", Some(TokenKind::AliasKeyword)),
+        ("and", Some(TokenKind::AndKeyword)),
+        ("begin", Some(TokenKind::BeginKeyword)),
+        ("break", Some(TokenKind::BreakKeyword)),
+        ("case", Some(TokenKind::CaseKeyword)),
+        ("class", Some(TokenKind::ClassKeyword)),
+        ("def", Some(TokenKind::DefKeyword)),
+        ("defined?", Some(TokenKind::DefinedQKeyword)),
+        ("do", None),
+        ("else", Some(TokenKind::ElseKeyword)),
+        ("elsif", Some(TokenKind::ElsifKeyword)),
+        ("end", Some(TokenKind::EndKeyword)),
+        ("ensure", Some(TokenKind::EnsureKeyword)),
+        ("false", Some(TokenKind::FalseKeyword)),
+        ("for", Some(TokenKind::ForKeyword)),
+        ("if", None),
+        ("in", Some(TokenKind::InKeyword)),
+        ("module", Some(TokenKind::ModuleKeyword)),
+        ("next", Some(TokenKind::NextKeyword)),
+        ("nil", Some(TokenKind::NilKeyword)),
+        ("not", Some(TokenKind::NotKeyword)),
+        ("or", Some(TokenKind::OrKeyword)),
+        ("redo", Some(TokenKind::RedoKeyword)),
+        ("rescue", None),
+        ("retry", Some(TokenKind::RetryKeyword)),
+        ("return", Some(TokenKind::ReturnKeyword)),
+        ("self", Some(TokenKind::SelfKeyword)),
+        ("super", Some(TokenKind::SuperKeyword)),
+        ("then", Some(TokenKind::ThenKeyword)),
+        ("true", Some(TokenKind::TrueKeyword)),
+        ("undef", Some(TokenKind::UndefKeyword)),
+        ("unless", None),
+        ("until", None),
+        ("when", Some(TokenKind::WhenKeyword)),
+        ("while", None),
+        ("yield", Some(TokenKind::YieldKeyword)),
     ]
     .into_iter()
     .map(|(k, v)| (k.as_bytes().as_bstr(), v))
@@ -406,7 +407,6 @@ impl Parser {
                 TokenKind::BinOp(BinaryOp::Mod)
             }
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
-                // TODO: support __END__
                 let start = self.pos;
                 while self.pos < self.source.len() && {
                     let ch = self.source[self.pos];
@@ -416,7 +416,50 @@ impl Parser {
                 }
                 let ident = self.source[start..self.pos].as_bstr();
                 if let Some(kind) = KEYWORDS.get(ident) {
-                    kind.clone()
+                    if let Some(kind) = kind {
+                        kind.clone()
+                    } else {
+                        match ident.as_bytes() {
+                            b"__END__" => todo!("__END__"),
+                            b"do" => todo!("do keyword"),
+                            b"if" => {
+                                if mode.beg {
+                                    TokenKind::IfKeyword
+                                } else {
+                                    TokenKind::IfModifier
+                                }
+                            }
+                            b"rescue" => {
+                                if mode.beg {
+                                    TokenKind::RescueKeyword
+                                } else {
+                                    TokenKind::RescueModifier
+                                }
+                            }
+                            b"unless" => {
+                                if mode.beg {
+                                    TokenKind::UnlessKeyword
+                                } else {
+                                    TokenKind::UnlessModifier
+                                }
+                            }
+                            b"until" => {
+                                if mode.beg {
+                                    TokenKind::UntilKeyword
+                                } else {
+                                    TokenKind::UntilModifier
+                                }
+                            }
+                            b"while" => {
+                                if mode.beg {
+                                    TokenKind::WhileKeyword
+                                } else {
+                                    TokenKind::WhileModifier
+                                }
+                            }
+                            _ => unreachable!("invalid special keyword: {:?}", ident),
+                        }
+                    }
                 } else if ident.chars().next().is_some_and_(|ch| ch.is_uppercase()) {
                     // TODO: handle titlecase letters
                     TokenKind::CIdent(ident.to_owned())
