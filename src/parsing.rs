@@ -6,7 +6,7 @@ use crate::ast::{
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
-use crate::token::{StringType, Token, TokenKind};
+use crate::token::{IdentType, StringType, Token, TokenKind};
 
 pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
     let mut parser = Parser::new(source);
@@ -824,13 +824,13 @@ impl Parser {
                     // TODO: handle primary_value condition
                     let op_token = self.bump(LexerMode::BEG);
                     match &self.next_token.kind {
-                        TokenKind::Ident(name) | TokenKind::CIdent(name) => {
+                        TokenKind::Ident(ident_type, name) => {
+                            let ident_type = *ident_type;
                             let is_dcolon = matches!(op_token.kind, TokenKind::DColon);
-                            let is_const = matches!(self.next_token.kind, TokenKind::CIdent(_));
                             let name = name.to_string();
                             let token = self.bump(LexerMode::MID);
                             let range = expr.range() | token.range;
-                            if is_dcolon && is_const {
+                            if is_dcolon && ident_type == IdentType::Const {
                                 let e = ast::ConstExpr {
                                     toplevel: false,
                                     recv: Some(Box::new(expr)),
@@ -923,7 +923,7 @@ impl Parser {
             // method_call : fcall paren_args
             // var_ref : user_variable
             // user_variable : tIDENTIFIER
-            TokenKind::Ident(name) => {
+            TokenKind::Ident(IdentType::Ident, name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
                 let mut e = ast::SendExpr {
@@ -947,7 +947,7 @@ impl Parser {
             // method_call : fcall paren_args
             // var_ref : user_variable
             // user_variable : tCONSTANT
-            TokenKind::CIdent(name) => {
+            TokenKind::Ident(IdentType::Const, name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
                 let e = ast::ConstExpr {
@@ -971,7 +971,7 @@ impl Parser {
             // primary : tCOLON3 tCONSTANT
             TokenKind::DColonBeg => {
                 let dcolon_token = self.bump(LexerMode::BEG);
-                if let TokenKind::CIdent(name) = &self.next_token.kind {
+                if let TokenKind::Ident(IdentType::Const, name) = &self.next_token.kind {
                     let name = name.to_string();
                     let token = self.bump(LexerMode::MID);
                     let range = dcolon_token.range | token.range;
@@ -1126,7 +1126,7 @@ impl Parser {
                 // TODO: EXPR_FNAME
                 let def_token = self.bump(LexerMode::BEG);
                 match &self.next_token.kind {
-                    TokenKind::Ident(name) | TokenKind::CIdent(name) => {
+                    TokenKind::Ident(_, name) => {
                         let name = name.to_string();
                         // TODO: EXPR_ENDFN
                         self.bump(LexerMode::MID);
@@ -1210,8 +1210,7 @@ impl Parser {
         while !is_end_token(&self.next_token) {
             match self.next_token.kind {
                 // Those which likely starts an expression
-                TokenKind::Ident(_)
-                | TokenKind::CIdent(_)
+                TokenKind::Ident(_, _)
                 | TokenKind::UnderscoreEncodingKeyword
                 | TokenKind::UnderscoreLineKeyword
                 | TokenKind::UnderscoreFileKeyword
@@ -1308,8 +1307,7 @@ impl Parser {
 fn starts_arg(token: &Token) -> bool {
     matches!(
         token.kind,
-        TokenKind::Ident(_)
-            | TokenKind::CIdent(_)
+        TokenKind::Ident(_, _)
             | TokenKind::UnderscoreEncodingKeyword
             | TokenKind::UnderscoreLineKeyword
             | TokenKind::UnderscoreFileKeyword

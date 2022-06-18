@@ -1,7 +1,7 @@
 use crate::ast::{BinaryOp, Range, UnaryOp};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
-use crate::token::{StringType, Token, TokenKind};
+use crate::token::{IdentType, StringType, Token, TokenKind};
 use crate::util::OptionPredExt;
 use bstr::{BStr, ByteSlice};
 use once_cell::sync::Lazy;
@@ -462,9 +462,9 @@ impl Parser {
                     }
                 } else if ident.chars().next().is_some_and_(|ch| ch.is_uppercase()) {
                     // TODO: handle titlecase letters
-                    TokenKind::CIdent(ident.to_owned())
+                    TokenKind::Ident(IdentType::Const, ident.to_owned())
                 } else {
-                    TokenKind::Ident(ident.to_owned())
+                    TokenKind::Ident(IdentType::Ident, ident.to_owned())
                 }
             }
             _ => todo!("character {:?}", first as char),

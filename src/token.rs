@@ -31,10 +31,9 @@ impl Token {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
-    /// `foo` (a.k.a. tIDENTIFIER)
-    Ident(BString),
-    /// `Foo` (a.k.a. tCONSTANT)
-    CIdent(BString),
+    /// - `foo` (a.k.a. tIDENTIFIER)
+    /// - `Foo` (a.k.a. tCONSTANT)
+    Ident(IdentType, BString),
     /// `__ENCODING__` (a.k.a. keyword__ENCODING__)
     UnderscoreEncodingKeyword,
     /// `__LINE__` (a.k.a. keyword__LINE__)
@@ -214,6 +213,14 @@ pub enum TokenKind {
     DColon,
     NewLine,
     Eof,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IdentType {
+    /// - `foo` (a.k.a. tIDENTIFIER)
+    Ident,
+    /// - `Foo` (a.k.a. tCONSTANT)
+    Const,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
