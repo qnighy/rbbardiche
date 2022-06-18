@@ -32,6 +32,7 @@ impl Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /// - `foo` (a.k.a. tIDENTIFIER)
+    /// - `foo!` (a.k.a. tFID)
     /// - `Foo` (a.k.a. tCONSTANT)
     Ident(IdentType, BString),
     /// `__ENCODING__` (a.k.a. keyword__ENCODING__)
@@ -219,6 +220,8 @@ pub enum TokenKind {
 pub enum IdentType {
     /// - `foo` (a.k.a. tIDENTIFIER)
     Ident,
+    /// - `foo!` (a.k.a. tFID)
+    FIdent,
     /// - `Foo` (a.k.a. tCONSTANT)
     Const,
 }

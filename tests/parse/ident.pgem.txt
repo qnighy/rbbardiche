@@ -2,4 +2,12 @@ s(:begin,
   s(:send, nil, :foo),
   s(:const, nil, :Foo),
   s(:send, nil, :_foo_bar),
-  s(:send, nil, :あいう))
+  s(:send, nil, :あいう),
+  s(:send, nil, :foo!),
+  s(:send, nil, :foo?),
+  s(:send, nil, :Foo!),
+  s(:send, nil, :Foo?),
+  s(:send, nil, :あいう!),
+  s(:send,
+    s(:send, nil, :foo), :!=,
+    s(:int, 1)))

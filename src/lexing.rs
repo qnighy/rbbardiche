@@ -414,6 +414,11 @@ impl Parser {
                 } {
                     self.pos += 1;
                 }
+                if (self.next() == Some(b'!') || self.next() == Some(b'?'))
+                    && self.next_n(1) != Some(b'=')
+                {
+                    self.pos += 1;
+                }
                 let ident = self.source[start..self.pos].as_bstr();
                 if let Some(kind) = KEYWORDS.get(ident) {
                     if let Some(kind) = kind {
@@ -460,6 +465,8 @@ impl Parser {
                             _ => unreachable!("invalid special keyword: {:?}", ident),
                         }
                     }
+                } else if ident.ends_with(b"!") || ident.ends_with(b"?") {
+                    TokenKind::Ident(IdentType::FIdent, ident.to_owned())
                 } else if ident.chars().next().is_some_and_(|ch| ch.is_uppercase()) {
                     // TODO: handle titlecase letters
                     TokenKind::Ident(IdentType::Const, ident.to_owned())
@@ -550,8 +557,12 @@ impl Parser {
         }
     }
 
+    fn next_n(&self, off: usize) -> Option<u8> {
+        self.source.get(self.pos + off).copied()
+    }
+
     fn next(&self) -> Option<u8> {
-        self.source.get(self.pos).copied()
+        self.next_n(0)
     }
 
     // fn peek(&self, off: usize) -> Option<u8> {

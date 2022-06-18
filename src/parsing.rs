@@ -923,7 +923,7 @@ impl Parser {
             // method_call : fcall paren_args
             // var_ref : user_variable
             // user_variable : tIDENTIFIER
-            TokenKind::Ident(IdentType::Ident, name) => {
+            TokenKind::Ident(IdentType::Ident | IdentType::FIdent, name) => {
                 let name = name.to_string();
                 let token = self.bump(LexerMode::MID);
                 let mut e = ast::SendExpr {
