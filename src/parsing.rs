@@ -1,6 +1,7 @@
 use crate::ast::{
-    self, Arg, Args, BinaryOp, CommandArgs, Debri, DelimitedArg, EmptyStmt, Expr, ExprStmt,
-    NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
+    self, Arg, Args, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg, EmptyStmt, Expr,
+    ExprStmt, NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, SuperclassClause,
+    UnaryOp,
 };
 use crate::lexing::{LexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -1119,6 +1120,47 @@ impl Parser {
                 }
                 .into()
             }
+            // primary : defn_head f_arglist bodystmt k_end
+            //         | defs_head f_arglist bodystmt k_end
+            TokenKind::DefKeyword => {
+                // TODO: EXPR_FNAME
+                let def_token = self.bump(LexerMode::BEG);
+                match &self.next_token.kind {
+                    TokenKind::Ident(name) | TokenKind::CIdent(name) => {
+                        let name = name.to_string();
+                        // TODO: EXPR_ENDFN
+                        self.bump(LexerMode::MID);
+                        if matches!(self.next_token.kind, TokenKind::Dot) {
+                            todo!("singleton def");
+                        } else if matches!(self.next_token.kind, TokenKind::LParenCall) {
+                            todo!("f_paren_args");
+                        } else if !matches!(
+                            self.next_token.kind,
+                            TokenKind::Semi | TokenKind::NewLine
+                        ) {
+                            todo!("def args");
+                        }
+                        self.bump(LexerMode::BEG);
+                        // TODO: bodystmt
+                        let body = self.parse_compstmt_(|token| {
+                            matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                        });
+                        if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                            todo!("error recovery for def body");
+                        }
+                        let end_token = self.bump(LexerMode::MID);
+                        let range = def_token.range | end_token.range;
+                        DefnExpr {
+                            name,
+                            args: (),
+                            body: Box::new(body),
+                            meta: NodeMeta { range, node_id: 0 },
+                        }
+                        .into()
+                    }
+                    _ => todo!("fID, op, and resword after def: {:?}", self.next_token),
+                }
+            }
             TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword => {
                 self.errors.push(ParseError::UnexpectedEof {
                     range: self.next_token.range,
@@ -1135,7 +1177,6 @@ impl Parser {
             TokenKind::BeginKeyword => todo!("begin .. end"),
             TokenKind::CapitalBeginKeyword => todo!("BEGIN {{ .. }}"),
             TokenKind::CapitalEndKeyword => todo!("END {{ .. }}"),
-            TokenKind::DefKeyword => todo!("def .. end"),
             TokenKind::DoKeyword => todo!("do .. end"),
             TokenKind::ForKeyword => todo!("for .. end"),
             TokenKind::IfKeyword => todo!("if .. end"),

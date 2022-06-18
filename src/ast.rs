@@ -59,6 +59,7 @@ pub enum Expr {
     Const(ConstExpr),
     Class(ClassExpr),
     Module(ModuleExpr),
+    Defn(DefnExpr),
     Errored(ErroredExpr),
 }
 
@@ -80,6 +81,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Const($x) => $arm,
             $crate::ast::Expr::Class($x) => $arm,
             $crate::ast::Expr::Module($x) => $arm,
+            $crate::ast::Expr::Defn($x) => $arm,
             $crate::ast::Expr::Errored($x) => $arm,
         }
     };
@@ -192,6 +194,12 @@ impl From<ClassExpr> for Expr {
 impl From<ModuleExpr> for Expr {
     fn from(e: ModuleExpr) -> Self {
         Expr::Module(e)
+    }
+}
+
+impl From<DefnExpr> for Expr {
+    fn from(e: DefnExpr) -> Self {
+        Expr::Defn(e)
     }
 }
 
@@ -445,6 +453,14 @@ impl SuperclassClause {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModuleExpr {
     pub cpath: Box<Expr>,
+    pub body: Box<Expr>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefnExpr {
+    pub name: String,
+    pub args: (),
     pub body: Box<Expr>,
     pub meta: NodeMeta,
 }

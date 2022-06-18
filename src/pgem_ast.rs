@@ -391,6 +391,28 @@ impl From<&ast::ModuleExpr> for SExp {
     }
 }
 
+impl From<&ast::DefnExpr> for SExp {
+    fn from(expr: &ast::DefnExpr) -> Self {
+        let ast::DefnExpr {
+            name,
+            args: (),
+            body,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
+            tag: "def".to_owned(),
+            args: vec![
+                SExp::Symbol { name: name.clone() },
+                SExp::Tagged {
+                    tag: "args".to_owned(),
+                    args: vec![],
+                },
+                to_sexp(body),
+            ],
+        }
+    }
+}
+
 impl From<&ast::ErroredExpr> for SExp {
     fn from(expr: &ast::ErroredExpr) -> Self {
         let ast::ErroredExpr { debris: _, meta: _ } = expr;
