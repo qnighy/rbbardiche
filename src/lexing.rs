@@ -9,48 +9,48 @@ use std::{borrow::Cow, collections::HashMap};
 
 static KEYWORDS: Lazy<HashMap<&BStr, Option<TokenKind>>> = Lazy::new(|| {
     vec![
-        ("__ENCODING__", Some(TokenKind::UnderscoreEncodingKeyword)),
+        ("__ENCODING__", Some(TokenKind::KeywordUnderscoreEncoding)),
         ("__END__", None),
-        ("__LINE__", Some(TokenKind::UnderscoreLineKeyword)),
-        ("__FILE__", Some(TokenKind::UnderscoreFileKeyword)),
-        ("BEGIN", Some(TokenKind::CapitalBeginKeyword)),
-        ("END", Some(TokenKind::CapitalEndKeyword)),
-        ("alias", Some(TokenKind::AliasKeyword)),
-        ("and", Some(TokenKind::AndKeyword)),
-        ("begin", Some(TokenKind::BeginKeyword)),
-        ("break", Some(TokenKind::BreakKeyword)),
-        ("case", Some(TokenKind::CaseKeyword)),
-        ("class", Some(TokenKind::ClassKeyword)),
-        ("def", Some(TokenKind::DefKeyword)),
-        ("defined?", Some(TokenKind::DefinedQKeyword)),
+        ("__LINE__", Some(TokenKind::KeywordUnderscoreLine)),
+        ("__FILE__", Some(TokenKind::KeywordUnderscoreFile)),
+        ("BEGIN", Some(TokenKind::KeywordCapitalBegin)),
+        ("END", Some(TokenKind::KeywordCapitalEnd)),
+        ("alias", Some(TokenKind::KeywordAlias)),
+        ("and", Some(TokenKind::KeywordAnd)),
+        ("begin", Some(TokenKind::KeywordBegin)),
+        ("break", Some(TokenKind::KeywordBreak)),
+        ("case", Some(TokenKind::KeywordCase)),
+        ("class", Some(TokenKind::KeywordClass)),
+        ("def", Some(TokenKind::KeywordDef)),
+        ("defined?", Some(TokenKind::KeywordDefinedQ)),
         ("do", None),
-        ("else", Some(TokenKind::ElseKeyword)),
-        ("elsif", Some(TokenKind::ElsifKeyword)),
-        ("end", Some(TokenKind::EndKeyword)),
-        ("ensure", Some(TokenKind::EnsureKeyword)),
-        ("false", Some(TokenKind::FalseKeyword)),
-        ("for", Some(TokenKind::ForKeyword)),
+        ("else", Some(TokenKind::KeywordElse)),
+        ("elsif", Some(TokenKind::KeywordElsif)),
+        ("end", Some(TokenKind::KeywordEnd)),
+        ("ensure", Some(TokenKind::KeywordEnsure)),
+        ("false", Some(TokenKind::KeywordFalse)),
+        ("for", Some(TokenKind::KeywordFor)),
         ("if", None),
-        ("in", Some(TokenKind::InKeyword)),
-        ("module", Some(TokenKind::ModuleKeyword)),
-        ("next", Some(TokenKind::NextKeyword)),
-        ("nil", Some(TokenKind::NilKeyword)),
-        ("not", Some(TokenKind::NotKeyword)),
-        ("or", Some(TokenKind::OrKeyword)),
-        ("redo", Some(TokenKind::RedoKeyword)),
+        ("in", Some(TokenKind::KeywordIn)),
+        ("module", Some(TokenKind::KeywordModule)),
+        ("next", Some(TokenKind::KeywordNext)),
+        ("nil", Some(TokenKind::KeywordNil)),
+        ("not", Some(TokenKind::KeywordNot)),
+        ("or", Some(TokenKind::KeywordOr)),
+        ("redo", Some(TokenKind::KeywordRedo)),
         ("rescue", None),
-        ("retry", Some(TokenKind::RetryKeyword)),
-        ("return", Some(TokenKind::ReturnKeyword)),
-        ("self", Some(TokenKind::SelfKeyword)),
-        ("super", Some(TokenKind::SuperKeyword)),
-        ("then", Some(TokenKind::ThenKeyword)),
-        ("true", Some(TokenKind::TrueKeyword)),
-        ("undef", Some(TokenKind::UndefKeyword)),
+        ("retry", Some(TokenKind::KeywordRetry)),
+        ("return", Some(TokenKind::KeywordReturn)),
+        ("self", Some(TokenKind::KeywordSelf)),
+        ("super", Some(TokenKind::KeywordSuper)),
+        ("then", Some(TokenKind::KeywordThen)),
+        ("true", Some(TokenKind::KeywordTrue)),
+        ("undef", Some(TokenKind::KeywordUndef)),
         ("unless", None),
         ("until", None),
-        ("when", Some(TokenKind::WhenKeyword)),
+        ("when", Some(TokenKind::KeywordWhen)),
         ("while", None),
-        ("yield", Some(TokenKind::YieldKeyword)),
+        ("yield", Some(TokenKind::KeywordYield)),
     ]
     .into_iter()
     .map(|(k, v)| (k.as_bytes().as_bstr(), v))
@@ -429,37 +429,37 @@ impl Parser {
                             b"do" => todo!("do keyword"),
                             b"if" => {
                                 if mode.beg {
-                                    TokenKind::IfKeyword
+                                    TokenKind::KeywordIf
                                 } else {
-                                    TokenKind::IfModifier
+                                    TokenKind::ModifierIf
                                 }
                             }
                             b"rescue" => {
                                 if mode.beg {
-                                    TokenKind::RescueKeyword
+                                    TokenKind::KeywordRescue
                                 } else {
-                                    TokenKind::RescueModifier
+                                    TokenKind::ModifierRescue
                                 }
                             }
                             b"unless" => {
                                 if mode.beg {
-                                    TokenKind::UnlessKeyword
+                                    TokenKind::KeywordUnless
                                 } else {
-                                    TokenKind::UnlessModifier
+                                    TokenKind::ModifierUnless
                                 }
                             }
                             b"until" => {
                                 if mode.beg {
-                                    TokenKind::UntilKeyword
+                                    TokenKind::KeywordUntil
                                 } else {
-                                    TokenKind::UntilModifier
+                                    TokenKind::ModifierUntil
                                 }
                             }
                             b"while" => {
                                 if mode.beg {
-                                    TokenKind::WhileKeyword
+                                    TokenKind::KeywordWhile
                                 } else {
-                                    TokenKind::WhileModifier
+                                    TokenKind::ModifierWhile
                                 }
                             }
                             _ => unreachable!("invalid special keyword: {:?}", ident),

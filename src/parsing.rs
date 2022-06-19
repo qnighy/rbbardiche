@@ -695,7 +695,7 @@ impl Parser {
         let mut list = Vec::new();
         while !matches!(
             self.next_token.kind,
-            TokenKind::Eof | TokenKind::EndKeyword | TokenKind::Semi | TokenKind::RParen
+            TokenKind::Eof | TokenKind::KeywordEnd | TokenKind::Semi | TokenKind::RParen
         ) {
             let arg = self.parse_arg_elem();
 
@@ -703,7 +703,7 @@ impl Parser {
                 matches!(
                     token.kind,
                     TokenKind::Eof
-                        | TokenKind::EndKeyword
+                        | TokenKind::KeywordEnd
                         | TokenKind::Semi
                         | TokenKind::RParen
                         | TokenKind::Comma
@@ -999,7 +999,7 @@ impl Parser {
             // primary : var_ref
             // var_ref : keyword_variable
             // keyword_variable : keyword_nil
-            TokenKind::NilKeyword => {
+            TokenKind::KeywordNil => {
                 let token = self.bump(LexerMode::MID);
                 ast::NilExpr {
                     meta: NodeMeta {
@@ -1033,7 +1033,7 @@ impl Parser {
                 let stmts = self.parse_compstmt(|token| {
                     matches!(
                         token.kind,
-                        TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword
+                        TokenKind::Eof | TokenKind::RParen | TokenKind::KeywordEnd
                     )
                 });
                 if !matches!(self.next_token.kind, TokenKind::RParen) {
@@ -1052,7 +1052,7 @@ impl Parser {
             }
             // primary : k_class cpath superclass bodystmt k_end
             //         | k_class tLSHFT expr term bodystmt k_end
-            TokenKind::ClassKeyword => {
+            TokenKind::KeywordClass => {
                 // TODO: class-specific lexer condition (e.g. class<<Foo)
                 let class_token = self.bump(LexerMode::BEG);
                 if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::LShift)) {
@@ -1078,9 +1078,9 @@ impl Parser {
                 };
                 // TODO: bodystmt
                 let body = self.parse_compstmt_(|token| {
-                    matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                    matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
                 });
-                if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!(
                         "error recovery on unmatched class-end: {:?}",
                         self.next_token
@@ -1097,15 +1097,15 @@ impl Parser {
                 .into()
             }
             // primary : k_module cpath bodystmt k_end
-            TokenKind::ModuleKeyword => {
+            TokenKind::KeywordModule => {
                 let module_token = self.bump(LexerMode::BEG);
                 // TODO: check cpath condition
                 let cpath = self.parse_primary();
                 // TODO: bodystmt
                 let body = self.parse_compstmt_(|token| {
-                    matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                    matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
                 });
-                if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!(
                         "error recovery on unmatched module-end: {:?}",
                         self.next_token
@@ -1122,7 +1122,7 @@ impl Parser {
             }
             // primary : defn_head f_arglist bodystmt k_end
             //         | defs_head f_arglist bodystmt k_end
-            TokenKind::DefKeyword => {
+            TokenKind::KeywordDef => {
                 // TODO: EXPR_FNAME
                 let def_token = self.bump(LexerMode::BEG);
                 match &self.next_token.kind {
@@ -1143,9 +1143,9 @@ impl Parser {
                         self.bump(LexerMode::BEG);
                         // TODO: bodystmt
                         let body = self.parse_compstmt_(|token| {
-                            matches!(token.kind, TokenKind::Eof | TokenKind::EndKeyword)
+                            matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
                         });
-                        if !matches!(self.next_token.kind, TokenKind::EndKeyword) {
+                        if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                             todo!("error recovery for def body");
                         }
                         let end_token = self.bump(LexerMode::MID);
@@ -1161,7 +1161,7 @@ impl Parser {
                     _ => todo!("fID, op, and resword after def: {:?}", self.next_token),
                 }
             }
-            TokenKind::Eof | TokenKind::RParen | TokenKind::EndKeyword => {
+            TokenKind::Eof | TokenKind::RParen | TokenKind::KeywordEnd => {
                 self.errors.push(ParseError::UnexpectedEof {
                     range: self.next_token.range,
                 });
@@ -1174,13 +1174,13 @@ impl Parser {
                 }
                 .into()
             }
-            TokenKind::BeginKeyword => todo!("begin .. end"),
-            TokenKind::CapitalBeginKeyword => todo!("BEGIN {{ .. }}"),
-            TokenKind::CapitalEndKeyword => todo!("END {{ .. }}"),
-            TokenKind::DoKeyword => todo!("do .. end"),
-            TokenKind::ForKeyword => todo!("for .. end"),
-            TokenKind::IfKeyword => todo!("if .. end"),
-            TokenKind::WhileKeyword => todo!("while .. end"),
+            TokenKind::KeywordBegin => todo!("begin .. end"),
+            TokenKind::KeywordCapitalBegin => todo!("BEGIN {{ .. }}"),
+            TokenKind::KeywordCapitalEnd => todo!("END {{ .. }}"),
+            TokenKind::KeywordDo => todo!("do .. end"),
+            TokenKind::KeywordFor => todo!("for .. end"),
+            TokenKind::KeywordIf => todo!("if .. end"),
+            TokenKind::KeywordWhile => todo!("while .. end"),
             _ => {
                 let token = self.bump(LexerMode::MID);
                 self.errors
@@ -1211,36 +1211,36 @@ impl Parser {
             match self.next_token.kind {
                 // Those which likely starts an expression
                 TokenKind::Ident(_, _)
-                | TokenKind::UnderscoreEncodingKeyword
-                | TokenKind::UnderscoreLineKeyword
-                | TokenKind::UnderscoreFileKeyword
-                | TokenKind::CapitalBeginKeyword
-                | TokenKind::CapitalEndKeyword
-                | TokenKind::AliasKeyword
-                | TokenKind::BeginKeyword
-                | TokenKind::BreakKeyword
-                | TokenKind::CaseKeyword
-                | TokenKind::ClassKeyword
-                | TokenKind::DefKeyword
-                | TokenKind::DefinedQKeyword
-                | TokenKind::FalseKeyword
-                | TokenKind::ForKeyword
-                | TokenKind::IfKeyword
-                | TokenKind::ModuleKeyword
-                | TokenKind::NextKeyword
-                | TokenKind::NilKeyword
-                | TokenKind::NotKeyword
-                | TokenKind::RedoKeyword
-                | TokenKind::RetryKeyword
-                | TokenKind::ReturnKeyword
-                | TokenKind::SelfKeyword
-                | TokenKind::SuperKeyword
-                | TokenKind::TrueKeyword
-                | TokenKind::UndefKeyword
-                | TokenKind::UnlessKeyword
-                | TokenKind::UntilKeyword
-                | TokenKind::WhileKeyword
-                | TokenKind::YieldKeyword
+                | TokenKind::KeywordUnderscoreEncoding
+                | TokenKind::KeywordUnderscoreLine
+                | TokenKind::KeywordUnderscoreFile
+                | TokenKind::KeywordCapitalBegin
+                | TokenKind::KeywordCapitalEnd
+                | TokenKind::KeywordAlias
+                | TokenKind::KeywordBegin
+                | TokenKind::KeywordBreak
+                | TokenKind::KeywordCase
+                | TokenKind::KeywordClass
+                | TokenKind::KeywordDef
+                | TokenKind::KeywordDefinedQ
+                | TokenKind::KeywordFalse
+                | TokenKind::KeywordFor
+                | TokenKind::KeywordIf
+                | TokenKind::KeywordModule
+                | TokenKind::KeywordNext
+                | TokenKind::KeywordNil
+                | TokenKind::KeywordNot
+                | TokenKind::KeywordRedo
+                | TokenKind::KeywordRetry
+                | TokenKind::KeywordReturn
+                | TokenKind::KeywordSelf
+                | TokenKind::KeywordSuper
+                | TokenKind::KeywordTrue
+                | TokenKind::KeywordUndef
+                | TokenKind::KeywordUnless
+                | TokenKind::KeywordUntil
+                | TokenKind::KeywordWhile
+                | TokenKind::KeywordYield
                 | TokenKind::Numeric(_)
                 | TokenKind::StringBeg(_)
                 | TokenKind::Dot2Beg
@@ -1253,21 +1253,21 @@ impl Parser {
                 }
 
                 // Those which is likely followed by an expression
-                TokenKind::AndKeyword
-                | TokenKind::DoKeyword
-                | TokenKind::ElseKeyword
-                | TokenKind::ElsifKeyword
-                | TokenKind::EnsureKeyword
-                | TokenKind::IfModifier
-                | TokenKind::InKeyword
-                | TokenKind::OrKeyword
-                | TokenKind::RescueKeyword
-                | TokenKind::RescueModifier
-                | TokenKind::ThenKeyword
-                | TokenKind::UnlessModifier
-                | TokenKind::UntilModifier
-                | TokenKind::WhenKeyword
-                | TokenKind::WhileModifier
+                TokenKind::KeywordAnd
+                | TokenKind::KeywordDo
+                | TokenKind::KeywordElse
+                | TokenKind::KeywordElsif
+                | TokenKind::KeywordEnsure
+                | TokenKind::ModifierIf
+                | TokenKind::KeywordIn
+                | TokenKind::KeywordOr
+                | TokenKind::KeywordRescue
+                | TokenKind::ModifierRescue
+                | TokenKind::KeywordThen
+                | TokenKind::ModifierUnless
+                | TokenKind::ModifierUntil
+                | TokenKind::KeywordWhen
+                | TokenKind::ModifierWhile
                 | TokenKind::Comma
                 | TokenKind::Dot
                 | TokenKind::AndDot
@@ -1286,7 +1286,7 @@ impl Parser {
                 }
 
                 // Those which usually closes an expression
-                TokenKind::EndKeyword | TokenKind::RParen => {
+                TokenKind::KeywordEnd | TokenKind::RParen => {
                     let token = self.bump(LexerMode::MID);
                     debris.push(Debri::Token(token));
                 }
@@ -1308,35 +1308,35 @@ fn starts_arg(token: &Token) -> bool {
     matches!(
         token.kind,
         TokenKind::Ident(_, _)
-            | TokenKind::UnderscoreEncodingKeyword
-            | TokenKind::UnderscoreLineKeyword
-            | TokenKind::UnderscoreFileKeyword
-            | TokenKind::CapitalBeginKeyword
-            | TokenKind::CapitalEndKeyword
-            | TokenKind::AliasKeyword
-            | TokenKind::BeginKeyword
-            | TokenKind::BreakKeyword
-            | TokenKind::CaseKeyword
-            | TokenKind::ClassKeyword
-            | TokenKind::DefKeyword
-            | TokenKind::DefinedQKeyword
-            | TokenKind::FalseKeyword
-            | TokenKind::ForKeyword
-            | TokenKind::IfKeyword
-            | TokenKind::ModuleKeyword
-            | TokenKind::NextKeyword
-            | TokenKind::NilKeyword
-            | TokenKind::RedoKeyword
-            | TokenKind::RetryKeyword
-            | TokenKind::ReturnKeyword
-            | TokenKind::SelfKeyword
-            | TokenKind::SuperKeyword
-            | TokenKind::TrueKeyword
-            | TokenKind::UndefKeyword
-            | TokenKind::UnlessKeyword
-            | TokenKind::UntilKeyword
-            | TokenKind::WhileKeyword
-            | TokenKind::YieldKeyword
+            | TokenKind::KeywordUnderscoreEncoding
+            | TokenKind::KeywordUnderscoreLine
+            | TokenKind::KeywordUnderscoreFile
+            | TokenKind::KeywordCapitalBegin
+            | TokenKind::KeywordCapitalEnd
+            | TokenKind::KeywordAlias
+            | TokenKind::KeywordBegin
+            | TokenKind::KeywordBreak
+            | TokenKind::KeywordCase
+            | TokenKind::KeywordClass
+            | TokenKind::KeywordDef
+            | TokenKind::KeywordDefinedQ
+            | TokenKind::KeywordFalse
+            | TokenKind::KeywordFor
+            | TokenKind::KeywordIf
+            | TokenKind::KeywordModule
+            | TokenKind::KeywordNext
+            | TokenKind::KeywordNil
+            | TokenKind::KeywordRedo
+            | TokenKind::KeywordRetry
+            | TokenKind::KeywordReturn
+            | TokenKind::KeywordSelf
+            | TokenKind::KeywordSuper
+            | TokenKind::KeywordTrue
+            | TokenKind::KeywordUndef
+            | TokenKind::KeywordUnless
+            | TokenKind::KeywordUntil
+            | TokenKind::KeywordWhile
+            | TokenKind::KeywordYield
             | TokenKind::Numeric(_)
             | TokenKind::StringBeg(_)
             | TokenKind::Dot2Beg

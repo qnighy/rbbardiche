@@ -36,97 +36,97 @@ pub enum TokenKind {
     /// - `Foo` (a.k.a. tCONSTANT)
     Ident(IdentType, BString),
     /// `__ENCODING__` (a.k.a. keyword__ENCODING__)
-    UnderscoreEncodingKeyword,
+    KeywordUnderscoreEncoding,
     /// `__LINE__` (a.k.a. keyword__LINE__)
-    UnderscoreLineKeyword,
+    KeywordUnderscoreLine,
     /// `__FILE__` (a.k.a. keyword__FILE__)
-    UnderscoreFileKeyword,
+    KeywordUnderscoreFile,
     /// `BEGIN` (a.k.a. keyword_BEGIN)
-    CapitalBeginKeyword,
+    KeywordCapitalBegin,
     /// `END` (a.k.a. keyword_END)
-    CapitalEndKeyword,
+    KeywordCapitalEnd,
     /// `alias` (a.k.a. keyword_alias)
-    AliasKeyword,
+    KeywordAlias,
     /// `and` (a.k.a. keyword_and)
-    AndKeyword,
+    KeywordAnd,
     /// `begin` (a.k.a. keyword_begin)
-    BeginKeyword,
+    KeywordBegin,
     /// `break` (a.k.a. keyword_break)
-    BreakKeyword,
+    KeywordBreak,
     /// `case` (a.k.a. keyword_case)
-    CaseKeyword,
+    KeywordCase,
     /// `class` (a.k.a. keyword_class)
-    ClassKeyword,
+    KeywordClass,
     /// `def` (a.k.a. keyword_def)
-    DefKeyword,
+    KeywordDef,
     /// `defined?` (a.k.a. keyword_defined)
-    DefinedQKeyword,
+    KeywordDefinedQ,
     /// `do` (a.k.a. keyword_do)
-    DoKeyword,
+    KeywordDo,
     /// `else` (a.k.a. keyword_else)
-    ElseKeyword,
+    KeywordElse,
     /// `elsif` (a.k.a. keyword_elsif)
-    ElsifKeyword,
+    KeywordElsif,
     /// `end` (a.k.a. keyword_end)
-    EndKeyword,
+    KeywordEnd,
     /// `ensure` (a.k.a. keyword_ensure)
-    EnsureKeyword,
+    KeywordEnsure,
     /// `false` (a.k.a. keyword_false)
-    FalseKeyword,
+    KeywordFalse,
     /// `for` (a.k.a. keyword_for)
-    ForKeyword,
+    KeywordFor,
     /// `if` (a.k.a. keyword_if)
-    IfKeyword,
+    KeywordIf,
     /// `if` (a.k.a. modifier_if)
-    IfModifier,
+    ModifierIf,
     /// `in` (a.k.a. keyword_in)
-    InKeyword,
+    KeywordIn,
     /// `module` (a.k.a. keyword_module)
-    ModuleKeyword,
+    KeywordModule,
     /// `next` (a.k.a. keyword_next)
-    NextKeyword,
+    KeywordNext,
     /// `nil` (a.k.a. keyword_nil)
-    NilKeyword,
+    KeywordNil,
     /// `not` (a.k.a. keyword_not)
-    NotKeyword,
+    KeywordNot,
     /// `or` (a.k.a. keyword_or)
-    OrKeyword,
+    KeywordOr,
     /// `redo` (a.k.a. keyword_redo)
-    RedoKeyword,
+    KeywordRedo,
     /// `rescue` (a.k.a. keyword_rescue)
-    RescueKeyword,
+    KeywordRescue,
     /// `rescue` (a.k.a. modifier_rescue)
-    RescueModifier,
+    ModifierRescue,
     /// `retry` (a.k.a. keyword_retry)
-    RetryKeyword,
+    KeywordRetry,
     /// `return` (a.k.a. keyword_return)
-    ReturnKeyword,
+    KeywordReturn,
     /// `self` (a.k.a. keyword_self)
-    SelfKeyword,
+    KeywordSelf,
     /// `super` (a.k.a. keyword_super)
-    SuperKeyword,
+    KeywordSuper,
     /// `then` (a.k.a. keyword_then)
-    ThenKeyword,
+    KeywordThen,
     /// `true` (a.k.a. keyword_true)
-    TrueKeyword,
+    KeywordTrue,
     /// `undef` (a.k.a. keyword_undef)
-    UndefKeyword,
+    KeywordUndef,
     /// `unless` (a.k.a. keyword_unless)
-    UnlessKeyword,
+    KeywordUnless,
     /// `unless` (a.k.a. modifier_unless)
-    UnlessModifier,
+    ModifierUnless,
     /// `until` (a.k.a. keyword_until)
-    UntilKeyword,
+    KeywordUntil,
     /// `until` (a.k.a. modifier_until)
-    UntilModifier,
+    ModifierUntil,
     /// `when` (a.k.a. keyword_when)
-    WhenKeyword,
+    KeywordWhen,
     /// `while` (a.k.a. keyword_while)
-    WhileKeyword,
+    KeywordWhile,
     /// `while` (a.k.a. modifier_while)
-    WhileModifier,
+    ModifierWhile,
     /// `yield` (a.k.a. keyword_yield)
-    YieldKeyword,
+    KeywordYield,
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
