@@ -3,7 +3,7 @@ use crate::ast::{
     ExprStmt, NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, SuperclassClause,
     UnaryOp,
 };
-use crate::lexing::{LexerMode, StringLexerMode};
+use crate::lexing::{LexerMode, NormalLexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenKind};
@@ -26,7 +26,7 @@ impl Parser {
             },
             errors: vec![],
         };
-        parser.bump(LexerMode::BEG);
+        parser.bump(LexCtx::default().beg());
         parser
     }
 
@@ -66,7 +66,7 @@ impl Parser {
         let mut stmts = Vec::new();
         while !is_end_token(&self.next_token) {
             if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
-                let delim = self.bump(LexerMode::BEG);
+                let delim = self.bump(LexCtx::default().beg());
                 let range = delim.range;
                 stmts.push(Stmt::Empty(EmptyStmt {
                     delim,
@@ -79,7 +79,7 @@ impl Parser {
                 matches!(token.kind, TokenKind::Semi | TokenKind::NewLine) || is_end_token(token)
             });
             let delim = if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
-                Some(self.bump(LexerMode::BEG))
+                Some(self.bump(LexCtx::default().beg()))
             } else {
                 None
             };
@@ -99,12 +99,12 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> Expr {
-        let mut e = self.parse_expr();
+        let mut e = self.parse_expr(LexCtx::default());
         loop {
             match &self.next_token.kind {
                 TokenKind::Equal => {
-                    self.bump(LexerMode::BEG);
-                    let rhs = self.parse_expr();
+                    self.bump(LexCtx::default().beg());
+                    let rhs = self.parse_expr(LexCtx::default());
                     let range = e.range() | rhs.range();
                     e = ast::AssignExpr {
                         lhs: Box::new(e),
@@ -127,20 +127,20 @@ impl Parser {
     //      | arg tASSOC p_top_expr_body
     //      | arg keyword_in p_top_expr_body
     //      | arg  %prec tLBRACE_ARG
-    fn parse_expr(&mut self) -> Expr {
-        let mut expr = self.parse_arg_expr();
+    fn parse_expr(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_arg_expr(ctx);
 
         if starts_arg(&self.next_token) {
             if let Some(args_hole) = command_head(&mut expr) {
-                let args = self.parse_command_args();
+                let args = self.parse_command_args(ctx);
                 *args_hole = Some(Args::Command(args));
             }
         }
         expr
     }
 
-    fn parse_arg_expr(&mut self) -> Expr {
-        self.parse_ternary_cond()
+    fn parse_arg_expr(&mut self, ctx: LexCtx) -> Expr {
+        self.parse_ternary_cond(ctx)
     }
 
     // %left modifier_rescue
@@ -150,19 +150,19 @@ impl Parser {
     // arg : arg '?' arg opt_nl ':' arg
     //
     /// Parses `e ? e : e`, and higher.
-    fn parse_ternary_cond(&mut self) -> Expr {
-        let expr = self.parse_range(false);
+    fn parse_ternary_cond(&mut self, ctx: LexCtx) -> Expr {
+        let expr = self.parse_range(ctx, false);
         if matches!(self.next_token.kind, TokenKind::Question) {
-            self.bump(LexerMode::BEG);
+            self.bump(ctx.beg());
             // This is delimited by `?` and `:` so the full `arg` can come here
-            let consequence = self.parse_arg_expr();
-            self.parse_opt_nl();
+            let consequence = self.parse_arg_expr(ctx);
+            self.parse_opt_nl(ctx);
             if matches!(self.next_token.kind, TokenKind::Colon) {
-                self.bump(LexerMode::BEG);
+                self.bump(ctx.beg());
             } else {
                 todo!("error handling for missing colon");
             }
-            let alternate = self.parse_ternary_cond();
+            let alternate = self.parse_ternary_cond(ctx);
             let range = expr.range() | alternate.range();
             ast::TernaryCondExpr {
                 cond: Box::new(expr),
@@ -188,22 +188,22 @@ impl Parser {
     //     | tBDOT3 arg /* <------ handled in parse_unary */
     //
     /// Parses `e .. e`, `e ... e`, `e ..`, `e ...`, and higher.
-    fn parse_range(&mut self, mut chaining: bool) -> Expr {
-        let mut expr = self.parse_logical_or();
+    fn parse_range(&mut self, ctx: LexCtx, mut chaining: bool) -> Expr {
+        let mut expr = self.parse_logical_or(ctx);
         loop {
             let range_type = match self.next_token.kind {
                 TokenKind::Dot2Mid => RangeType::Inclusive,
                 TokenKind::Dot3Mid => RangeType::Exclusive,
                 _ => break,
             };
-            let op_token = self.bump(LexerMode::BEG);
+            let op_token = self.bump(ctx.beg());
             if chaining {
                 self.errors.push(ParseError::ChainedRange {
                     range: op_token.range,
                 });
             }
             // TODO: parse endless ranges (like `42..`)
-            let rhs = self.parse_logical_or();
+            let rhs = self.parse_logical_or(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::RangeExpr {
                 begin: Some(Box::new(expr)),
@@ -224,8 +224,8 @@ impl Parser {
     // arg : arg tOROP arg
     //
     /// Parses `e || e`, and higher.
-    fn parse_logical_or(&mut self) -> Expr {
-        let mut expr = self.parse_logical_and();
+    fn parse_logical_or(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_logical_and(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -235,8 +235,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_logical_and();
+            self.bump(ctx.beg());
+            let rhs = self.parse_logical_and(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -256,8 +256,8 @@ impl Parser {
     // arg : arg tANDOP arg
     //
     /// Parses `e && e`, and higher.
-    fn parse_logical_and(&mut self) -> Expr {
-        let mut expr = self.parse_equality();
+    fn parse_logical_and(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_equality(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -267,8 +267,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_equality();
+            self.bump(ctx.beg());
+            let rhs = self.parse_equality(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -293,8 +293,8 @@ impl Parser {
     //     | arg tNMATCH arg
     //
     /// Parses `e <=> e`, `e == e`, `e === e`, `e != e`, `e =~ e`, `e !~ e`, and higher.
-    fn parse_equality(&mut self) -> Expr {
-        let mut expr = self.parse_inequality();
+    fn parse_equality(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_inequality(ctx);
         let mut chaining = false;
         loop {
             let op = if let Some(op) = self.next_token.to_binop(|op| {
@@ -312,13 +312,13 @@ impl Parser {
             } else {
                 break;
             };
-            let op_token = self.bump(LexerMode::BEG);
+            let op_token = self.bump(ctx.beg());
             if chaining {
                 self.errors.push(ParseError::ChainedEquality {
                     range: op_token.range,
                 });
             }
-            let rhs = self.parse_inequality();
+            let rhs = self.parse_inequality(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -345,8 +345,8 @@ impl Parser {
     //          | rel_expr relop arg  %prec '>' /* warned against */
     //
     /// Parses `e > e`, `e >= e`, `e < e`, `e <= e`, and higher.
-    fn parse_inequality(&mut self) -> Expr {
-        let mut expr = self.parse_bitwise_or();
+    fn parse_inequality(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_bitwise_or(ctx);
         let mut chaining = false;
         loop {
             let op = if let Some(op) = self.next_token.to_binop(|op| {
@@ -359,13 +359,13 @@ impl Parser {
             } else {
                 break;
             };
-            let op_token = self.bump(LexerMode::BEG);
+            let op_token = self.bump(ctx.beg());
             if chaining {
                 self.errors.push(ParseError::ChainedInequality {
                     range: op_token.range,
                 });
             }
-            let rhs = self.parse_bitwise_or();
+            let rhs = self.parse_bitwise_or(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -387,8 +387,8 @@ impl Parser {
     //     | arg '^' arg
     //
     /// Parses `e | e`, `e ^ e`, and higher.
-    fn parse_bitwise_or(&mut self) -> Expr {
-        let mut expr = self.parse_bitwise_and();
+    fn parse_bitwise_or(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_bitwise_and(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -398,8 +398,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_bitwise_and();
+            self.bump(ctx.beg());
+            let rhs = self.parse_bitwise_and(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -419,8 +419,8 @@ impl Parser {
     // arg : arg '&' arg
     //
     /// Parses `e & e` and higher.
-    fn parse_bitwise_and(&mut self) -> Expr {
-        let mut expr = self.parse_shift();
+    fn parse_bitwise_and(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_shift(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -430,8 +430,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_shift();
+            self.bump(ctx.beg());
+            let rhs = self.parse_shift(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -452,8 +452,8 @@ impl Parser {
     //     | arg tRSHFT arg
     //
     /// Parses `e << e`, `e >> e`, and higher.
-    fn parse_shift(&mut self) -> Expr {
-        let mut expr = self.parse_additive();
+    fn parse_shift(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_additive(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -463,8 +463,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_additive();
+            self.bump(ctx.beg());
+            let rhs = self.parse_additive(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -485,8 +485,8 @@ impl Parser {
     //     | arg '-' arg
     //
     /// Parses `e + e`, `e - e`, and higher.
-    fn parse_additive(&mut self) -> Expr {
-        let mut expr = self.parse_multiplicative();
+    fn parse_additive(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_multiplicative(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -496,8 +496,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_multiplicative();
+            self.bump(ctx.beg());
+            let rhs = self.parse_multiplicative(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -519,8 +519,8 @@ impl Parser {
     //     | arg '%' arg
     //
     /// Parses `e * e`, `e / e`, `e % e`, and higher.
-    fn parse_multiplicative(&mut self) -> Expr {
-        let mut expr = self.parse_pow();
+    fn parse_multiplicative(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_pow(ctx);
         loop {
             let op = if let Some(op) = self
                 .next_token
@@ -530,8 +530,8 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(LexerMode::BEG);
-            let rhs = self.parse_pow();
+            self.bump(ctx.beg());
+            let rhs = self.parse_pow(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
@@ -551,15 +551,15 @@ impl Parser {
     // arg : arg tPOW arg
     //
     /// Parses `e ** e` and higher.
-    fn parse_pow(&mut self) -> Expr {
-        let expr = self.parse_unary();
+    fn parse_pow(&mut self, ctx: LexCtx) -> Expr {
+        let expr = self.parse_unary(ctx);
         let _op = if let Some(op) = self.next_token.to_binop(|op| matches!(op, BinaryOp::Pow)) {
             op
         } else {
             return expr;
         };
-        self.bump(LexerMode::BEG);
-        let rhs = self.parse_pow();
+        self.bump(ctx.beg());
+        let rhs = self.parse_pow(ctx);
         match self.decompose_uminus(expr) {
             Ok((uminus_range, expr)) => {
                 // Special case for `-e ** e`
@@ -644,17 +644,17 @@ impl Parser {
     //     | '~' arg
     //
     /// Parses `+e`, `-e`, `!e`, `~e`, and higher.
-    fn parse_unary(&mut self) -> Expr {
+    fn parse_unary(&mut self, ctx: LexCtx) -> Expr {
         let range_type = match self.next_token.kind {
             TokenKind::Dot2Beg => Some(RangeType::Inclusive),
             TokenKind::Dot3Beg => Some(RangeType::Exclusive),
             _ => None,
         };
         if let Some(range_type) = range_type {
-            let op_token = self.bump(LexerMode::BEG);
+            let op_token = self.bump(ctx.beg());
             // Within these rules, shift takes precedence over reduce
             // E.g. `..1 + 2` is interpreted as being `..(1 + 2)`
-            let expr = self.parse_range(true);
+            let expr = self.parse_range(ctx, true);
             let range = op_token.range | expr.range();
             return ast::RangeExpr {
                 begin: None,
@@ -672,10 +672,10 @@ impl Parser {
         }) {
             op
         } else {
-            return self.parse_primary();
+            return self.parse_primary(ctx);
         };
-        let op_token = self.bump(LexerMode::BEG);
-        let expr = self.parse_unary();
+        let op_token = self.bump(ctx.beg());
+        let expr = self.parse_unary(ctx);
         let range = op_token.range | expr.range();
         ast::UnaryExpr {
             op,
@@ -689,15 +689,15 @@ impl Parser {
     //            | '(' args ',' args_forward rparen
     //            | '(' args_forward rparen
     /// Parses a parenthesized argument list like `(42, 80)` as in `foo(42, 80)`.
-    fn parse_paren_args(&mut self) -> Args {
+    fn parse_paren_args(&mut self, ctx: LexCtx) -> Args {
         assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
-        let lparen_token = self.bump(LexerMode::BEG);
+        let lparen_token = self.bump(ctx.beg());
         let mut list = Vec::new();
         while !matches!(
             self.next_token.kind,
             TokenKind::Eof | TokenKind::KeywordEnd | TokenKind::Semi | TokenKind::RParen
         ) {
-            let arg = self.parse_arg_elem();
+            let arg = self.parse_arg_elem(ctx);
 
             let debris = self.skip_debris(|token| {
                 matches!(
@@ -712,7 +712,7 @@ impl Parser {
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
-                Some(self.bump(LexerMode::BEG))
+                Some(self.bump(ctx.beg()))
             } else {
                 None
             };
@@ -733,7 +733,7 @@ impl Parser {
             todo!("arguments in paren_args");
         }
         // TODO: handle opt_nl
-        let rparen_token = self.bump(LexerMode::MID);
+        let rparen_token = self.bump(ctx.mid());
         let range = lparen_token.range | rparen_token.range;
         // (vec![], lparen_token.range | rparen_token.range)
         Args::Paren(ParenArgs {
@@ -745,14 +745,18 @@ impl Parser {
     }
 
     /// Parses a non-parenthesized argument list.
-    fn parse_command_args(&mut self) -> CommandArgs {
+    fn parse_command_args(&mut self, ctx: LexCtx) -> CommandArgs {
+        let ctx = LexCtx {
+            in_command_args: true,
+            ..ctx
+        };
         let mut list = Vec::new();
         loop {
-            let arg = self.parse_arg_elem();
+            let arg = self.parse_arg_elem(ctx);
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
-                Some(self.bump(LexerMode::BEG))
+                Some(self.bump(ctx.beg()))
             } else {
                 None
             };
@@ -779,7 +783,7 @@ impl Parser {
         }
     }
 
-    fn parse_arg_elem(&mut self) -> Arg {
+    fn parse_arg_elem(&mut self, ctx: LexCtx) -> Arg {
         // TODO: argument splat `f(*a)`
         // if matches!(self.next_token.kind, TokenKind::Star) {}
         // TODO: kwargs splat `f(**options)`
@@ -790,7 +794,7 @@ impl Parser {
         // if matches!(self.next_token.kind, TokenKind::Amper) {}
 
         // TODO: arg_value check `f(foo => bar)`
-        let expr = self.parse_arg_expr();
+        let expr = self.parse_arg_expr(ctx);
 
         // TODO: assoc arg
         // if matches!(self.next_token.kind, TokenKind::Assoc) {}
@@ -809,8 +813,8 @@ impl Parser {
     ///
     /// - `foo::Bar`
     /// - `foo.bar`
-    fn parse_primary(&mut self) -> Expr {
-        let mut expr = self.parse_primary_inner();
+    fn parse_primary(&mut self, ctx: LexCtx) -> Expr {
+        let mut expr = self.parse_primary_inner(ctx);
         loop {
             match &self.next_token.kind {
                 // primary : primary_value tCOLON2 tCONSTANT
@@ -822,13 +826,13 @@ impl Parser {
                 //             | primary_value tCOLON2 paren_args
                 TokenKind::Dot | TokenKind::AndDot | TokenKind::DColon => {
                     // TODO: handle primary_value condition
-                    let op_token = self.bump(LexerMode::BEG);
+                    let op_token = self.bump(ctx.beg());
                     match &self.next_token.kind {
                         TokenKind::Ident(ident_type, name) => {
                             let ident_type = *ident_type;
                             let is_dcolon = matches!(op_token.kind, TokenKind::DColon);
                             let name = name.to_string();
-                            let token = self.bump(LexerMode::MID);
+                            let token = self.bump(ctx.mid());
                             let range = expr.range() | token.range;
                             if is_dcolon && ident_type == IdentType::Const {
                                 let e = ast::ConstExpr {
@@ -839,7 +843,7 @@ impl Parser {
                                 };
                                 expr = if matches!(self.next_token.kind, TokenKind::LParenCall) {
                                     let mut e = e.convert_to_send();
-                                    let args = self.parse_paren_args();
+                                    let args = self.parse_paren_args(ctx);
                                     e.set_args(args);
                                     e.into()
                                 } else {
@@ -854,7 +858,7 @@ impl Parser {
                                     meta: NodeMeta { range, node_id: 0 },
                                 };
                                 if matches!(self.next_token.kind, TokenKind::LParenCall) {
-                                    let args = self.parse_paren_args();
+                                    let args = self.parse_paren_args(ctx);
                                     e.set_args(args);
                                 }
                                 expr = e.into();
@@ -883,7 +887,7 @@ impl Parser {
     }
 
     /// Parses a primary expression, with a few exceptions (which are parsed in `parse_primary`)
-    fn parse_primary_inner(&mut self) -> Expr {
+    fn parse_primary_inner(&mut self, ctx: LexCtx) -> Expr {
         match &self.next_token.kind {
             // primary : strings
             // strings : string
@@ -909,7 +913,7 @@ impl Parser {
                         unreachable!();
                     }
                 }
-                let end_token = self.bump(LexerMode::MID);
+                let end_token = self.bump(ctx.mid());
                 let range = beg_token.range | end_token.range;
                 // TODO: multiple quoted parts (like `"foo" "bar"`)
                 ast::StringLiteralExpr {
@@ -925,7 +929,7 @@ impl Parser {
             // user_variable : tIDENTIFIER
             TokenKind::Ident(IdentType::Ident | IdentType::FIdent, name) => {
                 let name = name.to_string();
-                let token = self.bump(LexerMode::MID);
+                let token = self.bump(ctx.mid());
                 let mut e = ast::SendExpr {
                     optional: false,
                     recv: None,
@@ -937,7 +941,7 @@ impl Parser {
                     },
                 };
                 if matches!(self.next_token.kind, TokenKind::LParenCall) {
-                    let args = self.parse_paren_args();
+                    let args = self.parse_paren_args(ctx);
                     e.set_args(args);
                 }
                 e.into()
@@ -949,7 +953,7 @@ impl Parser {
             // user_variable : tCONSTANT
             TokenKind::Ident(IdentType::Const, name) => {
                 let name = name.to_string();
-                let token = self.bump(LexerMode::MID);
+                let token = self.bump(ctx.mid());
                 let e = ast::ConstExpr {
                     toplevel: false,
                     recv: None,
@@ -961,7 +965,7 @@ impl Parser {
                 };
                 if matches!(self.next_token.kind, TokenKind::LParenCall) {
                     let mut e = e.convert_to_send();
-                    let args = self.parse_paren_args();
+                    let args = self.parse_paren_args(ctx);
                     e.set_args(args);
                     e.into()
                 } else {
@@ -970,10 +974,10 @@ impl Parser {
             }
             // primary : tCOLON3 tCONSTANT
             TokenKind::DColonBeg => {
-                let dcolon_token = self.bump(LexerMode::BEG);
+                let dcolon_token = self.bump(ctx.beg());
                 if let TokenKind::Ident(IdentType::Const, name) = &self.next_token.kind {
                     let name = name.to_string();
-                    let token = self.bump(LexerMode::MID);
+                    let token = self.bump(ctx.mid());
                     let range = dcolon_token.range | token.range;
                     ast::ConstExpr {
                         toplevel: true,
@@ -1000,7 +1004,7 @@ impl Parser {
             // var_ref : keyword_variable
             // keyword_variable : keyword_nil
             TokenKind::KeywordNil => {
-                let token = self.bump(LexerMode::MID);
+                let token = self.bump(ctx.mid());
                 ast::NilExpr {
                     meta: NodeMeta {
                         range: token.range,
@@ -1017,7 +1021,7 @@ impl Parser {
             // Note that tMINUS_NUM is handled in lexer in this parer
             TokenKind::Numeric(numval) => {
                 let numval = *numval;
-                let token = self.bump(LexerMode::MID);
+                let token = self.bump(ctx.mid());
                 ast::NumericExpr {
                     numval,
                     meta: NodeMeta {
@@ -1029,7 +1033,7 @@ impl Parser {
             }
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
-                let lparen_token = self.bump(LexerMode::BEG);
+                let lparen_token = self.bump(ctx.beg());
                 let stmts = self.parse_compstmt(|token| {
                     matches!(
                         token.kind,
@@ -1042,7 +1046,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let rparen_token = self.bump(LexerMode::MID);
+                let rparen_token = self.bump(ctx.mid());
                 let range = lparen_token.range | rparen_token.range;
                 ast::ParenthesizedExpr {
                     stmts,
@@ -1054,21 +1058,21 @@ impl Parser {
             //         | k_class tLSHFT expr term bodystmt k_end
             TokenKind::KeywordClass => {
                 // TODO: class-specific lexer condition (e.g. class<<Foo)
-                let class_token = self.bump(LexerMode::BEG);
+                let class_token = self.bump(ctx.beg());
                 if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::LShift)) {
                     todo!("singular class (class << foo)");
                 }
                 // TODO: check cpath condition
-                let cpath = self.parse_primary();
+                let cpath = self.parse_primary(ctx);
                 let superclass = if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::Lt)) {
-                    let op_token = self.bump(LexerMode::BEG);
+                    let op_token = self.bump(ctx.beg());
                     // TODO: check expr_value condition
-                    let expr = self.parse_expr();
+                    let expr = self.parse_expr(ctx);
                     let range = op_token.range | expr.range();
                     if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                         todo!("error handling after superclass clause");
                     }
-                    self.bump(LexerMode::BEG);
+                    self.bump(ctx.beg());
                     Some(SuperclassClause {
                         expr: Box::new(expr),
                         meta: NodeMeta { range, node_id: 0 },
@@ -1086,7 +1090,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let end_token = self.bump(LexerMode::MID);
+                let end_token = self.bump(ctx.mid());
                 let range = class_token.range | end_token.range;
                 ast::ClassExpr {
                     cpath: Box::new(cpath),
@@ -1098,9 +1102,9 @@ impl Parser {
             }
             // primary : k_module cpath bodystmt k_end
             TokenKind::KeywordModule => {
-                let module_token = self.bump(LexerMode::BEG);
+                let module_token = self.bump(ctx.beg());
                 // TODO: check cpath condition
-                let cpath = self.parse_primary();
+                let cpath = self.parse_primary(ctx);
                 // TODO: bodystmt
                 let body = self.parse_compstmt_(|token| {
                     matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
@@ -1111,7 +1115,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let end_token = self.bump(LexerMode::MID);
+                let end_token = self.bump(ctx.mid());
                 let range = module_token.range | end_token.range;
                 ast::ModuleExpr {
                     cpath: Box::new(cpath),
@@ -1124,12 +1128,12 @@ impl Parser {
             //         | defs_head f_arglist bodystmt k_end
             TokenKind::KeywordDef => {
                 // TODO: EXPR_FNAME
-                let def_token = self.bump(LexerMode::BEG);
+                let def_token = self.bump(ctx.beg());
                 match &self.next_token.kind {
                     TokenKind::Ident(_, name) => {
                         let name = name.to_string();
                         // TODO: EXPR_ENDFN
-                        self.bump(LexerMode::MID);
+                        self.bump(ctx.mid());
                         if matches!(self.next_token.kind, TokenKind::Dot) {
                             todo!("singleton def");
                         } else if matches!(self.next_token.kind, TokenKind::LParenCall) {
@@ -1140,7 +1144,7 @@ impl Parser {
                         ) {
                             todo!("def args");
                         }
-                        self.bump(LexerMode::BEG);
+                        self.bump(ctx.beg());
                         // TODO: bodystmt
                         let body = self.parse_compstmt_(|token| {
                             matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
@@ -1148,7 +1152,7 @@ impl Parser {
                         if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                             todo!("error recovery for def body");
                         }
-                        let end_token = self.bump(LexerMode::MID);
+                        let end_token = self.bump(ctx.mid());
                         let range = def_token.range | end_token.range;
                         DefnExpr {
                             name,
@@ -1177,12 +1181,15 @@ impl Parser {
             TokenKind::KeywordBegin => todo!("begin .. end"),
             TokenKind::KeywordCapitalBegin => todo!("BEGIN {{ .. }}"),
             TokenKind::KeywordCapitalEnd => todo!("END {{ .. }}"),
-            TokenKind::KeywordDo => todo!("do .. end"),
+            TokenKind::KeywordDoAfterCommandCall
+            | TokenKind::KeywordDoAfterMethodCall
+            | TokenKind::KeywordDoAfterCondition
+            | TokenKind::KeywordDoAfterLambda => todo!("do .. end"),
             TokenKind::KeywordFor => todo!("for .. end"),
             TokenKind::KeywordIf => todo!("if .. end"),
             TokenKind::KeywordWhile => todo!("while .. end"),
             _ => {
-                let token = self.bump(LexerMode::MID);
+                let token = self.bump(ctx.mid());
                 self.errors
                     .push(ParseError::UnexpectedToken { range: token.range });
                 let range = token.range;
@@ -1195,9 +1202,9 @@ impl Parser {
         }
     }
 
-    fn parse_opt_nl(&mut self) {
+    fn parse_opt_nl(&mut self, ctx: LexCtx) {
         if matches!(self.next_token.kind, TokenKind::NewLine) {
-            self.bump(LexerMode::BEG);
+            self.bump(ctx.beg());
         }
     }
 
@@ -1205,6 +1212,7 @@ impl Parser {
     where
         F: Fn(&Token) -> bool,
     {
+        let ctx = LexCtx::default();
         let first_range = self.next_token.range;
         let mut debris = Vec::new();
         while !is_end_token(&self.next_token) {
@@ -1248,13 +1256,16 @@ impl Parser {
                 | TokenKind::UnOp(_)
                 | TokenKind::LParenBeg
                 | TokenKind::DColonBeg => {
-                    let expr = self.parse_primary();
+                    let expr = self.parse_primary(ctx);
                     debris.push(Debri::ExprLike(expr));
                 }
 
                 // Those which is likely followed by an expression
                 TokenKind::KeywordAnd
-                | TokenKind::KeywordDo
+                | TokenKind::KeywordDoAfterCommandCall
+                | TokenKind::KeywordDoAfterMethodCall
+                | TokenKind::KeywordDoAfterCondition
+                | TokenKind::KeywordDoAfterLambda
                 | TokenKind::KeywordElse
                 | TokenKind::KeywordElsif
                 | TokenKind::KeywordEnsure
@@ -1281,13 +1292,13 @@ impl Parser {
                 | TokenKind::Semi
                 | TokenKind::DColon
                 | TokenKind::NewLine => {
-                    let token = self.bump(LexerMode::BEG);
+                    let token = self.bump(ctx.beg());
                     debris.push(Debri::Token(token));
                 }
 
                 // Those which usually closes an expression
                 TokenKind::KeywordEnd | TokenKind::RParen => {
-                    let token = self.bump(LexerMode::MID);
+                    let token = self.bump(ctx.mid());
                     debris.push(Debri::Token(token));
                 }
 
@@ -1301,6 +1312,38 @@ impl Parser {
                 .push(ParseError::UnexpectedToken { range: first_range });
         }
         debris
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+struct LexCtx {
+    in_condition: bool,
+    in_command_args: bool,
+}
+
+impl LexCtx {
+    fn beg(&self) -> LexerMode {
+        let Self {
+            in_condition,
+            in_command_args,
+        } = *self;
+        LexerMode::Normal(NormalLexerMode {
+            beg: true,
+            in_condition,
+            in_command_args,
+        })
+    }
+
+    fn mid(&self) -> LexerMode {
+        let Self {
+            in_condition,
+            in_command_args,
+        } = *self;
+        LexerMode::Normal(NormalLexerMode {
+            beg: false,
+            in_condition,
+            in_command_args,
+        })
     }
 }
 

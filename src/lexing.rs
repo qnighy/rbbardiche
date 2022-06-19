@@ -63,14 +63,11 @@ pub(crate) enum LexerMode {
     String(StringLexerMode),
 }
 
-impl LexerMode {
-    pub(crate) const BEG: LexerMode = LexerMode::Normal(NormalLexerMode { beg: true });
-    pub(crate) const MID: LexerMode = LexerMode::Normal(NormalLexerMode { beg: false });
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct NormalLexerMode {
     pub(crate) beg: bool,
+    pub(crate) in_condition: bool,
+    pub(crate) in_command_args: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -426,7 +423,17 @@ impl Parser {
                     } else {
                         match ident.as_bytes() {
                             b"__END__" => todo!("__END__"),
-                            b"do" => todo!("do keyword"),
+                            b"do" => {
+                                // TODO: lambda_beginning_p
+                                if mode.in_condition {
+                                    TokenKind::KeywordDoAfterCondition
+                                    // TODO: take EXPR_CMDARG into account
+                                } else if mode.in_command_args {
+                                    TokenKind::KeywordDoAfterCommandCall
+                                } else {
+                                    TokenKind::KeywordDoAfterMethodCall
+                                }
+                            }
                             b"if" => {
                                 if mode.beg {
                                     TokenKind::KeywordIf

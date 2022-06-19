@@ -61,8 +61,14 @@ pub enum TokenKind {
     KeywordDef,
     /// `defined?` (a.k.a. keyword_defined)
     KeywordDefinedQ,
+    /// `do` (a.k.a. keyword_do_block)
+    KeywordDoAfterCommandCall,
     /// `do` (a.k.a. keyword_do)
-    KeywordDo,
+    KeywordDoAfterMethodCall,
+    /// `do` (a.k.a. keyword_do_cond)
+    KeywordDoAfterCondition,
+    /// `do` (a.k.a. keyword_do_LAMBDA)
+    KeywordDoAfterLambda,
     /// `else` (a.k.a. keyword_else)
     KeywordElse,
     /// `elsif` (a.k.a. keyword_elsif)
