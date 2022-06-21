@@ -1,7 +1,7 @@
 use crate::ast::{
-    self, Arg, Args, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg, EmptyStmt, Expr,
-    ExprStmt, NilExpr, NodeMeta, ParenArgs, Program, Range, RangeType, Stmt, SuperclassClause,
-    UnaryOp,
+    self, Arg, Args, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg, DelimitedFArg,
+    EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs, ParenFArgs, Program,
+    Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::lexing::{LexerMode, NormalLexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -1136,12 +1136,9 @@ impl Parser {
                         self.bump(ctx.mid());
                         if matches!(self.next_token.kind, TokenKind::Dot) {
                             todo!("singleton def");
-                        } else if matches!(self.next_token.kind, TokenKind::LParenCall) {
-                            todo!("f_paren_args");
-                        } else if !matches!(
-                            self.next_token.kind,
-                            TokenKind::Semi | TokenKind::NewLine
-                        ) {
+                        }
+                        let args = self.parse_f_arglist(ctx);
+                        if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                             todo!("def args");
                         }
                         self.bump(ctx.beg());
@@ -1156,7 +1153,7 @@ impl Parser {
                         let range = def_token.range | end_token.range;
                         DefnExpr {
                             name,
-                            args: (),
+                            args,
                             body: Box::new(body),
                             meta: NodeMeta { range, node_id: 0 },
                         }
@@ -1200,6 +1197,92 @@ impl Parser {
                 .into()
             }
         }
+    }
+
+    fn parse_f_paren_args(&mut self, ctx: LexCtx) -> ParenFArgs {
+        assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
+        let lparen_token = self.bump(ctx.beg());
+        let mut list = Vec::new();
+        while !matches!(
+            self.next_token.kind,
+            TokenKind::Eof | TokenKind::KeywordEnd | TokenKind::Semi | TokenKind::RParen
+        ) {
+            let arg = self.parse_f_arg(ctx);
+
+            let debris = self.skip_debris(|token| {
+                matches!(
+                    token.kind,
+                    TokenKind::Eof
+                        | TokenKind::KeywordEnd
+                        | TokenKind::Semi
+                        | TokenKind::RParen
+                        | TokenKind::Comma
+                )
+            });
+
+            // TODO: the condition below should exclude block args
+            let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
+                Some(self.bump(ctx.beg()))
+            } else {
+                None
+            };
+            let range = if let Some(delim) = &delim {
+                arg.range() | delim.range
+            } else {
+                arg.range()
+            };
+            list.push(DelimitedFArg {
+                arg,
+                debris,
+                delim,
+                meta: NodeMeta { range, node_id: 0 },
+            })
+        }
+        if !matches!(self.next_token.kind, TokenKind::RParen) {
+            // TODO: actual argument contents
+            todo!("arguments in paren_args");
+        }
+        // TODO: handle opt_nl
+        let rparen_token = self.bump(ctx.mid());
+        let range = lparen_token.range | rparen_token.range;
+        // TODO: check ordering constraints
+        // TODO: check invalid trailing comma
+        ParenFArgs {
+            open_token: lparen_token,
+            list,
+            meta: NodeMeta { range, node_id: 0 },
+            close_token: Some(rparen_token),
+        }
+    }
+
+    fn parse_f_arglist(&mut self, ctx: LexCtx) -> Option<FArgs> {
+        if matches!(self.next_token.kind, TokenKind::LParenCall) {
+            Some(FArgs::Paren(self.parse_f_paren_args(ctx)))
+        } else if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
+            todo!("def args");
+        } else {
+            None
+        }
+    }
+    fn parse_f_arg(&mut self, ctx: LexCtx) -> FArg {
+        // TODO: argument splat `f(*a)`
+        // if matches!(self.next_token.kind, TokenKind::Star) {}
+        // TODO: kwargs splat `f(**options)`
+        // if matches!(self.next_token.kind, TokenKind::DStar) {}
+        // TODO: label assoc `f(foo: bar)`
+        // if matches!(self.next_token.kind, TokenKind::Label) {}
+        // TODO: block arg `f(&block)`
+        // if matches!(self.next_token.kind, TokenKind::Amper) {}
+
+        // TODO: arg_value check `f(foo => bar)`
+        let expr = self.parse_arg_expr(ctx);
+
+        // TODO: assoc arg
+        // if matches!(self.next_token.kind, TokenKind::Assoc) {}
+
+        // TODO: command in call_args `f(g h)`
+        // if list.is_empty() && is_eligible_for_command(&expr) && is_beginning {}
+        FArg::Simple(expr)
     }
 
     fn parse_opt_nl(&mut self, ctx: LexCtx) {

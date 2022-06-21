@@ -395,7 +395,7 @@ impl From<&ast::DefnExpr> for SExp {
     fn from(expr: &ast::DefnExpr) -> Self {
         let ast::DefnExpr {
             name,
-            args: (),
+            args,
             body,
             meta: _,
         } = expr;
@@ -405,10 +405,52 @@ impl From<&ast::DefnExpr> for SExp {
                 SExp::Symbol { name: name.clone() },
                 SExp::Tagged {
                     tag: "args".to_owned(),
-                    args: vec![],
+                    args: if let Some(args) = args {
+                        args.list()
+                            .iter()
+                            .map(|arg| SExp::from(arg))
+                            .collect::<Vec<_>>()
+                    } else {
+                        vec![]
+                    },
                 },
                 to_sexp(body),
             ],
+        }
+    }
+}
+
+impl From<&ast::DelimitedFArg> for SExp {
+    fn from(expr: &ast::DelimitedFArg) -> Self {
+        let ast::DelimitedFArg {
+            arg,
+            debris: _,
+            delim: _,
+            meta: _,
+        } = expr;
+        SExp::from(arg)
+    }
+}
+
+impl From<&ast::FArg> for SExp {
+    fn from(expr: &ast::FArg) -> Self {
+        match expr {
+            ast::FArg::Simple(expr) => match expr {
+                Expr::Send(ast::SendExpr {
+                    optional: false,
+                    recv: None,
+                    name,
+                    args: None,
+                    meta: _,
+                }) => SExp::Tagged {
+                    tag: "arg".to_owned(),
+                    args: vec![SExp::Symbol { name: name.clone() }],
+                },
+                _ => SExp::Tagged {
+                    tag: "arg".to_owned(),
+                    args: vec![SExp::Invalid],
+                },
+            },
         }
     }
 }

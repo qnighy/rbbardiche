@@ -460,9 +460,117 @@ pub struct ModuleExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefnExpr {
     pub name: String,
-    pub args: (),
+    pub args: Option<FArgs>,
     pub body: Box<Expr>,
     pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FArgs {
+    Paren(ParenFArgs),
+    Command(CommandFArgs),
+}
+
+impl FArgs {
+    pub fn list(&self) -> &Vec<DelimitedFArg> {
+        match self {
+            FArgs::Paren(e) => &e.list,
+            FArgs::Command(e) => &e.list,
+        }
+    }
+
+    pub fn list_mut(&mut self) -> &mut Vec<DelimitedFArg> {
+        match self {
+            FArgs::Paren(e) => &mut e.list,
+            FArgs::Command(e) => &mut e.list,
+        }
+    }
+
+    pub fn meta(&self) -> &NodeMeta {
+        self.as_ref()
+    }
+
+    pub fn meta_mut(&mut self) -> &mut NodeMeta {
+        self.as_mut()
+    }
+
+    pub fn range(&self) -> Range {
+        self.meta().range
+    }
+}
+
+impl AsRef<NodeMeta> for FArgs {
+    fn as_ref(&self) -> &NodeMeta {
+        match self {
+            FArgs::Paren(e) => &e.meta,
+            FArgs::Command(e) => &e.meta,
+        }
+    }
+}
+
+impl AsMut<NodeMeta> for FArgs {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            FArgs::Paren(e) => &mut e.meta,
+            FArgs::Command(e) => &mut e.meta,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParenFArgs {
+    pub open_token: Token,
+    pub list: Vec<DelimitedFArg>,
+    pub close_token: Option<Token>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommandFArgs {
+    pub list: Vec<DelimitedFArg>,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DelimitedFArg {
+    pub arg: FArg,
+    pub debris: Vec<Debri>,
+    pub delim: Option<Token>,
+    pub meta: NodeMeta,
+}
+
+impl DelimitedFArg {
+    pub fn range(&self) -> Range {
+        self.meta.range
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FArg {
+    Simple(Expr),
+    // Splat(SplatFArg),
+    // KeywordSplat(KeywordSplatFArg),
+    // Assoc(AssocFArg),
+    // Labeled(LabeledFArg),
+    // Block(BlockFArg),
+}
+
+impl FArg {
+    pub fn meta(&self) -> &NodeMeta {
+        match self {
+            FArg::Simple(a) => a.meta(),
+        }
+    }
+
+    pub fn meta_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            FArg::Simple(a) => a.meta_mut(),
+        }
+    }
+
+    pub fn range(&self) -> Range {
+        self.meta().range
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
