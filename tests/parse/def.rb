@@ -15,3 +15,40 @@ end
 def foo(); end
 def foo(x); end
 def foo(x, y); end
+
+def foo; end
+def Foo; end
+def foo!; end
+def Foo!; end
+def foo?; end
+def Foo?; end
+# def foo=; end
+# def Foo=; end
+def |; end
+def ^; end
+# def &; end
+def <=>; end
+def ==; end
+def ===; end
+def =~; end
+def !~; end
+def >; end
+def >=; end
+def <; end
+def <=; end
+def !=; end
+def <<; end
+def >>; end
+def +; end
+def -; end
+# def *; end
+# def /; end
+# def %; end
+# def **; end
+def !; end
+def ~; end
+# def +@; end
+# def -@; end
+# def []; end
+# def []=; end
+# def `; end
