@@ -2,10 +2,8 @@ s(:begin,
   s(:send,
     s(:str, "foo"), :+,
     s(:str, "bar")),
-  s(:str, "foo
-bar"),
+  s(:str, "foo\nbar"),
   s(:send,
     s(:str, "foo"), :+,
     s(:str, "bar")),
-  s(:str, "foo
-bar"))
+  s(:str, "foo\nbar"))

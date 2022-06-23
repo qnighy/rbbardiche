@@ -67,7 +67,32 @@ impl<'a> Display for SExpIndent<'a> {
             }
             SExp::String { value } => {
                 // TODO: escaping
-                write!(f, "\"{}\"", value)?;
+                f.write_str("\"")?;
+                for ch in value.chars() {
+                    if ch.is_control() {
+                        let name = match ch {
+                            '\x07' => Some("\\a"),
+                            '\x08' => Some("\\b"),
+                            '\x09' => Some("\\t"),
+                            '\x0A' => Some("\\n"),
+                            '\x0B' => Some("\\v"),
+                            '\x0C' => Some("\\f"),
+                            '\x0D' => Some("\\r"),
+                            '\x1B' => Some("\\e"),
+                            _ => None,
+                        };
+                        if let Some(name) = name {
+                            f.write_str(name)?;
+                        } else if (ch as u32) < 0x10000 {
+                            write!(f, "\\u{:04X}", ch as u32)?;
+                        } else {
+                            write!(f, "\\u{{{:X}}}", ch as u32)?;
+                        }
+                    } else {
+                        write!(f, "{}", ch)?;
+                    }
+                }
+                f.write_str("\"")?;
             }
             SExp::Invalid => {
                 f.write_str("<invalid>")?;
