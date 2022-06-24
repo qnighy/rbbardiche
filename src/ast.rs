@@ -57,6 +57,7 @@ pub enum Expr {
     Assign(AssignExpr),
     Send(SendExpr),
     Const(ConstExpr),
+    Array(ArrayExpr),
     Class(ClassExpr),
     Module(ModuleExpr),
     Defn(DefnExpr),
@@ -79,6 +80,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Assign($x) => $arm,
             $crate::ast::Expr::Send($x) => $arm,
             $crate::ast::Expr::Const($x) => $arm,
+            $crate::ast::Expr::Array($x) => $arm,
             $crate::ast::Expr::Class($x) => $arm,
             $crate::ast::Expr::Module($x) => $arm,
             $crate::ast::Expr::Defn($x) => $arm,
@@ -182,6 +184,12 @@ impl From<SendExpr> for Expr {
 impl From<ConstExpr> for Expr {
     fn from(e: ConstExpr) -> Self {
         Expr::Const(e)
+    }
+}
+
+impl From<ArrayExpr> for Expr {
+    fn from(e: ArrayExpr) -> Self {
+        Expr::Array(e)
     }
 }
 
@@ -428,6 +436,14 @@ impl ConstExpr {
             meta: self.meta,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArrayExpr {
+    pub open_token: Token,
+    pub list: Vec<DelimitedArg>,
+    pub close_token: Option<Token>,
+    pub meta: NodeMeta,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

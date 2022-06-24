@@ -329,6 +329,10 @@ impl Parser {
                 self.pos += 1;
                 TokenKind::RParen
             }
+            b']' => {
+                self.pos += 1;
+                TokenKind::RBrack
+            }
             b':' => {
                 self.pos += 1;
                 if self.next() == Some(b':') {
@@ -389,6 +393,17 @@ impl Parser {
                     TokenKind::LParenCall
                 } else {
                     todo!("(")
+                }
+            }
+            b'[' => {
+                self.pos += 1;
+                // TODO: after_operator condition
+                // TODO: arg condition
+                if mode.beg {
+                    TokenKind::LBrackBeg
+                } else {
+                    todo!("[");
+                    // TokenKind::LBrackMid
                 }
             }
             b'%' => {

@@ -379,6 +379,21 @@ impl From<&Arg> for SExp {
     }
 }
 
+impl From<&ast::ArrayExpr> for SExp {
+    fn from(expr: &ast::ArrayExpr) -> Self {
+        let ast::ArrayExpr {
+            open_token: _,
+            list,
+            close_token: _,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
+            tag: "array".to_owned(),
+            args: list.iter().map(|elem| SExp::from(elem)).collect::<Vec<_>>(),
+        }
+    }
+}
+
 impl From<&ast::ClassExpr> for SExp {
     fn from(expr: &ast::ClassExpr) -> Self {
         let ast::ClassExpr {

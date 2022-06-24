@@ -1,9 +1,9 @@
 use bstr::ByteSlice;
 
 use crate::ast::{
-    self, Arg, Args, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg, DelimitedFArg,
-    EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs, ParenFArgs, Program,
-    Range, RangeType, Stmt, SuperclassClause, UnaryOp,
+    self, Arg, Args, ArrayExpr, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg,
+    DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs,
+    ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::lexing::{LexerMode, NormalLexerMode, StringLexerMode};
 use crate::parser::Parser;
@@ -687,6 +687,67 @@ impl Parser {
         .into()
     }
 
+    // primary : tLBRACK aref_args ']'
+    // aref_args : none
+    //           | args trailer
+    //           | args ',' assocs trailer
+    //           | assocs trailer
+    /// Parses an array literal like `[]`.
+    fn parse_array(&mut self, ctx: LexCtx) -> ArrayExpr {
+        assert!(matches!(self.next_token.kind, TokenKind::LBrackBeg));
+        let lbrack_token = self.bump(ctx.beg());
+        let mut list = Vec::new();
+        while !matches!(
+            self.next_token.kind,
+            TokenKind::Eof | TokenKind::KeywordEnd | TokenKind::Semi | TokenKind::RBrack
+        ) {
+            let arg = self.parse_arg_elem(ctx);
+
+            let debris = self.skip_debris(|token| {
+                matches!(
+                    token.kind,
+                    TokenKind::Eof
+                        | TokenKind::KeywordEnd
+                        | TokenKind::Semi
+                        | TokenKind::RBrack
+                        | TokenKind::Comma
+                        | TokenKind::NewLine
+                )
+            });
+
+            // TODO: the condition below should exclude block args
+            let delim = if matches!(self.next_token.kind, TokenKind::Comma | TokenKind::NewLine) {
+                Some(self.bump(ctx.beg()))
+            } else {
+                None
+            };
+            let range = if let Some(delim) = &delim {
+                arg.range() | delim.range
+            } else {
+                arg.range()
+            };
+            list.push(DelimitedArg {
+                arg,
+                debris,
+                delim,
+                meta: NodeMeta { range, node_id: 0 },
+            })
+        }
+        if !matches!(self.next_token.kind, TokenKind::RBrack) {
+            todo!("error recovery in aref_args");
+        }
+        // TODO: handle opt_nl
+        let rbrack_token = self.bump(ctx.mid());
+        let range = lbrack_token.range | rbrack_token.range;
+        // TODO: check invalid arguments (like `[&block]`)
+        ArrayExpr {
+            open_token: lbrack_token,
+            list,
+            meta: NodeMeta { range, node_id: 0 },
+            close_token: Some(rbrack_token),
+        }
+    }
+
     // paren_args : '(' opt_call_args rparen
     //            | '(' args ',' args_forward rparen
     //            | '(' args_forward rparen
@@ -731,13 +792,11 @@ impl Parser {
             })
         }
         if !matches!(self.next_token.kind, TokenKind::RParen) {
-            // TODO: actual argument contents
-            todo!("arguments in paren_args");
+            todo!("error recovery in paren_args");
         }
         // TODO: handle opt_nl
         let rparen_token = self.bump(ctx.mid());
         let range = lparen_token.range | rparen_token.range;
-        // (vec![], lparen_token.range | rparen_token.range)
         Args::Paren(ParenArgs {
             open_token: lparen_token,
             list,
@@ -1056,6 +1115,8 @@ impl Parser {
                 }
                 .into()
             }
+            // primary : tLBRACK aref_args ']'
+            TokenKind::LBrackBeg => self.parse_array(ctx).into(),
             // primary : k_class cpath superclass bodystmt k_end
             //         | k_class tLSHFT expr term bodystmt k_end
             TokenKind::KeywordClass => {
@@ -1413,6 +1474,7 @@ impl Parser {
                 | TokenKind::Dot3Beg
                 | TokenKind::UnOp(_)
                 | TokenKind::LParenBeg
+                | TokenKind::LBrackBeg
                 | TokenKind::DColonBeg => {
                     let expr = self.parse_primary(ctx);
                     debris.push(Debri::ExprLike(expr));
@@ -1455,7 +1517,7 @@ impl Parser {
                 }
 
                 // Those which usually closes an expression
-                TokenKind::KeywordEnd | TokenKind::RParen => {
+                TokenKind::KeywordEnd | TokenKind::RParen | TokenKind::RBrack => {
                     let token = self.bump(ctx.mid());
                     debris.push(Debri::Token(token));
                 }

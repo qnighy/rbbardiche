@@ -206,6 +206,10 @@ pub enum TokenKind {
     LParenCall,
     /// `)`
     RParen,
+    /// `[` at the beginning of the expression (a.k.a. tLBRACK)
+    LBrackBeg,
+    /// `]`
+    RBrack,
     /// `?`
     Question,
     /// `:`
