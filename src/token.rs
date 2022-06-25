@@ -226,6 +226,170 @@ pub enum TokenKind {
     Eof,
 }
 
+impl TokenKind {
+    pub fn token_class(&self) -> TokenClass {
+        match self {
+            // `foo`
+            TokenKind::Ident(_, _)
+            // `__ENCODING__`
+            | TokenKind::KeywordUnderscoreEncoding
+            // `__LINE__`
+            | TokenKind::KeywordUnderscoreLine
+            // `__FILE__`
+            | TokenKind::KeywordUnderscoreFile
+            // `BEGIN {}` (resembles `f {}`)
+            | TokenKind::KeywordCapitalBegin
+            // `END {}` (resembles `f {}`)
+            | TokenKind::KeywordCapitalEnd
+            // `false`
+            | TokenKind::KeywordFalse
+            // `nil`
+            | TokenKind::KeywordNil
+            // `redo`
+            | TokenKind::KeywordRedo
+            // `retry`
+            | TokenKind::KeywordRetry
+            // `self`
+            | TokenKind::KeywordSelf
+            // `super` / `super e` (behaves like a method)
+            | TokenKind::KeywordSuper
+            // `true`
+            | TokenKind::KeywordTrue
+            // `yield` / `yield e` (behaves like a method)
+            | TokenKind::KeywordYield
+            // `123`
+            | TokenKind::Numeric(_)
+            // `"foo"` (though the contents are not expressions)
+            | TokenKind::StringContent(_) => TokenClass::SelfContained,
+
+            // `break` / `break e`
+            TokenKind::KeywordBreak
+            // `next` / `next e`
+            | TokenKind::KeywordNext
+            // `return` / `return e`
+            | TokenKind::KeywordReturn => TokenClass::MaybeOpen,
+
+            // `alias foo bar`
+            TokenKind::KeywordAlias
+            // `begin e end`
+            | TokenKind::KeywordBegin
+            // `case e when e; end`
+            | TokenKind::KeywordCase
+            // `class C end`
+            | TokenKind::KeywordClass
+            // `def m; end`
+            | TokenKind::KeywordDef
+            // `defined? e`
+            | TokenKind::KeywordDefinedQ
+            // `for x in e; end`
+            | TokenKind::KeywordFor
+            // `if e; end`
+            | TokenKind::KeywordIf
+            // `module C end`
+            | TokenKind::KeywordModule
+            // `not e`
+            | TokenKind::KeywordNot
+            // `undef foo`
+            | TokenKind::KeywordUndef
+            // `unless e; end`
+            | TokenKind::KeywordUnless
+            // `until e; end`
+            | TokenKind::KeywordUntil
+            // `while e; end`
+            | TokenKind::KeywordWhile
+            // `"foo"` (though the contents are not expressions)
+            | TokenKind::StringBeg(_)
+            // `..e`
+            | TokenKind::Dot2Beg
+            // `...e`
+            | TokenKind::Dot3Beg
+            // `+e`
+            | TokenKind::UnOp(_)
+            // `(e)`
+            | TokenKind::LParenBeg
+            // `[e]`
+            | TokenKind::LBrackBeg
+            // `::C`
+            | TokenKind::DColonBeg => TokenClass::Open,
+
+            // `begin e end`
+            TokenKind::KeywordEnd
+            // `"foo"` (though the contents are not expressions)
+            | TokenKind::StringEnd
+            // `(e)`
+            | TokenKind::RParen
+            // `[e]`
+            | TokenKind::RBrack
+            // `e (eof)`
+            | TokenKind::Eof => TokenClass::Close,
+
+            // Sep
+            // `e and e`
+            TokenKind::KeywordAnd
+            // `f e do e end`
+            | TokenKind::KeywordDoAfterCommandCall
+            // `f() do e end`
+            | TokenKind::KeywordDoAfterMethodCall
+            // `while e do e end`
+            | TokenKind::KeywordDoAfterCondition
+            // `-> do e end`
+            | TokenKind::KeywordDoAfterLambda
+            // `if e; else e; end`
+            | TokenKind::KeywordElse
+            // `if e; elsif e; end`
+            | TokenKind::KeywordElsif
+            // `begin ensure e end`
+            | TokenKind::KeywordEnsure
+            // `e if e`
+            | TokenKind::ModifierIf
+            // `for x in e; end`
+            | TokenKind::KeywordIn
+            // `e or e`
+            | TokenKind::KeywordOr
+            // `begin rescue e; end`
+            | TokenKind::KeywordRescue
+            // `e rescue e`
+            | TokenKind::ModifierRescue
+            // `if e then e end`
+            | TokenKind::KeywordThen
+            // `e unless e`
+            | TokenKind::ModifierUnless
+            // `e until e`
+            | TokenKind::ModifierUntil
+            // `case e when e; end`
+            | TokenKind::KeywordWhen
+            // `e while e`
+            | TokenKind::ModifierWhile
+            // `f(e, e)`
+            | TokenKind::Comma
+            // `f.f`
+            | TokenKind::Dot
+            // `f&.f`
+            | TokenKind::AndDot
+            // `e..e` (`e..` is considered a special case)
+            | TokenKind::Dot2Mid
+            // `e...e` (`e...` is considered a special case)
+            | TokenKind::Dot3Mid
+            // `e+e`
+            | TokenKind::BinOp(_)
+            // `f(e)`
+            | TokenKind::LParenCall
+            // `e ? e : e`
+            | TokenKind::Question
+            // `e ? e : e`
+            | TokenKind::Colon
+            // `x = e`
+            | TokenKind::Equal
+            // `e; e`
+            | TokenKind::Semi
+            // `C::C`
+            | TokenKind::DColon
+            // `e (newline) e`
+            | TokenKind::NewLine => TokenClass::Sep
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentType {
     /// - `foo` (a.k.a. tIDENTIFIER)
@@ -244,4 +408,19 @@ pub enum StringType {
     DQuote,
     // /// <code>`</code>
     // BQuote,
+}
+
+/// Describes how the token relates to expressions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenClass {
+    /// Starts an expression and immediately ends the expression.
+    SelfContained,
+    /// Starts an expression and possibly is followed by an expression.
+    MaybeOpen,
+    /// Starts an expression and is followed by an expression.
+    Open,
+    /// Follows an expression and ends an expression.
+    Close,
+    /// Follows an expression and is followed by an expression.
+    Sep,
 }

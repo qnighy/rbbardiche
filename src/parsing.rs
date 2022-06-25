@@ -8,7 +8,7 @@ use crate::ast::{
 use crate::lexing::{LexerMode, NormalLexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
-use crate::token::{IdentType, StringType, Token, TokenKind};
+use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
 
 pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
     let mut parser = Parser::new(source);
@@ -1435,95 +1435,23 @@ impl Parser {
         let first_range = self.next_token.range;
         let mut debris = Vec::new();
         while !is_end_token(&self.next_token) {
-            match self.next_token.kind {
+            match self.next_token.kind.token_class() {
                 // Those which likely starts an expression
-                TokenKind::Ident(_, _)
-                | TokenKind::KeywordUnderscoreEncoding
-                | TokenKind::KeywordUnderscoreLine
-                | TokenKind::KeywordUnderscoreFile
-                | TokenKind::KeywordCapitalBegin
-                | TokenKind::KeywordCapitalEnd
-                | TokenKind::KeywordAlias
-                | TokenKind::KeywordBegin
-                | TokenKind::KeywordBreak
-                | TokenKind::KeywordCase
-                | TokenKind::KeywordClass
-                | TokenKind::KeywordDef
-                | TokenKind::KeywordDefinedQ
-                | TokenKind::KeywordFalse
-                | TokenKind::KeywordFor
-                | TokenKind::KeywordIf
-                | TokenKind::KeywordModule
-                | TokenKind::KeywordNext
-                | TokenKind::KeywordNil
-                | TokenKind::KeywordNot
-                | TokenKind::KeywordRedo
-                | TokenKind::KeywordRetry
-                | TokenKind::KeywordReturn
-                | TokenKind::KeywordSelf
-                | TokenKind::KeywordSuper
-                | TokenKind::KeywordTrue
-                | TokenKind::KeywordUndef
-                | TokenKind::KeywordUnless
-                | TokenKind::KeywordUntil
-                | TokenKind::KeywordWhile
-                | TokenKind::KeywordYield
-                | TokenKind::Numeric(_)
-                | TokenKind::StringBeg(_)
-                | TokenKind::Dot2Beg
-                | TokenKind::Dot3Beg
-                | TokenKind::UnOp(_)
-                | TokenKind::LParenBeg
-                | TokenKind::LBrackBeg
-                | TokenKind::DColonBeg => {
+                TokenClass::SelfContained | TokenClass::MaybeOpen | TokenClass::Open => {
                     let expr = self.parse_primary(ctx);
                     debris.push(Debri::ExprLike(expr));
                 }
 
                 // Those which is likely followed by an expression
-                TokenKind::KeywordAnd
-                | TokenKind::KeywordDoAfterCommandCall
-                | TokenKind::KeywordDoAfterMethodCall
-                | TokenKind::KeywordDoAfterCondition
-                | TokenKind::KeywordDoAfterLambda
-                | TokenKind::KeywordElse
-                | TokenKind::KeywordElsif
-                | TokenKind::KeywordEnsure
-                | TokenKind::ModifierIf
-                | TokenKind::KeywordIn
-                | TokenKind::KeywordOr
-                | TokenKind::KeywordRescue
-                | TokenKind::ModifierRescue
-                | TokenKind::KeywordThen
-                | TokenKind::ModifierUnless
-                | TokenKind::ModifierUntil
-                | TokenKind::KeywordWhen
-                | TokenKind::ModifierWhile
-                | TokenKind::Comma
-                | TokenKind::Dot
-                | TokenKind::AndDot
-                | TokenKind::Dot2Mid
-                | TokenKind::Dot3Mid
-                | TokenKind::BinOp(_)
-                | TokenKind::LParenCall
-                | TokenKind::Question
-                | TokenKind::Colon
-                | TokenKind::Equal
-                | TokenKind::Semi
-                | TokenKind::DColon
-                | TokenKind::NewLine => {
+                TokenClass::Sep => {
                     let token = self.bump(ctx.beg());
                     debris.push(Debri::Token(token));
                 }
 
                 // Those which usually closes an expression
-                TokenKind::KeywordEnd | TokenKind::RParen | TokenKind::RBrack => {
+                TokenClass::Close => {
                     let token = self.bump(ctx.mid());
                     debris.push(Debri::Token(token));
-                }
-
-                TokenKind::StringContent(_) | TokenKind::StringEnd | TokenKind::Eof => {
-                    unreachable!()
                 }
             }
         }
