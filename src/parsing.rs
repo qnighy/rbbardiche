@@ -1140,6 +1140,22 @@ impl Parser {
             }
             // primary : tLBRACK aref_args ']'
             TokenKind::LBrackBeg => self.parse_array(ctx).into(),
+            // primary : tLBRACE assoc_list '}'
+            TokenKind::LBraceHash => {
+                let open_token = self.bump(ctx.beg());
+                if !matches!(self.next_token.kind, TokenKind::RBrace) {
+                    todo!("Hash contents");
+                }
+                let close_token = self.bump(ctx.mid());
+                let range = open_token.range | close_token.range;
+                ast::HashExpr {
+                    open_token,
+                    list: vec![],
+                    close_token: Some(close_token),
+                    meta: NodeMeta { range, node_id: 0 },
+                }
+                .into()
+            }
             // primary : k_class cpath superclass bodystmt k_end
             //         | k_class tLSHFT expr term bodystmt k_end
             TokenKind::KeywordClass => {

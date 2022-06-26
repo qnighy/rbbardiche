@@ -411,6 +411,24 @@ impl From<&ast::ArrayExpr> for SExp {
     }
 }
 
+impl From<&ast::HashExpr> for SExp {
+    fn from(expr: &ast::HashExpr) -> Self {
+        let ast::HashExpr {
+            open_token: _,
+            list,
+            close_token: _,
+            meta: _,
+        } = expr;
+        if !list.is_empty() {
+            todo!("serializing hash contents");
+        }
+        SExp::Tagged {
+            tag: "hash".to_owned(),
+            args: vec![],
+        }
+    }
+}
+
 impl From<&ast::ClassExpr> for SExp {
     fn from(expr: &ast::ClassExpr) -> Self {
         let ast::ClassExpr {

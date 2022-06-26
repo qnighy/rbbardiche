@@ -212,6 +212,10 @@ pub enum TokenKind {
     LBrackBeg,
     /// `]`
     RBrack,
+    /// `{` (a.k.a. tBRACE)
+    LBraceHash,
+    /// `}` (a.k.a. '}' or tSTRING_DEND)
+    RBrace,
     /// `?`
     Question,
     /// `:`
@@ -313,6 +317,8 @@ impl TokenKind {
             | TokenKind::LParenBeg
             // `[e]`
             | TokenKind::LBrackBeg
+            // `{ x: e }`
+            | TokenKind::LBraceHash
             // `::C`
             | TokenKind::Colon2Prefix => TokenClass::Prefix,
 
@@ -324,6 +330,8 @@ impl TokenKind {
             | TokenKind::RParen
             // `[e]`
             | TokenKind::RBrack
+            // `{ x: e }`
+            | TokenKind::RBrace
             // `e (eof)`
             | TokenKind::Eof => TokenClass::Postfix,
 

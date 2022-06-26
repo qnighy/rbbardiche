@@ -333,6 +333,11 @@ impl Parser {
                 self.pos += 1;
                 TokenKind::RBrack
             }
+            b'}' => {
+                self.pos += 1;
+                // TODO: string interpolation
+                TokenKind::RBrace
+            }
             b':' => {
                 self.pos += 1;
                 if self.next() == Some(b':') {
@@ -407,6 +412,11 @@ impl Parser {
                     todo!("[");
                     // TokenKind::LBrackMid
                 }
+            }
+            b'{' => {
+                self.pos += 1;
+                // TODO: various other conditions
+                TokenKind::LBraceHash
             }
             b'%' => {
                 self.pos += 1;
