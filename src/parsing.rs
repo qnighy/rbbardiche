@@ -194,8 +194,8 @@ impl Parser {
         let mut expr = self.parse_logical_or(ctx);
         loop {
             let range_type = match self.next_token.kind {
-                TokenKind::Dot2Mid => RangeType::Inclusive,
-                TokenKind::Dot3Mid => RangeType::Exclusive,
+                TokenKind::Dot2Infix => RangeType::Inclusive,
+                TokenKind::Dot3Infix => RangeType::Exclusive,
                 _ => break,
             };
             let op_token = self.bump(ctx.beg());
@@ -648,8 +648,8 @@ impl Parser {
     /// Parses `+e`, `-e`, `!e`, `~e`, and higher.
     fn parse_unary(&mut self, ctx: LexCtx) -> Expr {
         let range_type = match self.next_token.kind {
-            TokenKind::Dot2Beg => Some(RangeType::Inclusive),
-            TokenKind::Dot3Beg => Some(RangeType::Exclusive),
+            TokenKind::Dot2Prefix => Some(RangeType::Inclusive),
+            TokenKind::Dot3Prefix => Some(RangeType::Exclusive),
             _ => None,
         };
         if let Some(range_type) = range_type {
@@ -885,13 +885,13 @@ impl Parser {
                 //             | primary_value tCOLON2 operation3
                 //             | primary_value call_op paren_args
                 //             | primary_value tCOLON2 paren_args
-                TokenKind::Dot | TokenKind::AndDot | TokenKind::DColon => {
+                TokenKind::Dot | TokenKind::AndDot | TokenKind::Colon2Infix => {
                     // TODO: handle primary_value condition
                     let op_token = self.bump(ctx.beg());
                     match &self.next_token.kind {
                         TokenKind::Ident(ident_type, name) => {
                             let ident_type = *ident_type;
-                            let is_dcolon = matches!(op_token.kind, TokenKind::DColon);
+                            let is_dcolon = matches!(op_token.kind, TokenKind::Colon2Infix);
                             let name = name.to_string();
                             let token = self.bump(ctx.mid());
                             let range = expr.range() | token.range;
@@ -956,7 +956,7 @@ impl Parser {
             //        | string1
             //        | string string1
             // string1 : tSTRING_BEG string_contents tSTRING_END
-            TokenKind::StringBeg(string_type) => {
+            TokenKind::StringBegin(string_type) => {
                 let mode = match string_type {
                     StringType::DQuote => StringLexerMode::DoubleQuoted,
                     StringType::SQuote => StringLexerMode::SingleQuoted,
@@ -1034,7 +1034,7 @@ impl Parser {
                 }
             }
             // primary : tCOLON3 tCONSTANT
-            TokenKind::DColonBeg => {
+            TokenKind::Colon2Prefix => {
                 let dcolon_token = self.bump(ctx.beg());
                 if let TokenKind::Ident(IdentType::Const, name) = &self.next_token.kind {
                     let name = name.to_string();
@@ -1096,7 +1096,7 @@ impl Parser {
             // literal : symbol
             // symbol : ssym
             // ssym : tSYMBEG sym
-            TokenKind::SymbolBeg => {
+            TokenKind::SymbolBegin => {
                 let open_token = self.bump(ctx.beg());
                 if !matches!(self.next_token.kind, TokenKind::Ident(_, _)) {
                     todo!("symbol other than identifier");
@@ -1552,12 +1552,12 @@ fn starts_arg(token: &Token) -> bool {
             | TokenKind::KeywordWhile
             | TokenKind::KeywordYield
             | TokenKind::Numeric(_)
-            | TokenKind::StringBeg(_)
-            | TokenKind::Dot2Beg
-            | TokenKind::Dot3Beg
+            | TokenKind::StringBegin(_)
+            | TokenKind::Dot2Prefix
+            | TokenKind::Dot3Prefix
             | TokenKind::UnOp(_)
             | TokenKind::LParenBeg
-            | TokenKind::DColonBeg
+            | TokenKind::Colon2Prefix
     )
 }
 

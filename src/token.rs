@@ -137,9 +137,9 @@ pub enum TokenKind {
     // TODO: bigint, float, etc.
     Numeric(i32),
     /// `:` as a symbol (a.k.a. tSYMBEG but excluding dsym case)
-    SymbolBeg,
+    SymbolBegin,
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING or tXSTRING)
-    StringBeg(StringType),
+    StringBegin(StringType),
     /// Text in a string literal
     StringContent(String),
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING_END)
@@ -151,13 +151,13 @@ pub enum TokenKind {
     /// `&.`
     AndDot,
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
-    Dot2Beg,
+    Dot2Prefix,
     /// `..` after the expression (a.k.a. tDOT2)
-    Dot2Mid,
+    Dot2Infix,
     /// `...` at the beginning of the expression (a.k.a. tBDOT3)
-    Dot3Beg,
+    Dot3Prefix,
     /// `...` after the expression (a.k.a. tBDOT3)
-    Dot3Mid,
+    Dot3Infix,
     /// Binary operator
     /// Note: some operators have overloaded meanings.
     ///
@@ -221,9 +221,9 @@ pub enum TokenKind {
     /// `;`
     Semi,
     // `::` at the beginning of the expression (a.k.a. tCOLON3)
-    DColonBeg,
+    Colon2Prefix,
     // `::` (a.k.a. tCOLON2)
-    DColon,
+    Colon2Infix,
     NewLine,
     Eof,
 }
@@ -262,7 +262,7 @@ impl TokenKind {
             // `123`
             | TokenKind::Numeric(_)
             // `:foo`
-            | TokenKind::SymbolBeg
+            | TokenKind::SymbolBegin
             // `"foo"` (though the contents are not expressions)
             | TokenKind::StringContent(_) => TokenClass::SelfContained,
 
@@ -302,11 +302,11 @@ impl TokenKind {
             // `while e; end`
             | TokenKind::KeywordWhile
             // `"foo"` (though the contents are not expressions)
-            | TokenKind::StringBeg(_)
+            | TokenKind::StringBegin(_)
             // `..e`
-            | TokenKind::Dot2Beg
+            | TokenKind::Dot2Prefix
             // `...e`
-            | TokenKind::Dot3Beg
+            | TokenKind::Dot3Prefix
             // `+e`
             | TokenKind::UnOp(_)
             // `(e)`
@@ -314,7 +314,7 @@ impl TokenKind {
             // `[e]`
             | TokenKind::LBrackBeg
             // `::C`
-            | TokenKind::DColonBeg => TokenClass::Prefix,
+            | TokenKind::Colon2Prefix => TokenClass::Prefix,
 
             // `begin e end`
             TokenKind::KeywordEnd
@@ -371,9 +371,9 @@ impl TokenKind {
             // `f&.f`
             | TokenKind::AndDot
             // `e..e` (`e..` is considered a special case)
-            | TokenKind::Dot2Mid
+            | TokenKind::Dot2Infix
             // `e...e` (`e...` is considered a special case)
-            | TokenKind::Dot3Mid
+            | TokenKind::Dot3Infix
             // `e+e`
             | TokenKind::BinOp(_)
             // `f(e)`
@@ -387,7 +387,7 @@ impl TokenKind {
             // `e; e`
             | TokenKind::Semi
             // `C::C`
-            | TokenKind::DColon
+            | TokenKind::Colon2Infix
             // `e (newline) e`
             | TokenKind::NewLine => TokenClass::Infix
         }

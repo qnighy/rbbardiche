@@ -191,12 +191,12 @@ impl Parser {
             b'\'' => {
                 self.pos += 1;
                 // TODO: check label condition
-                TokenKind::StringBeg(StringType::SQuote)
+                TokenKind::StringBegin(StringType::SQuote)
             }
             b'"' => {
                 self.pos += 1;
                 // TODO: check label condition
-                TokenKind::StringBeg(StringType::DQuote)
+                TokenKind::StringBegin(StringType::DQuote)
             }
             b'?' => {
                 self.pos += 1;
@@ -309,14 +309,14 @@ impl Parser {
                         // TODO: EOF warning
                         // TODO: lpar_beg condition
                         if mode.beg {
-                            TokenKind::Dot3Beg
+                            TokenKind::Dot3Prefix
                         } else {
-                            TokenKind::Dot3Mid
+                            TokenKind::Dot3Infix
                         }
                     } else if mode.beg {
-                        TokenKind::Dot2Beg
+                        TokenKind::Dot2Prefix
                     } else {
-                        TokenKind::Dot2Mid
+                        TokenKind::Dot2Infix
                     }
                 } else if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                     todo!("error handling for digit after dot");
@@ -339,9 +339,9 @@ impl Parser {
                     self.pos += 1;
                     // TODO: EXPR_CLASS and spcarg conditions
                     if mode.beg {
-                        TokenKind::DColonBeg
+                        TokenKind::Colon2Prefix
                     } else {
-                        TokenKind::DColon
+                        TokenKind::Colon2Infix
                     }
                     // TODO: end_any condition
                 } else if self
@@ -352,7 +352,7 @@ impl Parser {
                 } else if self.next() == Some(b'"') || self.next() == Some(b'\'') {
                     todo!("tSYMBEG string");
                 } else {
-                    TokenKind::SymbolBeg
+                    TokenKind::SymbolBegin
                 }
             }
             b'/' => {
