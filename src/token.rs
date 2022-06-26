@@ -327,7 +327,9 @@ impl TokenKind {
             // `e (eof)`
             | TokenKind::Eof => TokenClass::Postfix,
 
-            // Sep
+            // `begin rescue; end` / `begin rescue e; end`
+            TokenKind::KeywordRescue => TokenClass::MaybeInfix,
+
             // `e and e`
             TokenKind::KeywordAnd
             // `f e do e end`
@@ -350,8 +352,6 @@ impl TokenKind {
             | TokenKind::KeywordIn
             // `e or e`
             | TokenKind::KeywordOr
-            // `begin rescue e; end`
-            | TokenKind::KeywordRescue
             // `e rescue e`
             | TokenKind::ModifierRescue
             // `if e then e end`
@@ -425,6 +425,8 @@ pub enum TokenClass {
     Prefix,
     /// Follows an expression and ends an expression.
     Postfix,
+    /// Follows an expression and possibly is followed by an expression.
+    MaybeInfix,
     /// Follows an expression and is followed by an expression.
     Infix,
 }

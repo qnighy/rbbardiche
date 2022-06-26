@@ -1466,7 +1466,7 @@ impl Parser {
                 }
 
                 // Those which is likely followed by an expression
-                TokenClass::Infix => {
+                TokenClass::MaybeInfix | TokenClass::Infix => {
                     let token = self.bump(ctx.beg());
                     debris.push(Debri::Token(token));
                 }
