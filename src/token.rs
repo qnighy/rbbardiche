@@ -271,7 +271,7 @@ impl TokenKind {
             // `next` / `next e`
             | TokenKind::KeywordNext
             // `return` / `return e`
-            | TokenKind::KeywordReturn => TokenClass::MaybeOpen,
+            | TokenKind::KeywordReturn => TokenClass::MaybePrefix,
 
             // `alias foo bar`
             TokenKind::KeywordAlias
@@ -314,7 +314,7 @@ impl TokenKind {
             // `[e]`
             | TokenKind::LBrackBeg
             // `::C`
-            | TokenKind::DColonBeg => TokenClass::Open,
+            | TokenKind::DColonBeg => TokenClass::Prefix,
 
             // `begin e end`
             TokenKind::KeywordEnd
@@ -325,7 +325,7 @@ impl TokenKind {
             // `[e]`
             | TokenKind::RBrack
             // `e (eof)`
-            | TokenKind::Eof => TokenClass::Close,
+            | TokenKind::Eof => TokenClass::Postfix,
 
             // Sep
             // `e and e`
@@ -389,7 +389,7 @@ impl TokenKind {
             // `C::C`
             | TokenKind::DColon
             // `e (newline) e`
-            | TokenKind::NewLine => TokenClass::Sep
+            | TokenKind::NewLine => TokenClass::Infix
         }
     }
 }
@@ -420,11 +420,11 @@ pub enum TokenClass {
     /// Starts an expression and immediately ends the expression.
     SelfContained,
     /// Starts an expression and possibly is followed by an expression.
-    MaybeOpen,
+    MaybePrefix,
     /// Starts an expression and is followed by an expression.
-    Open,
+    Prefix,
     /// Follows an expression and ends an expression.
-    Close,
+    Postfix,
     /// Follows an expression and is followed by an expression.
-    Sep,
+    Infix,
 }

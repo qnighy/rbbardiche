@@ -1460,19 +1460,19 @@ impl Parser {
         while !is_end_token(&self.next_token) {
             match self.next_token.kind.token_class() {
                 // Those which likely starts an expression
-                TokenClass::SelfContained | TokenClass::MaybeOpen | TokenClass::Open => {
+                TokenClass::SelfContained | TokenClass::MaybePrefix | TokenClass::Prefix => {
                     let expr = self.parse_primary(ctx);
                     debris.push(Debri::ExprLike(expr));
                 }
 
                 // Those which is likely followed by an expression
-                TokenClass::Sep => {
+                TokenClass::Infix => {
                     let token = self.bump(ctx.beg());
                     debris.push(Debri::Token(token));
                 }
 
                 // Those which usually closes an expression
-                TokenClass::Close => {
+                TokenClass::Postfix => {
                     let token = self.bump(ctx.mid());
                     debris.push(Debri::Token(token));
                 }
