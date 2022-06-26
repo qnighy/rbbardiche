@@ -171,6 +171,23 @@ impl From<&ast::NumericExpr> for SExp {
     }
 }
 
+impl From<&ast::SymbolExpr> for SExp {
+    fn from(expr: &ast::SymbolExpr) -> Self {
+        let ast::SymbolExpr {
+            open_token: _,
+            ident_token: _,
+            value,
+            meta: _,
+        } = expr;
+        SExp::Tagged {
+            tag: "sym".to_string(),
+            args: vec![SExp::Symbol {
+                name: value.clone(),
+            }],
+        }
+    }
+}
+
 impl From<&ast::StringLiteralExpr> for SExp {
     fn from(expr: &ast::StringLiteralExpr) -> Self {
         let ast::StringLiteralExpr { strval, meta: _ } = expr;

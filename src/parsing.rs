@@ -1092,6 +1092,29 @@ impl Parser {
                 }
                 .into()
             }
+            // primary : literal
+            // literal : symbol
+            // symbol : ssym
+            // ssym : tSYMBEG sym
+            TokenKind::SymbolBeg => {
+                let open_token = self.bump(ctx.beg());
+                if !matches!(self.next_token.kind, TokenKind::Ident(_, _)) {
+                    todo!("symbol other than identifier");
+                }
+                let ident_token = self.bump(ctx.mid());
+                let value = match &ident_token.kind {
+                    TokenKind::Ident(_, name) => name.to_string(),
+                    _ => unreachable!(),
+                };
+                let range = open_token.range | ident_token.range;
+                ast::SymbolExpr {
+                    open_token,
+                    ident_token,
+                    value,
+                    meta: NodeMeta { range, node_id: 0 },
+                }
+                .into()
+            }
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
                 let lparen_token = self.bump(ctx.beg());

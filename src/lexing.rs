@@ -349,8 +349,10 @@ impl Parser {
                     .is_some_and_(|&ch| ch.is_ascii_whitespace() || ch == b'\x0B' || ch == b'#')
                 {
                     TokenKind::Colon
+                } else if self.next() == Some(b'"') || self.next() == Some(b'\'') {
+                    todo!("tSYMBEG string");
                 } else {
-                    todo!("tSYMBEG");
+                    TokenKind::SymbolBeg
                 }
             }
             b'/' => {

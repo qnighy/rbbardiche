@@ -48,6 +48,7 @@ pub enum Expr {
     Compound(CompoundExpr),
     // TODO: bigint, float, etc.
     Numeric(NumericExpr),
+    Symbol(SymbolExpr),
     StringLiteral(StringLiteralExpr),
     TernaryCond(TernaryCondExpr),
     Range(RangeExpr),
@@ -71,6 +72,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Parenthesized($x) => $arm,
             $crate::ast::Expr::Compound($x) => $arm,
             $crate::ast::Expr::Numeric($x) => $arm,
+            $crate::ast::Expr::Symbol($x) => $arm,
             $crate::ast::Expr::StringLiteral($x) => $arm,
             $crate::ast::Expr::TernaryCond($x) => $arm,
             $crate::ast::Expr::Range($x) => $arm,
@@ -130,6 +132,12 @@ impl From<CompoundExpr> for Expr {
 impl From<NumericExpr> for Expr {
     fn from(e: NumericExpr) -> Self {
         Expr::Numeric(e)
+    }
+}
+
+impl From<SymbolExpr> for Expr {
+    fn from(e: SymbolExpr) -> Self {
+        Expr::Symbol(e)
     }
 }
 
@@ -233,6 +241,14 @@ pub struct CompoundExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NumericExpr {
     pub numval: i32,
+    pub meta: NodeMeta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SymbolExpr {
+    pub open_token: Token,
+    pub ident_token: Token,
+    pub value: String,
     pub meta: NodeMeta,
 }
 

@@ -136,6 +136,8 @@ pub enum TokenKind {
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `:` as a symbol (a.k.a. tSYMBEG but excluding dsym case)
+    SymbolBeg,
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING or tXSTRING)
     StringBeg(StringType),
     /// Text in a string literal
@@ -259,6 +261,8 @@ impl TokenKind {
             | TokenKind::KeywordYield
             // `123`
             | TokenKind::Numeric(_)
+            // `:foo`
+            | TokenKind::SymbolBeg
             // `"foo"` (though the contents are not expressions)
             | TokenKind::StringContent(_) => TokenClass::SelfContained,
 
