@@ -5,7 +5,7 @@ use crate::ast::{
     DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs,
     ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
-use crate::lexing::{LexerMode, NormalLexerMode, StringLexerMode};
+use crate::lexing::{LexerMode, LexerParams, NormalLexerMode, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
@@ -961,7 +961,11 @@ impl Parser {
                     StringType::DQuote => StringLexerMode::DoubleQuoted,
                     StringType::SQuote => StringLexerMode::SingleQuoted,
                 };
-                let beg_token = self.bump(LexerMode::String(mode));
+                let beg_token = self.bump(LexerParams {
+                    mode: LexerMode::String(mode),
+                    in_command_args: ctx.in_command_args,
+                    in_condition: ctx.in_condition,
+                });
                 let mut contents = Vec::new();
                 loop {
                     if matches!(self.next_token.kind, TokenKind::StringEnd) {
@@ -969,7 +973,11 @@ impl Parser {
                     }
                     if let TokenKind::StringContent(content) = &self.next_token.kind {
                         contents.push(content.clone());
-                        self.bump(LexerMode::String(mode));
+                        self.bump(LexerParams {
+                            mode: LexerMode::String(mode),
+                            in_command_args: ctx.in_command_args,
+                            in_condition: ctx.in_condition,
+                        });
                     } else {
                         unreachable!();
                     }
@@ -1509,28 +1517,28 @@ struct LexCtx {
 }
 
 impl LexCtx {
-    fn beg(&self) -> LexerMode {
+    fn beg(&self) -> LexerParams {
         let Self {
             in_condition,
             in_command_args,
         } = *self;
-        LexerMode::Normal(NormalLexerMode {
-            beg: true,
+        LexerParams {
+            mode: LexerMode::Normal(NormalLexerMode { beg: true }),
             in_condition,
             in_command_args,
-        })
+        }
     }
 
-    fn mid(&self) -> LexerMode {
+    fn mid(&self) -> LexerParams {
         let Self {
             in_condition,
             in_command_args,
         } = *self;
-        LexerMode::Normal(NormalLexerMode {
-            beg: false,
+        LexerParams {
+            mode: LexerMode::Normal(NormalLexerMode { beg: false }),
             in_condition,
             in_command_args,
-        })
+        }
     }
 }
 

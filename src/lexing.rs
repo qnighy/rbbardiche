@@ -58,6 +58,13 @@ static KEYWORDS: Lazy<HashMap<&BStr, Option<TokenKind>>> = Lazy::new(|| {
 });
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LexerParams {
+    pub(crate) mode: LexerMode,
+    pub(crate) in_condition: bool,
+    pub(crate) in_command_args: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LexerMode {
     Normal(NormalLexerMode),
     String(StringLexerMode),
@@ -66,8 +73,6 @@ pub(crate) enum LexerMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct NormalLexerMode {
     pub(crate) beg: bool,
-    pub(crate) in_condition: bool,
-    pub(crate) in_command_args: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,19 +82,19 @@ pub(crate) enum StringLexerMode {
 }
 
 impl Parser {
-    pub(crate) fn bump(&mut self, mode: LexerMode) -> Token {
-        let next_token = self.lex_token(mode);
+    pub(crate) fn bump(&mut self, params: LexerParams) -> Token {
+        let next_token = self.lex_token(params);
         std::mem::replace(&mut self.next_token, next_token)
     }
 
-    fn lex_token(&mut self, mode: LexerMode) -> Token {
-        match mode {
-            LexerMode::Normal(mode) => self.lex_token_normal(mode),
+    fn lex_token(&mut self, params: LexerParams) -> Token {
+        match params.mode {
+            LexerMode::Normal(mode) => self.lex_token_normal(params, mode),
             LexerMode::String(mode) => self.lex_token_string(mode),
         }
     }
 
-    fn lex_token_normal(&mut self, mode: NormalLexerMode) -> Token {
+    fn lex_token_normal(&mut self, params: LexerParams, mode: NormalLexerMode) -> Token {
         let space_seen = self.skip_whitespace(mode.beg);
         let start = self.pos;
         if self.pos >= self.source.len() {
@@ -452,10 +457,10 @@ impl Parser {
                             b"__END__" => todo!("__END__"),
                             b"do" => {
                                 // TODO: lambda_beginning_p
-                                if mode.in_condition {
+                                if params.in_condition {
                                     TokenKind::KeywordDoAfterCondition
                                     // TODO: take EXPR_CMDARG into account
-                                } else if mode.in_command_args {
+                                } else if params.in_command_args {
                                     TokenKind::KeywordDoAfterCommandCall
                                 } else {
                                     TokenKind::KeywordDoAfterMethodCall
