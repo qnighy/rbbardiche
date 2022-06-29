@@ -5,7 +5,7 @@ use crate::ast::{
     DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs,
     ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
-use crate::lexing::{LexerMode, LexerParams, NormalLexerMode, StringLexerMode};
+use crate::lexing::{LexerMode, LexerParams, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
@@ -1523,7 +1523,7 @@ impl LexCtx {
             in_command_args,
         } = *self;
         LexerParams {
-            mode: LexerMode::Normal(NormalLexerMode { beg: true }),
+            mode: LexerMode::Begin,
             in_condition,
             in_command_args,
         }
@@ -1535,7 +1535,7 @@ impl LexCtx {
             in_command_args,
         } = *self;
         LexerParams {
-            mode: LexerMode::Normal(NormalLexerMode { beg: false }),
+            mode: LexerMode::End,
             in_condition,
             in_command_args,
         }

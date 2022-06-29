@@ -66,13 +66,9 @@ pub(crate) struct LexerParams {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LexerMode {
-    Normal(NormalLexerMode),
+    Begin,
+    End,
     String(StringLexerMode),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct NormalLexerMode {
-    pub(crate) beg: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -89,13 +85,18 @@ impl Parser {
 
     fn lex_token(&mut self, params: LexerParams) -> Token {
         match params.mode {
-            LexerMode::Normal(mode) => self.lex_token_normal(params, mode),
+            LexerMode::Begin | LexerMode::End => self.lex_token_normal(params),
             LexerMode::String(mode) => self.lex_token_string(mode),
         }
     }
 
-    fn lex_token_normal(&mut self, params: LexerParams, mode: NormalLexerMode) -> Token {
-        let space_seen = self.skip_whitespace(mode.beg);
+    fn lex_token_normal(&mut self, params: LexerParams) -> Token {
+        let beg = match params.mode {
+            LexerMode::Begin => true,
+            LexerMode::End => false,
+            LexerMode::String(_) => unreachable!(),
+        };
+        let space_seen = self.skip_whitespace(beg);
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -110,7 +111,7 @@ impl Parser {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
                     self.pos += 1;
-                    if mode.beg {
+                    if beg {
                         todo!("** as tDStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Pow)
@@ -119,7 +120,7 @@ impl Parser {
                     todo!("*=");
                 } else {
                     // TODO: spcarg condition
-                    if mode.beg {
+                    if beg {
                         todo!("* as tStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Mul)
@@ -238,7 +239,7 @@ impl Parser {
                     self.pos += 1;
                     TokenKind::AndDot
                 // TODO: spcarg condition
-                } else if mode.beg {
+                } else if beg {
                     todo!("& as tAMPER");
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseAnd)
@@ -251,7 +252,7 @@ impl Parser {
                     if self.next() == Some(b'=') {
                         self.pos += 1;
                         todo!("||=");
-                    } else if mode.beg {
+                    } else if beg {
                         // Split `||` into two `|`s
                         self.pos = start + 1;
                         TokenKind::BinOp(BinaryOp::BitwiseOr)
@@ -272,7 +273,7 @@ impl Parser {
                     todo!("+=");
                 }
                 // TODO: spcarg condition
-                if mode.beg {
+                if beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -293,7 +294,7 @@ impl Parser {
                     todo!("->");
                 }
                 // TODO: spcarg condition
-                if mode.beg {
+                if beg {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -313,12 +314,12 @@ impl Parser {
                         // TODO: in_argdef condition
                         // TODO: EOF warning
                         // TODO: lpar_beg condition
-                        if mode.beg {
+                        if beg {
                             TokenKind::Dot3Prefix
                         } else {
                             TokenKind::Dot3Infix
                         }
-                    } else if mode.beg {
+                    } else if beg {
                         TokenKind::Dot2Prefix
                     } else {
                         TokenKind::Dot2Infix
@@ -348,7 +349,7 @@ impl Parser {
                 if self.next() == Some(b':') {
                     self.pos += 1;
                     // TODO: EXPR_CLASS and spcarg conditions
-                    if mode.beg {
+                    if beg {
                         TokenKind::Colon2Prefix
                     } else {
                         TokenKind::Colon2Infix
@@ -367,7 +368,7 @@ impl Parser {
             }
             b'/' => {
                 self.pos += 1;
-                if mode.beg {
+                if beg {
                     todo!("regexp");
                 }
                 if self.next() == Some(b'=') {
@@ -399,7 +400,7 @@ impl Parser {
             }
             b'(' => {
                 self.pos += 1;
-                if mode.beg {
+                if beg {
                     TokenKind::LParenBeg
                 } else if !space_seen {
                     TokenKind::LParenCall
@@ -411,7 +412,7 @@ impl Parser {
                 self.pos += 1;
                 // TODO: after_operator condition
                 // TODO: arg condition
-                if mode.beg {
+                if beg {
                     TokenKind::LBrackBeg
                 } else {
                     todo!("[");
@@ -425,7 +426,7 @@ impl Parser {
             }
             b'%' => {
                 self.pos += 1;
-                if mode.beg {
+                if beg {
                     todo!("%q()");
                 }
                 if self.next() == Some(b'=') {
@@ -467,35 +468,35 @@ impl Parser {
                                 }
                             }
                             b"if" => {
-                                if mode.beg {
+                                if beg {
                                     TokenKind::KeywordIf
                                 } else {
                                     TokenKind::ModifierIf
                                 }
                             }
                             b"rescue" => {
-                                if mode.beg {
+                                if beg {
                                     TokenKind::KeywordRescue
                                 } else {
                                     TokenKind::ModifierRescue
                                 }
                             }
                             b"unless" => {
-                                if mode.beg {
+                                if beg {
                                     TokenKind::KeywordUnless
                                 } else {
                                     TokenKind::ModifierUnless
                                 }
                             }
                             b"until" => {
-                                if mode.beg {
+                                if beg {
                                     TokenKind::KeywordUntil
                                 } else {
                                     TokenKind::ModifierUntil
                                 }
                             }
                             b"while" => {
-                                if mode.beg {
+                                if beg {
                                     TokenKind::KeywordWhile
                                 } else {
                                     TokenKind::ModifierWhile
