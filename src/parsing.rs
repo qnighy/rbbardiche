@@ -747,7 +747,7 @@ impl Parser {
             todo!("error recovery in aref_args");
         }
         // TODO: handle opt_nl
-        let rbrack_token = self.bump(ctx.mid());
+        let rbrack_token = self.bump(ctx.end());
         let range = lbrack_token.range | rbrack_token.range;
         // TODO: check invalid arguments (like `[&block]`)
         ArrayExpr {
@@ -805,7 +805,7 @@ impl Parser {
             todo!("error recovery in paren_args");
         }
         // TODO: handle opt_nl
-        let rparen_token = self.bump(ctx.mid());
+        let rparen_token = self.bump(ctx.end());
         let range = lparen_token.range | rparen_token.range;
         Args::Paren(ParenArgs {
             open_token: lparen_token,
@@ -903,7 +903,7 @@ impl Parser {
                             let ident_type = *ident_type;
                             let is_dcolon = matches!(op_token.kind, TokenKind::Colon2Infix);
                             let name = name.to_string();
-                            let token = self.bump(ctx.mid());
+                            let token = self.bump(ctx.end());
                             let range = expr.range() | token.range;
                             if is_dcolon && ident_type == IdentType::Const {
                                 let e = ast::ConstExpr {
@@ -984,7 +984,7 @@ impl Parser {
                         unreachable!();
                     }
                 }
-                let end_token = self.bump(ctx.mid());
+                let end_token = self.bump(ctx.end());
                 let range = beg_token.range | end_token.range;
                 // TODO: multiple quoted parts (like `"foo" "bar"`)
                 ast::StringLiteralExpr {
@@ -1000,7 +1000,7 @@ impl Parser {
             // user_variable : tIDENTIFIER
             TokenKind::Ident(IdentType::Ident | IdentType::FIdent, name) => {
                 let name = name.to_string();
-                let token = self.bump(ctx.mid());
+                let token = self.bump(ctx.end());
                 let mut e = ast::SendExpr {
                     optional: false,
                     recv: None,
@@ -1024,7 +1024,7 @@ impl Parser {
             // user_variable : tCONSTANT
             TokenKind::Ident(IdentType::Const, name) => {
                 let name = name.to_string();
-                let token = self.bump(ctx.mid());
+                let token = self.bump(ctx.end());
                 let e = ast::ConstExpr {
                     toplevel: false,
                     recv: None,
@@ -1048,7 +1048,7 @@ impl Parser {
                 let dcolon_token = self.bump(ctx.beg());
                 if let TokenKind::Ident(IdentType::Const, name) = &self.next_token.kind {
                     let name = name.to_string();
-                    let token = self.bump(ctx.mid());
+                    let token = self.bump(ctx.end());
                     let range = dcolon_token.range | token.range;
                     ast::ConstExpr {
                         toplevel: true,
@@ -1075,7 +1075,7 @@ impl Parser {
             // var_ref : keyword_variable
             // keyword_variable : keyword_nil
             TokenKind::KeywordNil => {
-                let token = self.bump(ctx.mid());
+                let token = self.bump(ctx.end());
                 ast::NilExpr {
                     meta: NodeMeta {
                         range: token.range,
@@ -1092,7 +1092,7 @@ impl Parser {
             // Note that tMINUS_NUM is handled in lexer in this parer
             TokenKind::Numeric(numval) => {
                 let numval = *numval;
-                let token = self.bump(ctx.mid());
+                let token = self.bump(ctx.end());
                 ast::NumericExpr {
                     numval,
                     meta: NodeMeta {
@@ -1111,7 +1111,7 @@ impl Parser {
                 if !matches!(self.next_token.kind, TokenKind::Ident(_, _)) {
                     todo!("symbol other than identifier");
                 }
-                let ident_token = self.bump(ctx.mid());
+                let ident_token = self.bump(ctx.end());
                 let value = match &ident_token.kind {
                     TokenKind::Ident(_, name) => name.to_string(),
                     _ => unreachable!(),
@@ -1140,7 +1140,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let rparen_token = self.bump(ctx.mid());
+                let rparen_token = self.bump(ctx.end());
                 let range = lparen_token.range | rparen_token.range;
                 ast::ParenthesizedExpr {
                     stmts,
@@ -1156,7 +1156,7 @@ impl Parser {
                 if !matches!(self.next_token.kind, TokenKind::RBrace) {
                     todo!("Hash contents");
                 }
-                let close_token = self.bump(ctx.mid());
+                let close_token = self.bump(ctx.end());
                 let range = open_token.range | close_token.range;
                 ast::HashExpr {
                     open_token,
@@ -1203,7 +1203,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let end_token = self.bump(ctx.mid());
+                let end_token = self.bump(ctx.end());
                 let range = class_token.range | end_token.range;
                 ast::ClassExpr {
                     cpath: Box::new(cpath),
@@ -1228,7 +1228,7 @@ impl Parser {
                         self.next_token
                     );
                 }
-                let end_token = self.bump(ctx.mid());
+                let end_token = self.bump(ctx.end());
                 let range = module_token.range | end_token.range;
                 ast::ModuleExpr {
                     cpath: Box::new(cpath),
@@ -1322,7 +1322,7 @@ impl Parser {
                 .to_string();
 
                 // TODO: EXPR_ENDFN
-                self.bump(ctx.mid());
+                self.bump(ctx.end());
                 if matches!(self.next_token.kind, TokenKind::Dot) {
                     todo!("singleton def");
                 }
@@ -1338,7 +1338,7 @@ impl Parser {
                 if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!("error recovery for def body");
                 }
-                let end_token = self.bump(ctx.mid());
+                let end_token = self.bump(ctx.end());
                 let range = def_token.range | end_token.range;
                 DefnExpr {
                     name,
@@ -1372,7 +1372,7 @@ impl Parser {
             TokenKind::KeywordIf => todo!("if .. end"),
             TokenKind::KeywordWhile => todo!("while .. end"),
             _ => {
-                let token = self.bump(ctx.mid());
+                let token = self.bump(ctx.end());
                 self.errors
                     .push(ParseError::UnexpectedToken { range: token.range });
                 let range = token.range;
@@ -1429,7 +1429,7 @@ impl Parser {
             todo!("arguments in paren_args");
         }
         // TODO: handle opt_nl
-        let rparen_token = self.bump(ctx.mid());
+        let rparen_token = self.bump(ctx.end());
         let range = lparen_token.range | rparen_token.range;
         // TODO: check ordering constraints
         // TODO: check invalid trailing comma
@@ -1500,7 +1500,7 @@ impl Parser {
 
                 // Those which usually closes an expression
                 TokenClass::Postfix => {
-                    let token = self.bump(ctx.mid());
+                    let token = self.bump(ctx.end());
                     debris.push(Debri::Token(token));
                 }
             }
@@ -1540,7 +1540,7 @@ impl LexCtx {
         self.with_mode(LexerMode::Begin(LexerBeginMode::Labelable))
     }
 
-    fn mid(&self) -> LexerParams {
+    fn end(&self) -> LexerParams {
         self.with_mode(LexerMode::End)
     }
 }
