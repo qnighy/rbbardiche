@@ -66,9 +66,84 @@ pub(crate) struct LexerParams {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LexerMode {
-    Begin,
+    /// Beginning of an expression; IS_BEG().
+    ///
+    /// ## Behavior (example)
+    ///
+    /// - Newline insignificant
+    /// - `+`/`-` are unary
+    /// - `*`/`**`/`&` are argument prefixes
+    /// - `%` starts a percent literal
+    /// - `()` is a parenthesized expression
+    /// - `[]` is an array expression
+    /// - `{}` is a hash expression
+    Begin(LexerBeginMode),
     End,
     String(StringLexerMode),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LexerBeginMode {
+    /// Ordinary beginning state; EXPR_BEG or EXPR_VALUE.
+    ///
+    /// ## Conditions
+    ///
+    /// - At the beginning of the program
+    /// - After `and`, `begin`, `case`, `do`, `else`, `elsif`,
+    ///   `ensure`, `for`, `if`, `in`, `module`, `or`, `then`,
+    ///   `unless`, `until`, `when`, or `while`
+    /// - After `#` in a string before ivar, cvar, or gvar
+    /// - After `#{` as a string interpolation delimiter
+    /// - After `<` as a superclass clause
+    /// - After `)`, `;`, or `\n` at the end of parameter list
+    /// - After `(` after `def`
+    /// - After operators `!`, `~`, `**`, `*`, `/`, `%`, `+`, `-`,
+    ///   `<<`, `>>`, `&`, `^`, `>`, `>=`, `<`, `<=`, `<=>`, `==`,
+    ///   `===`, `!=`, `=~`, `!~`, `&&`, `||`, `..`, `...`, `?`,
+    ///   or `:`, but see the following exceptions:
+    ///   - EXPR_LABEL is given after `|`
+    ///   - `...` is treated differently in arguments
+    /// - After `=`, `**=`, `*=`, `/=`, `%=`, `+=`, `-=`, `<<=`,
+    ///   `>>=`, `&=`, `^=`, `&&=`, or `||=`
+    /// - After `\n` or `;`
+    /// - After `=>` except before pattern
+    /// - After `::` at the beginning of the expression
+    /// - After `{` as a block/lambda delimiter
+    Normal,
+    /// Beginning of an expression or a labelled argument; EXPR_BEG|EXPR_LABEL or EXPR_ARG|EXPR_LABELED.
+    ///
+    /// ## Conditions
+    ///
+    /// - After `if`, `rescue`, `unless`, `until`, or `while` as a modifier
+    /// - After `=>`/`in` before pattern
+    /// - After another label (`foo:` or `"foo":`)
+    /// - After `{` as a hash delimiter
+    /// - After `|`, `,`, `(`, or `[`
+    ///
+    /// ## Behavior (example)
+    ///
+    Labelable,
+    /// Beginning of an optional expression; EXPR_MID
+    ///
+    /// ## Conditions
+    ///
+    /// After `break`, `next`, `rescue` or `return`
+    ///
+    /// ## Behavior
+    ///
+    /// - Newline significant
+    /// - `||` is parsed normally (but the resulting code is usually useless)
+    _Omittable,
+    /// After the class keyword; EXPR_CLASS
+    ///
+    /// ## Conditions
+    ///
+    /// After `class`
+    ///
+    /// ## Behavior
+    ///
+    /// - no heredocs
+    AfterClass,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,14 +160,14 @@ impl Parser {
 
     fn lex_token(&mut self, params: LexerParams) -> Token {
         match params.mode {
-            LexerMode::Begin | LexerMode::End => self.lex_token_normal(params),
+            LexerMode::Begin(_) | LexerMode::End => self.lex_token_normal(params),
             LexerMode::String(mode) => self.lex_token_string(mode),
         }
     }
 
     fn lex_token_normal(&mut self, params: LexerParams) -> Token {
         let beg = match params.mode {
-            LexerMode::Begin => true,
+            LexerMode::Begin(_) => true,
             LexerMode::End => false,
             LexerMode::String(_) => unreachable!(),
         };

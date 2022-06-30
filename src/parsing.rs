@@ -5,7 +5,7 @@ use crate::ast::{
     DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs,
     ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
-use crate::lexing::{LexerMode, LexerParams, StringLexerMode};
+use crate::lexing::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
@@ -400,7 +400,11 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            self.bump(if matches!(op, BinaryOp::BitwiseOr) {
+                ctx.beg_labelable()
+            } else {
+                ctx.beg()
+            });
             let rhs = self.parse_bitwise_and(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
@@ -695,7 +699,7 @@ impl Parser {
     /// Parses an array literal like `[]`.
     fn parse_array(&mut self, ctx: LexCtx) -> ArrayExpr {
         assert!(matches!(self.next_token.kind, TokenKind::LBrackBeg));
-        let lbrack_token = self.bump(ctx.beg());
+        let lbrack_token = self.bump(ctx.beg_labelable());
         let mut list = Vec::new();
         while !matches!(
             self.next_token.kind,
@@ -717,7 +721,13 @@ impl Parser {
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma | TokenKind::NewLine) {
-                Some(self.bump(ctx.beg()))
+                Some(
+                    self.bump(if matches!(self.next_token.kind, TokenKind::Comma) {
+                        ctx.beg_labelable()
+                    } else {
+                        ctx.beg()
+                    }),
+                )
             } else {
                 None
             };
@@ -754,7 +764,7 @@ impl Parser {
     /// Parses a parenthesized argument list like `(42, 80)` as in `foo(42, 80)`.
     fn parse_paren_args(&mut self, ctx: LexCtx) -> Args {
         assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
-        let lparen_token = self.bump(ctx.beg());
+        let lparen_token = self.bump(ctx.beg_labelable());
         let mut list = Vec::new();
         while !matches!(
             self.next_token.kind,
@@ -775,7 +785,7 @@ impl Parser {
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
-                Some(self.bump(ctx.beg()))
+                Some(self.bump(ctx.beg_labelable()))
             } else {
                 None
             };
@@ -817,7 +827,7 @@ impl Parser {
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
-                Some(self.bump(ctx.beg()))
+                Some(self.bump(ctx.beg_labelable()))
             } else {
                 None
             };
@@ -961,11 +971,7 @@ impl Parser {
                     StringType::DQuote => StringLexerMode::DoubleQuoted,
                     StringType::SQuote => StringLexerMode::SingleQuoted,
                 };
-                let beg_token = self.bump(LexerParams {
-                    mode: LexerMode::String(mode),
-                    in_command_args: ctx.in_command_args,
-                    in_condition: ctx.in_condition,
-                });
+                let beg_token = self.bump(ctx.with_mode(LexerMode::String(mode)));
                 let mut contents = Vec::new();
                 loop {
                     if matches!(self.next_token.kind, TokenKind::StringEnd) {
@@ -973,11 +979,7 @@ impl Parser {
                     }
                     if let TokenKind::StringContent(content) = &self.next_token.kind {
                         contents.push(content.clone());
-                        self.bump(LexerParams {
-                            mode: LexerMode::String(mode),
-                            in_command_args: ctx.in_command_args,
-                            in_condition: ctx.in_condition,
-                        });
+                        self.bump(ctx.with_mode(LexerMode::String(mode)));
                     } else {
                         unreachable!();
                     }
@@ -1125,7 +1127,7 @@ impl Parser {
             }
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
-                let lparen_token = self.bump(ctx.beg());
+                let lparen_token = self.bump(ctx.beg_labelable());
                 let stmts = self.parse_compstmt(|token| {
                     matches!(
                         token.kind,
@@ -1150,7 +1152,7 @@ impl Parser {
             TokenKind::LBrackBeg => self.parse_array(ctx).into(),
             // primary : tLBRACE assoc_list '}'
             TokenKind::LBraceHash => {
-                let open_token = self.bump(ctx.beg());
+                let open_token = self.bump(ctx.beg_labelable());
                 if !matches!(self.next_token.kind, TokenKind::RBrace) {
                     todo!("Hash contents");
                 }
@@ -1168,7 +1170,8 @@ impl Parser {
             //         | k_class tLSHFT expr term bodystmt k_end
             TokenKind::KeywordClass => {
                 // TODO: class-specific lexer condition (e.g. class<<Foo)
-                let class_token = self.bump(ctx.beg());
+                let class_token =
+                    self.bump(ctx.with_mode(LexerMode::Begin(LexerBeginMode::AfterClass)));
                 if matches!(self.next_token.kind, TokenKind::BinOp(BinaryOp::LShift)) {
                     todo!("singular class (class << foo)");
                 }
@@ -1384,7 +1387,7 @@ impl Parser {
 
     fn parse_f_paren_args(&mut self, ctx: LexCtx) -> ParenFArgs {
         assert!(matches!(self.next_token.kind, TokenKind::LParenCall));
-        let lparen_token = self.bump(ctx.beg());
+        let lparen_token = self.bump(ctx.beg_labelable());
         let mut list = Vec::new();
         while !matches!(
             self.next_token.kind,
@@ -1405,7 +1408,7 @@ impl Parser {
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
-                Some(self.bump(ctx.beg()))
+                Some(self.bump(ctx.beg_labelable()))
             } else {
                 None
             };
@@ -1517,28 +1520,28 @@ struct LexCtx {
 }
 
 impl LexCtx {
-    fn beg(&self) -> LexerParams {
+    fn with_mode(&self, mode: LexerMode) -> LexerParams {
         let Self {
             in_condition,
             in_command_args,
         } = *self;
         LexerParams {
-            mode: LexerMode::Begin,
+            mode,
             in_condition,
             in_command_args,
         }
     }
 
+    fn beg(&self) -> LexerParams {
+        self.with_mode(LexerMode::Begin(LexerBeginMode::Normal))
+    }
+
+    fn beg_labelable(&self) -> LexerParams {
+        self.with_mode(LexerMode::Begin(LexerBeginMode::Labelable))
+    }
+
     fn mid(&self) -> LexerParams {
-        let Self {
-            in_condition,
-            in_command_args,
-        } = *self;
-        LexerParams {
-            mode: LexerMode::End,
-            in_condition,
-            in_command_args,
-        }
+        self.with_mode(LexerMode::End)
     }
 }
 
