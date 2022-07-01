@@ -903,7 +903,7 @@ impl Parser {
                             let ident_type = *ident_type;
                             let is_dcolon = matches!(op_token.kind, TokenKind::Colon2Infix);
                             let name = name.to_string();
-                            let token = self.bump(ctx.end());
+                            let token = self.bump(ctx.with_mode(LexerMode::Arg));
                             let range = expr.range() | token.range;
                             if is_dcolon && ident_type == IdentType::Const {
                                 let e = ast::ConstExpr {
@@ -1000,7 +1000,8 @@ impl Parser {
             // user_variable : tIDENTIFIER
             TokenKind::Ident(IdentType::Ident | IdentType::FIdent, name) => {
                 let name = name.to_string();
-                let token = self.bump(ctx.end());
+                // TODO: check if it is lvar
+                let token = self.bump(ctx.with_mode(LexerMode::Arg));
                 let mut e = ast::SendExpr {
                     optional: false,
                     recv: None,
@@ -1024,7 +1025,7 @@ impl Parser {
             // user_variable : tCONSTANT
             TokenKind::Ident(IdentType::Const, name) => {
                 let name = name.to_string();
-                let token = self.bump(ctx.end());
+                let token = self.bump(ctx.with_mode(LexerMode::Arg));
                 let e = ast::ConstExpr {
                     toplevel: false,
                     recv: None,
@@ -1048,7 +1049,7 @@ impl Parser {
                 let dcolon_token = self.bump(ctx.beg());
                 if let TokenKind::Ident(IdentType::Const, name) = &self.next_token.kind {
                     let name = name.to_string();
-                    let token = self.bump(ctx.end());
+                    let token = self.bump(ctx.with_mode(LexerMode::Arg));
                     let range = dcolon_token.range | token.range;
                     ast::ConstExpr {
                         toplevel: true,

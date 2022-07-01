@@ -78,6 +78,25 @@ pub(crate) enum LexerMode {
     /// - `[]` is an array expression
     /// - `{}` is a hash expression
     Begin(LexerBeginMode),
+    /// Beginning of the first command argument, if any; IS_ARG()
+    /// (excluding those satisfying IS_BEG()).
+    ///
+    /// ## Conditions
+    ///
+    /// - After `defined?`, `not`, `super`, `yield`
+    /// - After method name
+    ///
+    /// ## Behavior
+    ///
+    /// - Newline significant
+    /// - When preceded by spaces, the following token parses
+    ///   as if it is in the Begin state:
+    ///   - `[`, `::`
+    ///   - `(` (but the contents will be more restricted)
+    ///   - `%`, `**`, `*`, `&`, `+`, `-` (if not followed by spaces)
+    ///   - `/=` (if not followed by spaces or `=`)
+    /// - Label is allowed
+    Arg,
     End,
     String(StringLexerMode),
 }
@@ -120,7 +139,9 @@ pub(crate) enum LexerBeginMode {
     /// - After `{` as a hash delimiter
     /// - After `|`, `,`, `(`, or `[`
     ///
-    /// ## Behavior (example)
+    /// ## Behavior
+    ///
+    /// - Label is allowed
     ///
     Labelable,
     /// Beginning of an optional expression; EXPR_MID
@@ -160,7 +181,7 @@ impl Parser {
 
     fn lex_token(&mut self, params: LexerParams) -> Token {
         match params.mode {
-            LexerMode::Begin(_) | LexerMode::End => self.lex_token_normal(params),
+            LexerMode::Begin(_) | LexerMode::Arg | LexerMode::End => self.lex_token_normal(params),
             LexerMode::String(mode) => self.lex_token_string(mode),
         }
     }
@@ -168,6 +189,7 @@ impl Parser {
     fn lex_token_normal(&mut self, params: LexerParams) -> Token {
         let beg = match params.mode {
             LexerMode::Begin(_) => true,
+            LexerMode::Arg => false,
             LexerMode::End => false,
             LexerMode::String(_) => unreachable!(),
         };
