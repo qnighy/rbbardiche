@@ -154,7 +154,7 @@ pub(crate) enum LexerBeginMode {
     ///
     /// - Newline significant
     /// - `||` is parsed normally (but the resulting code is usually useless)
-    _Omittable,
+    Omittable,
     /// After the class keyword; EXPR_CLASS
     ///
     /// ## Conditions
@@ -193,7 +193,7 @@ impl Parser {
             LexerMode::End => false,
             LexerMode::String(_) => unreachable!(),
         };
-        let space_seen = self.skip_whitespace(beg);
+        let space_seen = self.skip_whitespace(params.mode);
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -706,11 +706,53 @@ impl Parser {
     //     self.source.get(self.pos + off).copied()
     // }
 
-    fn skip_whitespace(&mut self, beg: bool) -> bool {
+    fn skip_whitespace(&mut self, mode: LexerMode) -> bool {
+        // TODO: these cases are also newline-insensitive
+        // - `def f foo:`
+        // - `42 in foo:`
+        let newline_sensitive = match mode {
+            LexerMode::Begin(LexerBeginMode::Omittable) => true,
+            LexerMode::Begin(_) => false,
+            LexerMode::Arg => true,
+            LexerMode::End => true,
+            LexerMode::String(_) => unreachable!(),
+        };
         let start = self.pos;
         while self.pos < self.source.len() {
             let ch = self.source[self.pos];
-            if ch == b'\n' && !beg {
+            if ch == b'\n' && newline_sensitive {
+                let newline_pos = self.pos;
+                // lookahead
+                self.pos += 1;
+                while self
+                    .next()
+                    .is_some_and_(|&ch| ch.is_ascii_whitespace() || ch == b'\x0B')
+                {
+                    self.pos += 1;
+                }
+                match self.next() {
+                    Some(b'#') => {
+                        // continue and check the next newline.
+                        continue;
+                    }
+                    Some(b'&') => {
+                        if self.next_n(1) == Some(b'.') {
+                            // This is `&.`.
+                            // Ignore the previous newline.
+                            continue;
+                        }
+                    }
+                    Some(b'.') => {
+                        if self.next_n(1) != Some(b'.') {
+                            // This is `.` other than `..` or `...`.
+                            // Ignore the previous newline.
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
+                // Lookahead failed. Rewind the position to emit newline
+                self.pos = newline_pos;
                 break;
             } else if ch.is_ascii_whitespace() || ch == b'\x0B' {
                 self.pos += 1;
