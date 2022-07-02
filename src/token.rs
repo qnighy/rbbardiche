@@ -135,34 +135,62 @@ pub enum TokenKind {
     /// `yield` (a.k.a. keyword_yield)
     KeywordYield,
 
+    /// `foo:` (a.k.a. tLABEL)
+    Label(BString),
+
     // Literals
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
+    /// `?a` (a.k.a. tCHAR)
+    Char,
     /// `:` as a symbol (a.k.a. tSYMBEG but excluding dsym case)
     SymbolBegin,
-    /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING or tXSTRING)
+    /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING, tSYMBEG, or tXSTRING)
+    // TODO: take tWORDS_BEG, tQWORDS_BEG, tSYMBOLS_BEG, tQSYMBOLS_BEG into account
     StringBegin(StringType),
     /// Text in a string literal
     StringContent(String),
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING_END)
     StringEnd,
+    /// `':`, `":`, or <code>`:</code> (a.k.a. tLABEL_END)
+    StringLabelEnd,
+    /// `#@foo` (a.k.a. tSTRING_DVAR + tIVAR etc.)
+    StringEmbedIdent(IdentType),
+    /// `/` (a.k.a. tREGEXP_BEG)
+    RegExpBegin,
+    /// `/` (a.k.a. tREGEXP_END)
+    RegExpEnd,
 
-    // Punctuators
+    // Punctuators - parentheses
     /// `(` at the beginning of the expression (a.k.a. tLPAREN)
     LParenBeg,
+    /// `(` at the first command argument (a.k.a. tLPAREN_ARG)
+    LParenArg,
     /// `(` after the expression, usually without preceding spaces (a.k.a. '(')
     LParenCall,
     /// `)`
     RParen,
     /// `[` at the beginning of the expression (a.k.a. tLBRACK)
     LBrackBeg,
+    /// `[` as an array reference (a.k.a. '[')
+    LBrackARef,
     /// `]`
     RBrack,
-    /// `{` (a.k.a. tBRACE)
+    /// `{` at the beginning of the expression (a.k.a. tBRACE)
     LBraceHash,
+    /// `{` after a paren call (a.k.a. '{')
+    LBraceBlockNarrow,
+    /// `{` after a command call (a.k.a. tBRACE_ARG)
+    LBraceBlockWide,
+    /// `{` corresponding `->` (a.k.a. tLAMBEG)
+    LBraceLambda,
+    /// `#{` in a string (a.k.a. tSTRING_DBEG)
+    StringEmbedBegin,
     /// `}` (a.k.a. '}' or tSTRING_DEND)
     RBrace,
+
+    // Punctuators - separators / connectors
     /// `,`
     Comma,
     /// `.`
@@ -171,11 +199,23 @@ pub enum TokenKind {
     AndDot,
     /// `;`
     Semi,
-    // `::` at the beginning of the expression (a.k.a. tCOLON3)
-    Colon2Prefix,
-    // `::` (a.k.a. tCOLON2)
-    Colon2Infix,
     NewLine,
+    /// `::` (a.k.a. tCOLON2)
+    Colon2Infix,
+    /// `=>` (a.k.a. tASSOC)
+    Assoc,
+
+    // Punctuators - prefixes
+    /// `::` at the beginning of the expression (a.k.a. tCOLON3)
+    Colon2Prefix,
+    /// `->` (a.k.a. tLAMBDA)
+    Lambda,
+    /// `*` at the beginning of the expression (a.k.a. tSTAR)
+    Star,
+    /// `**` at the beginning of the expression (a.k.a. tDSTAR)
+    Star2,
+    /// `&` at the beginning of the expression (a.k.a. tAMPER)
+    Amper,
 
     // Operators
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
@@ -236,6 +276,8 @@ pub enum TokenKind {
     Colon,
     /// `=`
     Equal,
+    /// Compound assignment like `+=`
+    OpAssign(BinaryOp),
 
     // Others
     Eof,
@@ -274,10 +316,20 @@ impl TokenKind {
             | TokenKind::KeywordYield
             // `123`
             | TokenKind::Numeric(_)
-            // `:foo`
-            | TokenKind::SymbolBegin
+            // `?a`
+            | TokenKind::Char
             // `"foo"` (though the contents are not expressions)
-            | TokenKind::StringContent(_) => TokenClass::SelfContained,
+            | TokenKind::StringContent(_)
+            // `"#@foo"` (though the contents are not expressions)
+            | TokenKind::StringEmbedIdent(_)
+            // `-> x {}`
+            | TokenKind::Lambda
+            // `f(*e)`
+            | TokenKind::Star
+            // `f(**e)`
+            | TokenKind::Star2
+            // `f(&e)`
+            | TokenKind::Amper => TokenClass::SelfContained,
 
             // `break` / `break e`
             TokenKind::KeywordBreak
@@ -314,27 +366,40 @@ impl TokenKind {
             | TokenKind::KeywordUntil
             // `while e; end`
             | TokenKind::KeywordWhile
+            // `[foo: 42]` (though it does not begin expression itself)
+            | TokenKind::Label(_)
+            // `:foo`
+            | TokenKind::SymbolBegin
             // `"foo"` (though the contents are not expressions)
             | TokenKind::StringBegin(_)
+            // `/foo/` (though the contents are not expressions)
+            | TokenKind::RegExpBegin
+            // `(e)`
+            | TokenKind::LParenBeg
+            // `f (e)`
+            | TokenKind::LParenArg
+            // `[e]`
+            | TokenKind::LBrackBeg
+            // `{ x: e }`
+            | TokenKind::LBraceHash
+            // `"#{foo}"` (though the contents are not expressions)
+            | TokenKind::StringEmbedBegin
+            // `::C`
+            | TokenKind::Colon2Prefix
             // `..e`
             | TokenKind::Dot2Prefix
             // `...e`
             | TokenKind::Dot3Prefix
             // `+e`
             | TokenKind::UnOp(_)
-            // `(e)`
-            | TokenKind::LParenBeg
-            // `[e]`
-            | TokenKind::LBrackBeg
-            // `{ x: e }`
-            | TokenKind::LBraceHash
-            // `::C`
-            | TokenKind::Colon2Prefix => TokenClass::Prefix,
+            => TokenClass::Prefix,
 
             // `begin e end`
             TokenKind::KeywordEnd
             // `"foo"` (though the contents are not expressions)
             | TokenKind::StringEnd
+            // `/foo/` (though the contents are not expressions)
+            | TokenKind::RegExpEnd
             // `(e)`
             | TokenKind::RParen
             // `[e]`
@@ -381,44 +446,72 @@ impl TokenKind {
             | TokenKind::KeywordWhen
             // `e while e`
             | TokenKind::ModifierWhile
+            // `"foo": e`
+            | TokenKind::StringLabelEnd
+            // `f(e)`
+            | TokenKind::LParenCall
+            // `e[e]`
+            | TokenKind::LBrackARef
+            // `f() { e }`
+            | TokenKind::LBraceBlockNarrow
+            // `f e { e }`
+            | TokenKind::LBraceBlockWide
+            // `-> { e }`
+            | TokenKind::LBraceLambda
             // `f(e, e)`
             | TokenKind::Comma
             // `f.f`
             | TokenKind::Dot
             // `f&.f`
             | TokenKind::AndDot
+            // `e; e`
+            | TokenKind::Semi
+            // `[e => e]`
+            | TokenKind::Assoc
             // `e..e` (`e..` is considered a special case)
             | TokenKind::Dot2Infix
             // `e...e` (`e...` is considered a special case)
             | TokenKind::Dot3Infix
             // `e+e`
             | TokenKind::BinOp(_)
-            // `f(e)`
-            | TokenKind::LParenCall
             // `e ? e : e`
             | TokenKind::Question
             // `e ? e : e`
             | TokenKind::Colon
             // `x = e`
             | TokenKind::Equal
-            // `e; e`
-            | TokenKind::Semi
+            // `x += e`
+            | TokenKind::OpAssign(_)
             // `C::C`
             | TokenKind::Colon2Infix
             // `e (newline) e`
-            | TokenKind::NewLine => TokenClass::Infix
+            | TokenKind::NewLine => TokenClass::Infix,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentType {
-    /// - `foo` (a.k.a. tIDENTIFIER)
+    /// `foo` (a.k.a. tIDENTIFIER)
     Ident,
-    /// - `foo!` (a.k.a. tFID)
+    /// `foo!` (a.k.a. tFID)
     FIdent,
-    /// - `Foo` (a.k.a. tCONSTANT)
+    /// `Foo` (a.k.a. tCONSTANT)
     Const,
+    /// `$foo` (a.k.a. tGVAR)
+    GVar,
+    /// `$1` (a.k.a. tNTH_REF)
+    GVarNthRef,
+    /// `$&` (a.k.a. tBACK_REF)
+    GVarBackRef,
+    /// `@foo` (a.k.a. tIVAR)
+    IVar,
+    /// `@@foo` (a.k.a. tCVAR)
+    CVar,
+    /// Operators like `+` after `def`, `.`, `&.`, `::`, or `:`
+    ///
+    /// Includes tAREF and tASET.
+    Op,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
