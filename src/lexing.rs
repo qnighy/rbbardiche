@@ -187,13 +187,19 @@ impl Parser {
     }
 
     fn lex_token_normal(&mut self, params: LexerParams) -> Token {
-        let beg = match params.mode {
-            LexerMode::Begin(_) => true,
-            LexerMode::Arg => false,
-            LexerMode::End => false,
+        let (beg, arg) = match params.mode {
+            LexerMode::Begin(_) => (true, false),
+            LexerMode::Arg => (false, true),
+            LexerMode::End => (false, false),
             LexerMode::String(_) => unreachable!(),
         };
         let space_seen = self.skip_whitespace(params.mode);
+        // `a.b + c` -> false
+        // `a.b +c` -> true
+        // `a.b+c` -> false
+        let is_begin_like = |next_ch: Option<u8>| {
+            beg || (space_seen && arg && next_ch.is_none_or_(|&ch| !ch.isspace()))
+        };
         let start = self.pos;
         if self.pos >= self.source.len() {
             return Token {
@@ -218,7 +224,9 @@ impl Parser {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
                     self.pos += 1;
-                    if beg {
+                    if self.next() == Some(b'=') {
+                        todo!("**=");
+                    } else if is_begin_like(self.next()) {
                         todo!("** as tDStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Pow)
@@ -226,8 +234,7 @@ impl Parser {
                 } else if self.next() == Some(b'=') {
                     todo!("*=");
                 } else {
-                    // TODO: spcarg condition
-                    if beg {
+                    if is_begin_like(self.next()) {
                         todo!("* as tStar");
                     } else {
                         TokenKind::BinOp(BinaryOp::Mul)
@@ -301,6 +308,7 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Gt)
                 }
             }
+            b'`' => todo!("`"),
             b'\'' => {
                 self.pos += 1;
                 // TODO: check label condition
@@ -345,8 +353,7 @@ impl Parser {
                 } else if self.next() == Some(b'.') {
                     self.pos += 1;
                     TokenKind::AndDot
-                // TODO: spcarg condition
-                } else if beg {
+                } else if is_begin_like(self.next()) {
                     todo!("& as tAMPER");
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseAnd)
@@ -360,6 +367,13 @@ impl Parser {
                         self.pos += 1;
                         todo!("||=");
                     } else if beg {
+                        // Note: the condition above differs from parse.y
+                        // in some broken cases
+                        //
+                        // - EXPR_CLASS ... `class ||`
+                        // - EXPR_ARG|EXPR_LABELED ... `{ foo: || }`
+                        // - EXPR_MID ... `return || true`
+
                         // Split `||` into two `|`s
                         self.pos = start + 1;
                         TokenKind::BinOp(BinaryOp::BitwiseOr)
@@ -379,8 +393,7 @@ impl Parser {
                 if self.next() == Some(b'=') {
                     todo!("+=");
                 }
-                // TODO: spcarg condition
-                if beg {
+                if is_begin_like(self.next()) {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -400,8 +413,7 @@ impl Parser {
                 if self.next() == Some(b'>') {
                     todo!("->");
                 }
-                // TODO: spcarg condition
-                if beg {
+                if is_begin_like(self.next()) {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -455,8 +467,7 @@ impl Parser {
                 self.pos += 1;
                 if self.next() == Some(b':') {
                     self.pos += 1;
-                    // TODO: EXPR_CLASS and spcarg conditions
-                    if beg {
+                    if is_begin_like(None) {
                         TokenKind::Colon2Prefix
                     } else {
                         TokenKind::Colon2Infix
@@ -472,13 +483,21 @@ impl Parser {
             }
             b'/' => {
                 self.pos += 1;
-                if beg {
-                    todo!("regexp");
-                }
-                if self.next() == Some(b'=') {
+                // Note the complex rule for `/=` vs. regexp:
+                // - `/y / +1` ... regexp
+                // - `/ y / +1` ... regexp
+                // - `/=y / +1` ... regexp
+                // - `/= y / +1` ... regexp
+                // - `x /y / +1` ... regexp
+                // - `x / y / +1` ... operator
+                // - `x /=y / +1` ... operator
+                // - `x /= y / +1` ... operator
+                if self.next() == Some(b'=') && !beg {
                     todo!("/=");
                 }
-                // TODO: spcarg condition
+                if is_begin_like(self.next()) {
+                    todo!("regexp");
+                }
                 TokenKind::BinOp(BinaryOp::Div)
             }
             b'^' => {
@@ -508,6 +527,9 @@ impl Parser {
                     TokenKind::LParenBeg
                 } else if !space_seen {
                     TokenKind::LParenCall
+                } else if arg {
+                    // TODO: include EXPR_END|EXPR_LABEL too
+                    todo!("tLPAREN_ARG")
                 } else {
                     todo!("(")
                 }
@@ -515,8 +537,7 @@ impl Parser {
             b'[' => {
                 self.pos += 1;
                 // TODO: after_operator condition
-                // TODO: arg condition
-                if beg {
+                if is_begin_like(None) {
                     TokenKind::LBrackBeg
                 } else {
                     todo!("[");
@@ -528,18 +549,21 @@ impl Parser {
                 // TODO: various other conditions
                 TokenKind::LBraceHash
             }
+            b'\\' => todo!("backslash"),
             b'%' => {
                 self.pos += 1;
-                if beg {
-                    todo!("%q()");
-                }
-                if self.next() == Some(b'=') {
+                if self.next() == Some(b'=') && !beg {
                     todo!("%=");
                 }
-                // TODO: spcarg condition
+                if is_begin_like(self.next()) {
+                    // TODO: include EXPR_FITEM condition
+                    todo!("%q()");
+                }
                 // TODO: fitem condition
                 TokenKind::BinOp(BinaryOp::Mod)
             }
+            b'$' => todo!("dollar sign"),
+            b'@' => todo!("at sign"),
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
                 let start = self.pos;
                 while self.pos < self.source.len() && {
