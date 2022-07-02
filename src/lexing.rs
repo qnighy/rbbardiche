@@ -225,17 +225,19 @@ impl Parser {
                 if self.next() == Some(b'*') {
                     self.pos += 1;
                     if self.next() == Some(b'=') {
-                        todo!("**=");
+                        self.pos += 1;
+                        TokenKind::OpAssign(BinaryOp::Pow)
                     } else if is_begin_like(self.next()) {
-                        todo!("** as tDStar");
+                        TokenKind::Star2
                     } else {
                         TokenKind::BinOp(BinaryOp::Pow)
                     }
                 } else if self.next() == Some(b'=') {
-                    todo!("*=");
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::Mul)
                 } else {
                     if is_begin_like(self.next()) {
-                        todo!("* as tStar");
+                        TokenKind::Star
                     } else {
                         TokenKind::BinOp(BinaryOp::Mul)
                     }
@@ -269,7 +271,8 @@ impl Parser {
                     self.pos += 1;
                     TokenKind::BinOp(BinaryOp::Match)
                 } else if self.next() == Some(b'>') {
-                    todo!("=>");
+                    self.pos += 1;
+                    TokenKind::Assoc
                 } else {
                     TokenKind::Equal
                 }
@@ -288,7 +291,8 @@ impl Parser {
                 } else if self.next() == Some(b'<') {
                     self.pos += 1;
                     if self.next() == Some(b'=') {
-                        todo!("<<=");
+                        self.pos += 1;
+                        TokenKind::OpAssign(BinaryOp::LShift)
                     } else {
                         TokenKind::BinOp(BinaryOp::LShift)
                     }
@@ -303,7 +307,12 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::GtEq)
                 } else if self.next() == Some(b'>') {
                     self.pos += 1;
-                    TokenKind::BinOp(BinaryOp::RShift)
+                    if self.next() == Some(b'=') {
+                        self.pos += 1;
+                        TokenKind::OpAssign(BinaryOp::RShift)
+                    } else {
+                        TokenKind::BinOp(BinaryOp::RShift)
+                    }
                 } else {
                     TokenKind::BinOp(BinaryOp::Gt)
                 }
@@ -343,18 +352,19 @@ impl Parser {
                 if self.next() == Some(b'&') {
                     self.pos += 1;
                     if self.next() == Some(b'=') {
-                        todo!("&&=");
+                        self.pos += 1;
+                        TokenKind::OpAssign(BinaryOp::LogicalAnd)
                     } else {
                         TokenKind::BinOp(BinaryOp::LogicalAnd)
                     }
                 } else if self.next() == Some(b'=') {
                     self.pos += 1;
-                    todo!("&=");
+                    TokenKind::OpAssign(BinaryOp::BitwiseAnd)
                 } else if self.next() == Some(b'.') {
                     self.pos += 1;
                     TokenKind::AndDot
                 } else if is_begin_like(self.next()) {
-                    todo!("& as tAMPER");
+                    TokenKind::Amper
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseAnd)
                 }
@@ -365,7 +375,7 @@ impl Parser {
                     self.pos += 1;
                     if self.next() == Some(b'=') {
                         self.pos += 1;
-                        todo!("||=");
+                        TokenKind::OpAssign(BinaryOp::LogicalOr)
                     } else if beg {
                         // Note: the condition above differs from parse.y
                         // in some broken cases
@@ -382,7 +392,7 @@ impl Parser {
                     }
                 } else if self.next() == Some(b'=') {
                     self.pos += 1;
-                    todo!("|=");
+                    TokenKind::OpAssign(BinaryOp::BitwiseOr)
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseOr)
                 }
@@ -391,9 +401,9 @@ impl Parser {
                 self.pos += 1;
                 // TODO: after_operator condition
                 if self.next() == Some(b'=') {
-                    todo!("+=");
-                }
-                if is_begin_like(self.next()) {
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::Add)
+                } else if is_begin_like(self.next()) {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -408,12 +418,12 @@ impl Parser {
                 self.pos += 1;
                 // TODO: after_operator condition
                 if self.next() == Some(b'=') {
-                    todo!("-=");
-                }
-                if self.next() == Some(b'>') {
-                    todo!("->");
-                }
-                if is_begin_like(self.next()) {
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::Sub)
+                } else if self.next() == Some(b'>') {
+                    self.pos += 1;
+                    TokenKind::Lambda
+                } else if is_begin_like(self.next()) {
                     if self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
                         self.pos = start;
                         self.lex_numeric()
@@ -493,17 +503,19 @@ impl Parser {
                 // - `x /=y / +1` ... operator
                 // - `x /= y / +1` ... operator
                 if self.next() == Some(b'=') && !beg {
-                    todo!("/=");
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::Div)
+                } else if is_begin_like(self.next()) {
+                    TokenKind::RegExpBegin
+                } else {
+                    TokenKind::BinOp(BinaryOp::Div)
                 }
-                if is_begin_like(self.next()) {
-                    todo!("regexp");
-                }
-                TokenKind::BinOp(BinaryOp::Div)
             }
             b'^' => {
                 self.pos += 1;
                 if self.next() == Some(b'=') {
-                    todo!("^=");
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::BitwiseXor)
                 } else {
                     TokenKind::BinOp(BinaryOp::BitwiseXor)
                 }
@@ -529,9 +541,9 @@ impl Parser {
                     TokenKind::LParenCall
                 } else if arg {
                     // TODO: include EXPR_END|EXPR_LABEL too
-                    todo!("tLPAREN_ARG")
+                    TokenKind::LParenArg
                 } else {
-                    todo!("(")
+                    TokenKind::LParenCall
                 }
             }
             b'[' => {
@@ -540,8 +552,7 @@ impl Parser {
                 if is_begin_like(None) {
                     TokenKind::LBrackBeg
                 } else {
-                    todo!("[");
-                    // TokenKind::LBrackMid
+                    TokenKind::LBrackARef
                 }
             }
             b'{' => {
@@ -549,18 +560,18 @@ impl Parser {
                 // TODO: various other conditions
                 TokenKind::LBraceHash
             }
-            b'\\' => todo!("backslash"),
             b'%' => {
                 self.pos += 1;
                 if self.next() == Some(b'=') && !beg {
-                    todo!("%=");
-                }
-                if is_begin_like(self.next()) {
+                    self.pos += 1;
+                    TokenKind::OpAssign(BinaryOp::Mod)
+                } else if is_begin_like(self.next()) {
                     // TODO: include EXPR_FITEM condition
                     todo!("%q()");
+                } else {
+                    // TODO: fitem condition
+                    TokenKind::BinOp(BinaryOp::Mod)
                 }
-                // TODO: fitem condition
-                TokenKind::BinOp(BinaryOp::Mod)
             }
             b'$' => todo!("dollar sign"),
             b'@' => todo!("at sign"),
