@@ -212,6 +212,8 @@ impl Parser {
                 };
             }
             b'\n' => TokenKind::NewLine,
+            _ if first.isspace() => unreachable!("unconsumed whitespace"),
+            b'#' => unreachable!("unconsumed comment"),
             b'*' => {
                 self.pos += 1;
                 if self.next() == Some(b'*') {
