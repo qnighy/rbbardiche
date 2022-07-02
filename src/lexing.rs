@@ -203,6 +203,14 @@ impl Parser {
         }
         let first = self.source[self.pos];
         let kind = match first {
+            b'\0' | b'\x04' | b'\x1A' => {
+                // NUL, ^D, or ^Z
+                self.pos = self.source.len();
+                return Token {
+                    kind: TokenKind::Eof,
+                    range: Range(start, start + 1),
+                };
+            }
             b'\n' => TokenKind::NewLine,
             b'*' => {
                 self.pos += 1;
