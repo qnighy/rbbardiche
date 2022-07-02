@@ -31,6 +31,7 @@ impl Token {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
+    // Identifiers and keywords
     /// - `foo` (a.k.a. tIDENTIFIER)
     /// - `foo!` (a.k.a. tFID)
     /// - `Foo` (a.k.a. tCONSTANT)
@@ -133,6 +134,8 @@ pub enum TokenKind {
     ModifierWhile,
     /// `yield` (a.k.a. keyword_yield)
     KeywordYield,
+
+    // Literals
     /// `42` (a.k.a. tINTEGER, tFLOAT, tRATIONAL or tIMAGINARY)
     // TODO: bigint, float, etc.
     Numeric(i32),
@@ -144,12 +147,37 @@ pub enum TokenKind {
     StringContent(String),
     /// `'`, `"`, or <code>`</code> (a.k.a. tSTRING_END)
     StringEnd,
+
+    // Punctuators
+    /// `(` at the beginning of the expression (a.k.a. tLPAREN)
+    LParenBeg,
+    /// `(` after the expression, usually without preceding spaces (a.k.a. '(')
+    LParenCall,
+    /// `)`
+    RParen,
+    /// `[` at the beginning of the expression (a.k.a. tLBRACK)
+    LBrackBeg,
+    /// `]`
+    RBrack,
+    /// `{` (a.k.a. tBRACE)
+    LBraceHash,
+    /// `}` (a.k.a. '}' or tSTRING_DEND)
+    RBrace,
     /// `,`
     Comma,
     /// `.`
     Dot,
     /// `&.`
     AndDot,
+    /// `;`
+    Semi,
+    // `::` at the beginning of the expression (a.k.a. tCOLON3)
+    Colon2Prefix,
+    // `::` (a.k.a. tCOLON2)
+    Colon2Infix,
+    NewLine,
+
+    // Operators
     /// `..` at the beginning of the expression (a.k.a. tBDOT2)
     Dot2Prefix,
     /// `..` after the expression (a.k.a. tDOT2)
@@ -202,33 +230,14 @@ pub enum TokenKind {
     /// - '~'
     /// - tUPLUS (`+`)
     UnOp(UnaryOp),
-    /// `(` at the beginning of the expression (a.k.a. tLPAREN)
-    LParenBeg,
-    /// `(` after the expression, usually without preceding spaces (a.k.a. '(')
-    LParenCall,
-    /// `)`
-    RParen,
-    /// `[` at the beginning of the expression (a.k.a. tLBRACK)
-    LBrackBeg,
-    /// `]`
-    RBrack,
-    /// `{` (a.k.a. tBRACE)
-    LBraceHash,
-    /// `}` (a.k.a. '}' or tSTRING_DEND)
-    RBrace,
     /// `?`
     Question,
     /// `:`
     Colon,
     /// `=`
     Equal,
-    /// `;`
-    Semi,
-    // `::` at the beginning of the expression (a.k.a. tCOLON3)
-    Colon2Prefix,
-    // `::` (a.k.a. tCOLON2)
-    Colon2Infix,
-    NewLine,
+
+    // Others
     Eof,
 }
 
