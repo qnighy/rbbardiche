@@ -200,6 +200,50 @@ impl From<&ast::StringLiteralExpr> for SExp {
     }
 }
 
+impl From<&ast::NilExpr> for SExp {
+    fn from(expr: &ast::NilExpr) -> Self {
+        let ast::NilExpr { meta: _ } = expr;
+        SExp::Tagged {
+            tag: "nil".to_owned(),
+            args: vec![],
+        }
+    }
+}
+
+impl From<&ast::SelfExpr> for SExp {
+    fn from(expr: &ast::SelfExpr) -> Self {
+        let ast::SelfExpr { meta: _ } = expr;
+        SExp::Tagged {
+            tag: "self".to_owned(),
+            args: vec![],
+        }
+    }
+}
+
+impl From<&ast::BooleanLiteralExpr> for SExp {
+    fn from(expr: &ast::BooleanLiteralExpr) -> Self {
+        let ast::BooleanLiteralExpr { value, meta: _ } = expr;
+        SExp::Tagged {
+            tag: if *value {
+                "true".to_owned()
+            } else {
+                "false".to_owned()
+            },
+            args: vec![],
+        }
+    }
+}
+
+impl From<&ast::FileMetaExpr> for SExp {
+    fn from(expr: &ast::FileMetaExpr) -> Self {
+        let ast::FileMetaExpr { name, meta: _ } = expr;
+        SExp::Tagged {
+            tag: name.name().to_owned(),
+            args: vec![],
+        }
+    }
+}
+
 impl From<&ast::TernaryCondExpr> for SExp {
     fn from(expr: &ast::TernaryCondExpr) -> Self {
         let ast::TernaryCondExpr {
@@ -283,16 +327,6 @@ impl From<&ast::UnaryExpr> for SExp {
                     name: unop_send_name(*op).to_owned(),
                 },
             ],
-        }
-    }
-}
-
-impl From<&ast::NilExpr> for SExp {
-    fn from(expr: &ast::NilExpr) -> Self {
-        let ast::NilExpr { meta: _ } = expr;
-        SExp::Tagged {
-            tag: "nil".to_owned(),
-            args: vec![],
         }
     }
 }

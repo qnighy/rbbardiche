@@ -1,0 +1,8 @@
+s(:begin,
+  s(:nil),
+  s(:self),
+  s(:true),
+  s(:false),
+  s(:__FILE__),
+  s(:__LINE__),
+  s(:__ENCODING__))

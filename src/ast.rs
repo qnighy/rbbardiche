@@ -44,25 +44,50 @@ impl AsMut<NodeMeta> for Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
+    /// Parenthesized expression, `(1 + 2)`
     Parenthesized(ParenthesizedExpr),
+    /// Container for multiple expressions
     Compound(CompoundExpr),
+    /// Numeric, `42`, `123.4`
     // TODO: bigint, float, etc.
     Numeric(NumericExpr),
+    /// Symbol, `:foo`
     Symbol(SymbolExpr),
+    /// String, `"foo"`
     StringLiteral(StringLiteralExpr),
-    TernaryCond(TernaryCondExpr),
-    Range(RangeExpr),
-    Binary(BinaryExpr),
-    Unary(UnaryExpr),
+    /// `nil`
     Nil(NilExpr),
+    /// `self`
+    Self_(SelfExpr),
+    /// `true` or `false`
+    BooleanLiteral(BooleanLiteralExpr),
+    /// One of `__FILE__`, `__LINE__`, or `__ENCODING__`
+    FileMeta(FileMetaExpr),
+    /// `cond ? e1 : e2`
+    TernaryCond(TernaryCondExpr),
+    /// `0..10`
+    Range(RangeExpr),
+    /// Binary operators like `1 + 1`
+    Binary(BinaryExpr),
+    /// Unary operators like `-x`
+    Unary(UnaryExpr),
+    /// Assignment, `x = 42`
     Assign(AssignExpr),
+    /// Method call, `obj.foo()`
     Send(SendExpr),
+    /// Constant reference, `Foo::Bar`
     Const(ConstExpr),
+    /// Array expression, `[1, 2, 3]`
     Array(ArrayExpr),
+    /// Hash expression, `{ foo: 1, bar: 2 }`
     Hash(HashExpr),
+    /// Class expression, `class C; end`
     Class(ClassExpr),
+    /// Module expression, `module M; end`
     Module(ModuleExpr),
+    /// Instance method definition, `def f; end`
     Defn(DefnExpr),
+    /// A dummy expression generated on a parse error
     Errored(ErroredExpr),
 }
 
@@ -80,6 +105,9 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Binary($x) => $arm,
             $crate::ast::Expr::Unary($x) => $arm,
             $crate::ast::Expr::Nil($x) => $arm,
+            $crate::ast::Expr::Self_($x) => $arm,
+            $crate::ast::Expr::BooleanLiteral($x) => $arm,
+            $crate::ast::Expr::FileMeta($x) => $arm,
             $crate::ast::Expr::Assign($x) => $arm,
             $crate::ast::Expr::Send($x) => $arm,
             $crate::ast::Expr::Const($x) => $arm,
@@ -149,6 +177,30 @@ impl From<StringLiteralExpr> for Expr {
     }
 }
 
+impl From<NilExpr> for Expr {
+    fn from(e: NilExpr) -> Self {
+        Expr::Nil(e)
+    }
+}
+
+impl From<SelfExpr> for Expr {
+    fn from(e: SelfExpr) -> Self {
+        Expr::Self_(e)
+    }
+}
+
+impl From<BooleanLiteralExpr> for Expr {
+    fn from(e: BooleanLiteralExpr) -> Self {
+        Expr::BooleanLiteral(e)
+    }
+}
+
+impl From<FileMetaExpr> for Expr {
+    fn from(e: FileMetaExpr) -> Self {
+        Expr::FileMeta(e)
+    }
+}
+
 impl From<TernaryCondExpr> for Expr {
     fn from(e: TernaryCondExpr) -> Self {
         Expr::TernaryCond(e)
@@ -170,12 +222,6 @@ impl From<BinaryExpr> for Expr {
 impl From<UnaryExpr> for Expr {
     fn from(e: UnaryExpr) -> Self {
         Expr::Unary(e)
-    }
-}
-
-impl From<NilExpr> for Expr {
-    fn from(e: NilExpr) -> Self {
-        Expr::Nil(e)
     }
 }
 
@@ -266,6 +312,53 @@ pub struct StringLiteralExpr {
     pub meta: NodeMeta,
 }
 
+/// `nil`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NilExpr {
+    pub meta: NodeMeta,
+}
+
+/// `self`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SelfExpr {
+    pub meta: NodeMeta,
+}
+
+/// `true` or `false`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BooleanLiteralExpr {
+    pub value: bool,
+    pub meta: NodeMeta,
+}
+
+/// One of `__FILE__`, `__LINE__`, or `__ENCODING__`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileMetaExpr {
+    pub name: FileMetaName,
+    pub meta: NodeMeta,
+}
+
+/// One of `__FILE__`, `__LINE__`, or `__ENCODING__`
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileMetaName {
+    /// `__FILE__`
+    File,
+    /// `__LINE__`
+    Line,
+    /// `__ENCODING__`
+    Encoding,
+}
+
+impl FileMetaName {
+    pub fn name(self) -> &'static str {
+        match self {
+            FileMetaName::File => "__FILE__",
+            FileMetaName::Line => "__LINE__",
+            FileMetaName::Encoding => "__ENCODING__",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TernaryCondExpr {
     pub cond: Box<Expr>,
@@ -294,11 +387,6 @@ pub struct BinaryExpr {
 pub struct UnaryExpr {
     pub op: UnaryOp,
     pub expr: Box<Expr>,
-    pub meta: NodeMeta,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NilExpr {
     pub meta: NodeMeta,
 }
 

@@ -2,8 +2,8 @@ use bstr::ByteSlice;
 
 use crate::ast::{
     self, Arg, Args, ArrayExpr, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg,
-    DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, NilExpr, NodeMeta, ParenArgs,
-    ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
+    DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, FileMetaName, NilExpr, NodeMeta,
+    ParenArgs, ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::lexing::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};
 use crate::parser::Parser;
@@ -1072,19 +1072,6 @@ impl Parser {
                     .into()
                 }
             }
-            // primary : var_ref
-            // var_ref : keyword_variable
-            // keyword_variable : keyword_nil
-            TokenKind::KeywordNil => {
-                let token = self.bump(ctx.end());
-                ast::NilExpr {
-                    meta: NodeMeta {
-                        range: token.range,
-                        node_id: 0,
-                    },
-                }
-                .into()
-            }
             // primary : literal
             // literal : numeric
             // numeric : simple_numeric
@@ -1123,6 +1110,69 @@ impl Parser {
                     ident_token,
                     value,
                     meta: NodeMeta { range, node_id: 0 },
+                }
+                .into()
+            }
+            // primary : var_ref
+            // var_ref : keyword_variable
+            // keyword_variable : keyword_nil
+            TokenKind::KeywordNil => {
+                let token = self.bump(ctx.end());
+                ast::NilExpr {
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
+                }
+                .into()
+            }
+            // primary : var_ref
+            // var_ref : keyword_variable
+            // keyword_variable : keyword_self
+            TokenKind::KeywordSelf => {
+                let token = self.bump(ctx.end());
+                ast::SelfExpr {
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
+                }
+                .into()
+            }
+            // primary : var_ref
+            // var_ref : keyword_variable
+            // keyword_variable : keyword_true
+            //                  | keyword_false
+            TokenKind::KeywordTrue | TokenKind::KeywordFalse => {
+                let token = self.bump(ctx.end());
+                ast::BooleanLiteralExpr {
+                    value: matches!(token.kind, TokenKind::KeywordTrue),
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
+                }
+                .into()
+            }
+            // primary : var_ref
+            // var_ref : keyword_variable
+            // keyword_variable : keyword_true
+            //                  | keyword_false
+            TokenKind::KeywordUnderscoreEncoding
+            | TokenKind::KeywordUnderscoreFile
+            | TokenKind::KeywordUnderscoreLine => {
+                let token = self.bump(ctx.end());
+                ast::FileMetaExpr {
+                    name: match token.kind {
+                        TokenKind::KeywordUnderscoreEncoding => FileMetaName::Encoding,
+                        TokenKind::KeywordUnderscoreFile => FileMetaName::File,
+                        TokenKind::KeywordUnderscoreLine => FileMetaName::Line,
+                        _ => unreachable!(),
+                    },
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
                 }
                 .into()
             }
