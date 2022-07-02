@@ -1,16 +1,25 @@
 foo
 + bar
 
+foo # comment
++ bar
+
 foo
   + bar
 
 foo
 - bar
 
+foo # comment
+- bar
+
 foo
   - bar
 
 foo
+.bar
+
+foo # comment
 .bar
 
 foo
@@ -30,6 +39,9 @@ foo
   .bar
 
 foo
+&.bar
+
+foo # comment
 &.bar
 
 foo
@@ -51,8 +63,17 @@ foo
 Foo
 ::Bar
 
+Foo # comment
+::Bar
+
 foo
 ..bar
 
+foo # comment
+..bar
+
 foo
+...bar
+
+foo # comment
 ...bar
