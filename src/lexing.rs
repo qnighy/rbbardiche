@@ -2,7 +2,7 @@ use crate::ast::{BinaryOp, Range, UnaryOp};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenKind};
-use crate::util::OptionPredExt;
+use crate::util::{CharExt, OptionPredExt};
 use bstr::{BStr, ByteSlice};
 use once_cell::sync::Lazy;
 use std::{borrow::Cow, collections::HashMap};
@@ -310,7 +310,7 @@ impl Parser {
                         // Here we emit '?' instead, and it will lead to syntax error anyway.
                         TokenKind::Question
                     }
-                    Some(ch) if ch.is_ascii_whitespace() || ch == b'\x0B' => TokenKind::Question,
+                    Some(ch) if ch.isspace() => TokenKind::Question,
                     Some(b'\\') => {
                         todo!("character syntax with escapes")
                     }
@@ -452,10 +452,7 @@ impl Parser {
                         TokenKind::Colon2Infix
                     }
                     // TODO: end_any condition
-                } else if self
-                    .next()
-                    .is_some_and_(|&ch| ch.is_ascii_whitespace() || ch == b'\x0B' || ch == b'#')
-                {
+                } else if self.next().is_some_and_(|&ch| ch.isspace() || ch == b'#') {
                     TokenKind::Colon
                 } else if self.next() == Some(b'"') || self.next() == Some(b'\'') {
                     todo!("tSYMBEG string");
@@ -724,10 +721,7 @@ impl Parser {
                 let newline_pos = self.pos;
                 // lookahead
                 self.pos += 1;
-                while self
-                    .next()
-                    .is_some_and_(|&ch| ch.is_ascii_whitespace() || ch == b'\x0B')
-                {
+                while self.next().is_some_and_(|&ch| ch.isspace()) {
                     self.pos += 1;
                 }
                 match self.next() {
@@ -754,7 +748,7 @@ impl Parser {
                 // Lookahead failed. Rewind the position to emit newline
                 self.pos = newline_pos;
                 break;
-            } else if ch.is_ascii_whitespace() || ch == b'\x0B' {
+            } else if ch.isspace() {
                 self.pos += 1;
             } else if ch == b'#' {
                 self.pos += 1;

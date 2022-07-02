@@ -31,3 +31,20 @@ impl<T> OptionPredExt<T> for Option<T> {
         }
     }
 }
+
+pub(crate) trait CharExt {
+    /// Equivalent to isspace(3)
+    fn isspace(self) -> bool;
+}
+
+impl CharExt for u8 {
+    fn isspace(self) -> bool {
+        self.is_ascii_whitespace() || self == b'\x0B'
+    }
+}
+
+impl CharExt for char {
+    fn isspace(self) -> bool {
+        self.is_ascii_whitespace() || self == '\x0B'
+    }
+}
