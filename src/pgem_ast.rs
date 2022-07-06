@@ -200,6 +200,38 @@ impl From<&ast::StringLiteralExpr> for SExp {
     }
 }
 
+impl From<&ast::VarExpr> for SExp {
+    fn from(expr: &ast::VarExpr) -> Self {
+        let ast::VarExpr { name, meta: _ } = expr;
+        let tag = if name.starts_with("$") {
+            if name == "$&" || name == "$`" || name == "$'" || name == "$+" {
+                "back_ref"
+            } else if name.as_bytes()[1..].iter().all(|&ch| ch.is_ascii_digit())
+                && *name.as_bytes().get(1).unwrap_or(&b'0') != b'0'
+            {
+                // TODO: very large nth ref
+                let num = name[1..].parse::<i32>().unwrap();
+                return SExp::Tagged {
+                    tag: "nth_tef".to_owned(),
+                    args: vec![SExp::Number { value: num }],
+                };
+            } else {
+                "gvar"
+            }
+        } else if name.starts_with("@@") {
+            "cvar"
+        } else if name.starts_with("@") {
+            "ivar"
+        } else {
+            "lvar"
+        };
+        SExp::Tagged {
+            tag: tag.to_owned(),
+            args: vec![SExp::Symbol { name: name.clone() }],
+        }
+    }
+}
+
 impl From<&ast::NilExpr> for SExp {
     fn from(expr: &ast::NilExpr) -> Self {
         let ast::NilExpr { meta: _ } = expr;

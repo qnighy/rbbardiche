@@ -498,12 +498,8 @@ pub enum IdentType {
     FIdent,
     /// `Foo` (a.k.a. tCONSTANT)
     Const,
-    /// `$foo` (a.k.a. tGVAR)
+    /// `$foo` (a.k.a. tGVAR, tNTH_REF, or tBACK_REF)
     GVar,
-    /// `$1` (a.k.a. tNTH_REF)
-    GVarNthRef,
-    /// `$&` (a.k.a. tBACK_REF)
-    GVarBackRef,
     /// `@foo` (a.k.a. tIVAR)
     IVar,
     /// `@@foo` (a.k.a. tCVAR)

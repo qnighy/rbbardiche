@@ -1044,6 +1044,21 @@ impl Parser {
                     e.into()
                 }
             }
+            // primary : var_ref
+            // var_ref : user_variable
+            // user_variable : tGVAR
+            TokenKind::Ident(IdentType::GVar, name) => {
+                let name = name.to_string();
+                let token = self.bump(ctx.end());
+                ast::VarExpr {
+                    name,
+                    meta: NodeMeta {
+                        range: token.range,
+                        node_id: 0,
+                    },
+                }
+                .into()
+            }
             // primary : tCOLON3 tCONSTANT
             TokenKind::Colon2Prefix => {
                 let dcolon_token = self.bump(ctx.beg());

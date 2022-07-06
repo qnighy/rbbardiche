@@ -573,7 +573,15 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Mod)
                 }
             }
-            b'$' => todo!("dollar sign"),
+            b'$' => {
+                let start = self.pos;
+                let is_ok = self.advance_gvar();
+                if !is_ok {
+                    todo!("error recovery from invalid gvar");
+                }
+                let ident = self.source[start..self.pos].as_bstr();
+                TokenKind::Ident(IdentType::GVar, ident.to_owned())
+            }
             b'@' => todo!("at sign"),
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
                 let start = self.pos;
@@ -661,6 +669,68 @@ impl Parser {
         }
     }
 
+    fn advance_gvar(&mut self) -> bool {
+        assert_eq!(self.next(), Some(b'$'));
+        self.pos += 1;
+        match self.next() {
+            Some(
+                b'!' | b'$' | b'&' | b'*' | b'+' | b',' | b'.' | b'/' | b':' | b';' | b'<' | b'='
+                | b'>' | b'?' | b'@' | b'\"' | b'\'' | b'\\' | b'`' | b'~',
+            ) => {
+                self.pos += 1;
+                true
+            }
+            Some(b'-') => {
+                self.pos += 1;
+                if self
+                    .next()
+                    .is_some_and_(|&ch| ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80)
+                {
+                    if self.next().unwrap() >= 0x80 {
+                        self.advance_utf8_char();
+                    } else {
+                        self.pos += 1;
+                    }
+                    true
+                } else {
+                    if self.next().is_some_and_(|&ch| !ch.isspace()) {
+                        self.advance_utf8_char();
+                    }
+                    false
+                }
+            }
+            Some(b'1'..=b'9') => {
+                self.pos += 1;
+                // Allow $10, $11, ... too
+                while self.next().is_some_and_(|&ch| ch.is_ascii_digit()) {
+                    self.pos += 1;
+                }
+                true
+            }
+            Some(first) if first.is_ascii_alphanumeric() || first == b'_' || first >= 0x80 => {
+                let start = self.pos;
+                while self
+                    .next()
+                    .is_some_and_(|&ch| ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80)
+                {
+                    self.pos += 1;
+                }
+                if first == b'0' {
+                    // Disallow $0abc
+                    self.pos - start == 1
+                } else {
+                    true
+                }
+            }
+            _ => {
+                if self.next().is_some_and_(|&ch| !ch.isspace()) {
+                    self.advance_utf8_char();
+                }
+                false
+            }
+        }
+    }
+
     fn lex_token_string(&mut self, mode: StringLexerMode) -> Token {
         let term = match mode {
             StringLexerMode::SingleQuoted => b'\'',
@@ -733,6 +803,14 @@ impl Parser {
             TokenKind::Numeric(numval)
         } else {
             todo!();
+        }
+    }
+
+    fn advance_utf8_char(&mut self) {
+        assert!(self.pos < self.source.len());
+        self.pos += 1;
+        while self.next().is_some_and_(|&ch| (0x80..0xC0).contains(&ch)) {
+            self.pos += 1;
         }
     }
 

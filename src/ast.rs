@@ -55,6 +55,8 @@ pub enum Expr {
     Symbol(SymbolExpr),
     /// String, `"foo"`
     StringLiteral(StringLiteralExpr),
+    /// `foo`, `$foo`, `@foo`, `@@foo`
+    Var(VarExpr),
     /// `nil`
     Nil(NilExpr),
     /// `self`
@@ -104,6 +106,7 @@ macro_rules! delegate_expr {
             $crate::ast::Expr::Range($x) => $arm,
             $crate::ast::Expr::Binary($x) => $arm,
             $crate::ast::Expr::Unary($x) => $arm,
+            $crate::ast::Expr::Var($x) => $arm,
             $crate::ast::Expr::Nil($x) => $arm,
             $crate::ast::Expr::Self_($x) => $arm,
             $crate::ast::Expr::BooleanLiteral($x) => $arm,
@@ -174,6 +177,12 @@ impl From<SymbolExpr> for Expr {
 impl From<StringLiteralExpr> for Expr {
     fn from(e: StringLiteralExpr) -> Self {
         Expr::StringLiteral(e)
+    }
+}
+
+impl From<VarExpr> for Expr {
+    fn from(e: VarExpr) -> Self {
+        Expr::Var(e)
     }
 }
 
@@ -309,6 +318,13 @@ pub struct SymbolExpr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StringLiteralExpr {
     pub strval: String,
+    pub meta: NodeMeta,
+}
+
+/// `foo`, `$foo`, `@foo`, `@@foo`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VarExpr {
+    pub name: String,
     pub meta: NodeMeta,
 }
 
