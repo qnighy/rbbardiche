@@ -1046,8 +1046,10 @@ impl Parser {
             }
             // primary : var_ref
             // var_ref : user_variable
-            // user_variable : tGVAR
-            TokenKind::Ident(IdentType::GVar, name) => {
+            // user_variable : tIVAR
+            //               | tGVAR
+            //               | tCVAR
+            TokenKind::Ident(IdentType::GVar | IdentType::IVar | IdentType::CVar, name) => {
                 let name = name.to_string();
                 let token = self.bump(ctx.end());
                 ast::VarExpr {

@@ -11,10 +11,10 @@ Foo?
 foo!=1
 # foo?=
 
-# @foo
-# @Foo
-# @@foo
-# @@Foo
+@foo
+@Foo
+@@foo
+@@Foo
 $foo
 $Foo
 $_foo

@@ -582,15 +582,25 @@ impl Parser {
                 let ident = self.source[start..self.pos].as_bstr();
                 TokenKind::Ident(IdentType::GVar, ident.to_owned())
             }
-            b'@' => todo!("at sign"),
+            b'@' => {
+                let start = self.pos;
+                let is_ok = self.advance_ivar_or_cvar();
+                if !is_ok {
+                    todo!("error recovery from invalid ivar/cvar");
+                }
+                let ident = self.source[start..self.pos].as_bstr();
+                TokenKind::Ident(
+                    if ident.starts_with(b"@@") {
+                        IdentType::CVar
+                    } else {
+                        IdentType::IVar
+                    },
+                    ident.to_owned(),
+                )
+            }
             _ if first.is_ascii_alphabetic() || first == b'_' || first >= 0x80 => {
                 let start = self.pos;
-                while self.pos < self.source.len() && {
-                    let ch = self.source[self.pos];
-                    ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80
-                } {
-                    self.pos += 1;
-                }
+                self.advance_ident();
                 if (self.next() == Some(b'!') || self.next() == Some(b'?'))
                     && self.next_n(1) != Some(b'=')
                 {
@@ -709,12 +719,7 @@ impl Parser {
             }
             Some(first) if first.is_ascii_alphanumeric() || first == b'_' || first >= 0x80 => {
                 let start = self.pos;
-                while self
-                    .next()
-                    .is_some_and_(|&ch| ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80)
-                {
-                    self.pos += 1;
-                }
+                self.advance_ident();
                 if first == b'0' {
                     // Disallow $0abc
                     self.pos - start == 1
@@ -728,6 +733,26 @@ impl Parser {
                 }
                 false
             }
+        }
+    }
+
+    fn advance_ivar_or_cvar(&mut self) -> bool {
+        assert_eq!(self.next(), Some(b'@'));
+        self.pos += 1;
+        if self.next() == Some(b'@') {
+            self.pos += 1;
+        }
+        let pos = self.pos;
+        self.advance_ident();
+        pos < self.pos
+    }
+
+    fn advance_ident(&mut self) {
+        while self
+            .next()
+            .is_some_and_(|&ch| ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80)
+        {
+            self.pos += 1;
         }
     }
 
