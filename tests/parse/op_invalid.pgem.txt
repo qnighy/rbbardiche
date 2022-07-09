@@ -1,5 +1,2 @@
-s(:begin,
-  s(:const,
-    s(:send, nil, :foo), :),
-  s(:const,
-    s(:cbase), :))
+s(:const,
+  s(:cbase), :)

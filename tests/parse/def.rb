@@ -26,7 +26,7 @@ def Foo?; end
 # def Foo=; end
 def |; end
 def ^; end
-# def &; end
+def &; end
 def <=>; end
 def ==; end
 def ===; end
@@ -41,14 +41,16 @@ def <<; end
 def >>; end
 def +; end
 def -; end
-# def *; end
-# def /; end
-# def %; end
-# def **; end
+def *; end
+def /; end
+def %; end
+def **; end
 def !; end
+def !@; end
 def ~; end
-# def +@; end
-# def -@; end
-# def []; end
-# def []=; end
-# def `; end
+def ~@; end
+def +@; end
+def -@; end
+def []; end
+def []=; end
+def `; end

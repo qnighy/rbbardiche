@@ -97,6 +97,26 @@ pub(crate) enum LexerMode {
     ///   - `/=` (if not followed by spaces or `=`)
     /// - Label is allowed
     Arg,
+    /// Where identifier is preferred; EXPR_DOT, EXPR_FNAME, or EXPR_FNAME|EXPR_FITEM
+    ///
+    /// ## Conditions
+    ///
+    /// - After `.`, `&.`,
+    /// - After `::` as an infix operator
+    /// - After `:` as a symbol prefix
+    /// - Before an argument of `alias` and `undef`
+    /// - After `def`
+    ///
+    /// ## Behavior
+    ///
+    /// - Behaves similarly to `Begin` (like being newline insignificant)
+    /// - `foo=` is allowed (only if EXPR_FNAME)
+    /// - Keywords are not recognized (unless between `def` and `.`)
+    /// - Operators are treated as identifiers
+    /// - `` ` `` represents an operator (= an identifier)
+    /// - `+@`, `-@`, `!@`, `~@`, `[]`, `[]=` are parsed
+    /// - No heredocs (only if EXPR_DOT)
+    SpecialIdent,
     End,
     String(StringLexerMode),
 }
@@ -182,6 +202,7 @@ impl Parser {
     fn lex_token(&mut self, params: LexerParams) -> Token {
         match params.mode {
             LexerMode::Begin(_) | LexerMode::Arg | LexerMode::End => self.lex_token_normal(params),
+            LexerMode::SpecialIdent => self.lex_token_special_ident(params),
             LexerMode::String(mode) => self.lex_token_string(mode),
         }
     }
@@ -190,7 +211,7 @@ impl Parser {
         let (beg, arg) = match params.mode {
             LexerMode::Begin(_) => (true, false),
             LexerMode::Arg => (false, true),
-            LexerMode::End => (false, false),
+            LexerMode::SpecialIdent | LexerMode::End => (false, false),
             LexerMode::String(_) => unreachable!(),
         };
         let space_seen = self.skip_whitespace(params.mode);
@@ -200,7 +221,11 @@ impl Parser {
         let is_begin_like = |next_ch: Option<u8>| {
             beg || (space_seen && arg && next_ch.is_none_or_(|&ch| !ch.isspace()))
         };
+
         let start = self.pos;
+
+        let is_special_ident = matches!(params.mode, LexerMode::SpecialIdent);
+
         if self.pos >= self.source.len() {
             return Token {
                 kind: TokenKind::Eof,
@@ -245,7 +270,6 @@ impl Parser {
             }
             b'!' => {
                 self.pos += 1;
-                // TODO: after_operator condition
                 if self.next() == Some(b'=') {
                     self.pos += 1;
                     TokenKind::BinOp(BinaryOp::NEq)
@@ -253,6 +277,9 @@ impl Parser {
                     self.pos += 1;
                     TokenKind::BinOp(BinaryOp::NMatch)
                 } else {
+                    if is_special_ident && self.next() == Some(b'@') {
+                        self.pos += 1;
+                    }
                     TokenKind::UnOp(UnaryOp::Not)
                 }
             }
@@ -317,7 +344,14 @@ impl Parser {
                     TokenKind::BinOp(BinaryOp::Gt)
                 }
             }
-            b'`' => todo!("`"),
+            b'`' => {
+                self.pos += 1;
+                if is_special_ident {
+                    TokenKind::Ident(IdentType::Op, b"`".as_bstr().to_owned())
+                } else {
+                    todo!("`")
+                }
+            }
             b'\'' => {
                 self.pos += 1;
                 // TODO: check label condition
@@ -399,7 +433,6 @@ impl Parser {
             }
             b'+' => {
                 self.pos += 1;
-                // TODO: after_operator condition
                 if self.next() == Some(b'=') {
                     self.pos += 1;
                     TokenKind::OpAssign(BinaryOp::Add)
@@ -411,12 +444,14 @@ impl Parser {
                         TokenKind::UnOp(UnaryOp::Plus)
                     }
                 } else {
+                    if is_special_ident && self.next() == Some(b'@') {
+                        self.pos += 1;
+                    }
                     TokenKind::BinOp(BinaryOp::Add)
                 }
             }
             b'-' => {
                 self.pos += 1;
-                // TODO: after_operator condition
                 if self.next() == Some(b'=') {
                     self.pos += 1;
                     TokenKind::OpAssign(BinaryOp::Sub)
@@ -431,6 +466,9 @@ impl Parser {
                         TokenKind::UnOp(UnaryOp::Neg)
                     }
                 } else {
+                    if is_special_ident && self.next() == Some(b'@') {
+                        self.pos += 1;
+                    }
                     TokenKind::BinOp(BinaryOp::Sub)
                 }
             }
@@ -530,7 +568,9 @@ impl Parser {
             }
             b'~' => {
                 self.pos += 1;
-                // TODO: after_operator condition
+                if is_special_ident && self.next() == Some(b'@') {
+                    self.pos += 1;
+                }
                 TokenKind::UnOp(UnaryOp::BitwiseNot)
             }
             b'(' => {
@@ -548,8 +588,16 @@ impl Parser {
             }
             b'[' => {
                 self.pos += 1;
-                // TODO: after_operator condition
-                if is_begin_like(None) {
+                if is_special_ident && self.next() == Some(b']') {
+                    self.pos += 1;
+                    if self.next() == Some(b'=') {
+                        self.pos += 1;
+                    }
+                    TokenKind::Ident(
+                        IdentType::Op,
+                        self.source[start..self.pos].as_bstr().to_owned(),
+                    )
+                } else if is_begin_like(None) {
                     TokenKind::LBrackBeg
                 } else {
                     TokenKind::LBrackARef
@@ -607,7 +655,11 @@ impl Parser {
                     self.pos += 1;
                 }
                 let ident = self.source[start..self.pos].as_bstr();
-                if let Some(kind) = KEYWORDS.get(ident) {
+                if let Some(kind) = if is_special_ident {
+                    None
+                } else {
+                    KEYWORDS.get(ident)
+                } {
                     if let Some(kind) = kind {
                         kind.clone()
                     } else {
@@ -677,6 +729,19 @@ impl Parser {
             kind,
             range: Range(start, self.pos),
         }
+    }
+
+    fn lex_token_special_ident(&mut self, params: LexerParams) -> Token {
+        let Token { kind, range } = self.lex_token_normal(params);
+        let kind = match kind {
+            TokenKind::BinOp(_) | TokenKind::UnOp(_) => TokenKind::Ident(
+                IdentType::Op,
+                self.source[range.0..range.1].as_bstr().to_owned(),
+            ),
+            TokenKind::Ident(..) => kind,
+            _ => todo!("Error recovery from invalid ident"),
+        };
+        Token { kind, range }
     }
 
     fn advance_gvar(&mut self) -> bool {
@@ -859,6 +924,7 @@ impl Parser {
             LexerMode::Begin(LexerBeginMode::Omittable) => true,
             LexerMode::Begin(_) => false,
             LexerMode::Arg => true,
+            LexerMode::SpecialIdent => false,
             LexerMode::End => true,
             LexerMode::String(_) => unreachable!(),
         };

@@ -897,7 +897,7 @@ impl Parser {
                 //             | primary_value tCOLON2 paren_args
                 TokenKind::Dot | TokenKind::AndDot | TokenKind::Colon2Infix => {
                     // TODO: handle primary_value condition
-                    let op_token = self.bump(ctx.beg());
+                    let op_token = self.bump(ctx.with_mode(LexerMode::SpecialIdent));
                     match &self.next_token.kind {
                         TokenKind::Ident(ident_type, name) => {
                             let ident_type = *ident_type;
@@ -1309,81 +1309,18 @@ impl Parser {
             //         | defs_head f_arglist bodystmt k_end
             TokenKind::KeywordDef => {
                 // TODO: EXPR_FNAME
-                let def_token = self.bump(ctx.beg());
+                let def_token = self.bump(ctx.with_mode(LexerMode::SpecialIdent));
                 // TODO: LParen -> always singleton
                 let name = match &self.next_token.kind {
-                    TokenKind::Ident(_, name) => &name[..],
-                    TokenKind::BinOp(BinaryOp::BitwiseOr) => b"|",
-                    TokenKind::BinOp(BinaryOp::BitwiseXor) => b"^",
-                    TokenKind::BinOp(BinaryOp::BitwiseAnd) => b"&",
-                    TokenKind::BinOp(BinaryOp::Cmp) => b"<=>",
-                    TokenKind::BinOp(BinaryOp::Eq) => b"==",
-                    TokenKind::BinOp(BinaryOp::Eqq) => b"===",
-                    TokenKind::BinOp(BinaryOp::Match) => b"=~",
-                    TokenKind::BinOp(BinaryOp::NMatch) => b"!~",
-                    TokenKind::BinOp(BinaryOp::Gt) => b">",
-                    TokenKind::BinOp(BinaryOp::GtEq) => b">=",
-                    TokenKind::BinOp(BinaryOp::Lt) => b"<",
-                    TokenKind::BinOp(BinaryOp::LtEq) => b"<=",
-                    TokenKind::BinOp(BinaryOp::NEq) => b"!=",
-                    TokenKind::BinOp(BinaryOp::LShift) => b"<<",
-                    TokenKind::BinOp(BinaryOp::RShift) => b">>",
-                    TokenKind::BinOp(BinaryOp::Add) => b"+",
-                    TokenKind::BinOp(BinaryOp::Sub) => b"-",
-                    TokenKind::BinOp(BinaryOp::Mul) => b"*",
-                    // TokenKind::Star => b"*",
-                    TokenKind::BinOp(BinaryOp::Div) => b"/",
-                    TokenKind::BinOp(BinaryOp::Mod) => b"%",
-                    TokenKind::BinOp(BinaryOp::Pow) => b"**",
-                    // TokenKind::DStar => b"**",
-                    TokenKind::UnOp(UnaryOp::Not) => b"!",
-                    TokenKind::UnOp(UnaryOp::BitwiseNot) => b"~",
-                    TokenKind::UnOp(UnaryOp::Plus) => b"+@",
-                    TokenKind::UnOp(UnaryOp::Neg) => b"-@",
-                    // TokenKind::ARef => b"[]",
-                    // TokenKind::ASet => b"[]=",
-                    // TokenKind::BackQuote => b"`",
-                    TokenKind::KeywordUnderscoreEncoding => b"__ENCODING__",
-                    TokenKind::KeywordUnderscoreLine => b"__LINE__",
-                    TokenKind::KeywordUnderscoreFile => b"__FILE__",
-                    TokenKind::KeywordCapitalBegin => b"BEGIN",
-                    TokenKind::KeywordCapitalEnd => b"END",
-                    TokenKind::KeywordAlias => b"alias",
-                    TokenKind::KeywordAnd => b"and",
-                    TokenKind::KeywordBegin => b"begin",
-                    TokenKind::KeywordBreak => b"break",
-                    TokenKind::KeywordCase => b"case",
-                    TokenKind::KeywordClass => b"class",
-                    TokenKind::KeywordDef => b"def",
-                    TokenKind::KeywordDefinedQ => b"defined?",
-                    TokenKind::KeywordDoAfterMethodCall => b"do",
-                    TokenKind::KeywordElse => b"else",
-                    TokenKind::KeywordElsif => b"elsif",
-                    TokenKind::KeywordEnd => b"end",
-                    TokenKind::KeywordEnsure => b"ensure",
-                    TokenKind::KeywordFalse => b"false",
-                    TokenKind::KeywordFor => b"for",
-                    TokenKind::KeywordIf => b"if",
-                    TokenKind::KeywordIn => b"in",
-                    TokenKind::KeywordModule => b"module",
-                    TokenKind::KeywordNext => b"next",
-                    TokenKind::KeywordNil => b"nil",
-                    TokenKind::KeywordNot => b"not",
-                    TokenKind::KeywordOr => b"or",
-                    TokenKind::KeywordRedo => b"redo",
-                    TokenKind::KeywordRescue => b"rescue",
-                    TokenKind::KeywordRetry => b"retry",
-                    TokenKind::KeywordReturn => b"return",
-                    TokenKind::KeywordSelf => b"self",
-                    TokenKind::KeywordSuper => b"super",
-                    TokenKind::KeywordThen => b"then",
-                    TokenKind::KeywordTrue => b"true",
-                    TokenKind::KeywordUndef => b"undef",
-                    TokenKind::KeywordUnless => b"unless",
-                    TokenKind::KeywordUntil => b"until",
-                    TokenKind::KeywordWhen => b"when",
-                    TokenKind::KeywordWhile => b"while",
-                    TokenKind::KeywordYield => b"yield",
+                    TokenKind::Ident(_, name) => {
+                        if &name[..] == b"!@" {
+                            b"!"
+                        } else if &name[..] == b"~@" {
+                            b"~"
+                        } else {
+                            &name[..]
+                        }
+                    }
                     _ => todo!("error recovery after def: {:?}", self.next_token),
                 }
                 .as_bstr()
