@@ -1,7 +1,11 @@
-use std::fmt::{self, Write};
+use once_cell::sync::Lazy;
+use std::{
+    collections::HashSet,
+    fmt::{self, Write},
+};
 use unicode_general_category::{get_general_category, GeneralCategory};
 
-use bstr::ByteSlice;
+use bstr::{BStr, ByteSlice};
 
 pub(crate) fn rb_str_inspect<'a>(s: &'a [u8]) -> RubyStringInspector<'a> {
     RubyStringInspector(s)
@@ -84,6 +88,127 @@ fn is_printable(ch: char) -> bool {
         GeneralCategory::Unassigned => false,
     }
 }
+
+pub(crate) fn rb_sym_inspect<'a>(s: &'a [u8]) -> RubySymbolInspector<'a> {
+    RubySymbolInspector(s)
+}
+
+pub(crate) struct RubySymbolInspector<'a>(&'a [u8]);
+
+impl<'a> fmt::Display for RubySymbolInspector<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if is_plain_symbol(self.0.as_bstr()) && self.0.is_utf8() {
+            write!(f, ":{}", self.0.as_bstr())?;
+        } else {
+            write!(f, ":{}", rb_str_inspect(self.0))?;
+        }
+        Ok(())
+    }
+}
+
+fn is_plain_symbol(s: &BStr) -> bool {
+    if s.starts_with(b"@@") {
+        is_ident(&s[2..])
+    } else if s.starts_with(b"@") {
+        is_ident(&s[1..])
+    } else if s.starts_with(b"$-") {
+        let rest = s[2..].as_bstr();
+        rest.is_utf8() && rest.len() > 0 && {
+            let mut iter = rest.chars();
+            if let Some(first) = iter.next() {
+                iter.next().is_none() && (first.is_alphanumeric() || first == '_')
+            } else {
+                false
+            }
+        }
+    } else if s.starts_with(b"$") {
+        is_ident(&s[1..])
+            || (s.len() >= 2
+                && s[1].is_ascii_digit()
+                && s[1] != b'0'
+                && s[1..].iter().all(|&ch| ch.is_ascii_digit()))
+            || SYMBOL_NAMES.contains(s)
+    } else if is_ident_start(s) {
+        if s.ends_with(b"!") || s.ends_with(b"?") || s.ends_with(b"=") {
+            is_ident_cont(s[..s.len() - 1].as_bstr())
+        } else {
+            is_ident_cont(s)
+        }
+    } else {
+        SYMBOL_NAMES.contains(s)
+    }
+}
+
+fn is_ident(s: &BStr) -> bool {
+    is_ident_start(s) && is_ident_cont(s)
+}
+
+fn is_ident_start(s: &BStr) -> bool {
+    s.len() >= 1 && (s[0].is_ascii_alphabetic() || s[0] == b'_' || s[0] >= 0x80)
+}
+
+fn is_ident_cont(s: &BStr) -> bool {
+    s[1..]
+        .iter()
+        .all(|&ch| ch.is_ascii_alphanumeric() || ch == b'_' || ch >= 0x80)
+}
+
+static SYMBOL_NAMES: Lazy<HashSet<&BStr>> = Lazy::new(|| {
+    vec![
+        &b"<"[..],
+        b"<<",
+        b"<=",
+        b"<=>",
+        b">",
+        b">>",
+        b">=",
+        b"=~",
+        b"==",
+        b"===",
+        b"*",
+        b"**",
+        b"+",
+        b"+@",
+        b"-",
+        b"-@",
+        b"|",
+        b"^",
+        b"&",
+        b"/",
+        b"%",
+        b"~",
+        b"`",
+        b"[]",
+        b"[]=",
+        b"!",
+        b"!=",
+        b"!~",
+        b"$~",
+        b"$*",
+        b"$$",
+        b"$?",
+        b"$!",
+        b"$@",
+        b"$/",
+        b"$\\",
+        b"$;",
+        b"$,",
+        b"$.",
+        b"$=",
+        b"$:",
+        b"$<",
+        b"$>",
+        b"$\"",
+        b"$&",
+        b"$`",
+        b"$'",
+        b"$+",
+        b"$0",
+    ]
+    .into_iter()
+    .map(|sym| sym.as_bstr())
+    .collect::<HashSet<_>>()
+});
 
 #[cfg(test)]
 mod tests {

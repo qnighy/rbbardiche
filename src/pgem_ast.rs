@@ -4,7 +4,7 @@ use crate::ast::{
     self, Arg, BinaryOp, DelimitedArg, EmptyStmt, Expr, ExprStmt, Program, RangeType, Stmt, UnaryOp,
 };
 use crate::delegate_expr;
-use crate::ruby_util::rb_str_inspect;
+use crate::ruby_util::{rb_str_inspect, rb_sym_inspect};
 
 #[derive(Debug, Clone)]
 pub enum SExp {
@@ -61,7 +61,7 @@ impl<'a> Display for SExpIndent<'a> {
                 f.write_str("nil")?;
             }
             SExp::Symbol { name } => {
-                write!(f, ":{}", name)?;
+                write!(f, "{}", rb_sym_inspect(name.as_bytes()))?;
             }
             SExp::Number { value } => {
                 write!(f, "{}", value)?;
