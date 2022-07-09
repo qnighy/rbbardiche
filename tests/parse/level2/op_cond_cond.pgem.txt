@@ -1,0 +1,4 @@
+s(:if,
+  s(:send, nil, :cond),
+  s(:send, nil, :x),
+  s(:send, nil, :y))
