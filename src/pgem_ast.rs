@@ -4,6 +4,7 @@ use crate::ast::{
     self, Arg, BinaryOp, DelimitedArg, EmptyStmt, Expr, ExprStmt, Program, RangeType, Stmt, UnaryOp,
 };
 use crate::delegate_expr;
+use crate::ruby_util::rb_str_inspect;
 
 #[derive(Debug, Clone)]
 pub enum SExp {
@@ -66,33 +67,7 @@ impl<'a> Display for SExpIndent<'a> {
                 write!(f, "{}", value)?;
             }
             SExp::String { value } => {
-                // TODO: escaping
-                f.write_str("\"")?;
-                for ch in value.chars() {
-                    if ch.is_control() {
-                        let name = match ch {
-                            '\x07' => Some("\\a"),
-                            '\x08' => Some("\\b"),
-                            '\x09' => Some("\\t"),
-                            '\x0A' => Some("\\n"),
-                            '\x0B' => Some("\\v"),
-                            '\x0C' => Some("\\f"),
-                            '\x0D' => Some("\\r"),
-                            '\x1B' => Some("\\e"),
-                            _ => None,
-                        };
-                        if let Some(name) = name {
-                            f.write_str(name)?;
-                        } else if (ch as u32) < 0x10000 {
-                            write!(f, "\\u{:04X}", ch as u32)?;
-                        } else {
-                            write!(f, "\\u{{{:X}}}", ch as u32)?;
-                        }
-                    } else {
-                        write!(f, "{}", ch)?;
-                    }
-                }
-                f.write_str("\"")?;
+                write!(f, "{}", rb_str_inspect(value.as_bytes()))?;
             }
             SExp::Invalid => {
                 f.write_str("<invalid>")?;
