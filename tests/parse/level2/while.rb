@@ -1,4 +1,3 @@
-# TODO
-# while cond
-#   x
-# end
+while cond
+  x
+end

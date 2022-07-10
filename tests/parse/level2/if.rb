@@ -1,4 +1,3 @@
-# TODO
-# if cond
-#   x
-# end
+if cond
+  x
+end

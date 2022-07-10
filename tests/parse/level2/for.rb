@@ -1,4 +1,3 @@
-# TODO
-# for x in a
-#   y
-# end
+for x in a
+  y
+end
