@@ -51,80 +51,78 @@ pub struct OutputFile {
 impl_conversions!(OutputFile);
 
 impl OutputFile {
-    pub fn generic_compare<F>(&self, actual: &[u8], on_diff: F, mode: SnapshotMode)
-    where
-        F: FnOnce(&[u8]),
-    {
-        match std::fs::read(self) {
-            Ok(expected) => {
-                if expected != actual {
-                    if mode == SnapshotMode::All {
-                        std::fs::write(self, actual).unwrap_or_else(|e| {
-                            panic!("Error writing {}: {}", self.path.display(), e)
-                        });
-                    } else {
-                        on_diff(&expected);
-                        // Fallback
-                        assert_eq!(actual, expected);
-                    }
-                }
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                if mode >= SnapshotMode::New {
-                    std::fs::write(self, actual)
+    pub fn compare_with_mode<T: Snapshot>(&self, actual: &T, mode: SnapshotMode) {
+        if let Some(expected) = self.read_bytes_opt() {
+            if !actual.compare_with(&expected) {
+                if mode == SnapshotMode::All {
+                    std::fs::write(self, actual.to_snapshot())
                         .unwrap_or_else(|e| panic!("Error writing {}: {}", self.path.display(), e));
                 } else {
-                    panic!("Snapshot {} not found\n\nUse UPDATE_SNAPSHOTS=true to generate the snapshot", self.path.display());
+                    actual.on_diff(&expected);
                 }
             }
-            Err(e) => panic!("Error reading {}: {}", self.path.display(), e),
-        }
-    }
-
-    pub fn compare_string_with_mode(&self, actual: &str, mode: SnapshotMode) {
-        self.generic_compare(
-            actual.as_bytes(),
-            |expected| assert_eq!(actual, expected.as_bstr()),
-            mode,
-        );
-    }
-
-    pub fn compare_string(&self, actual: &str) {
-        self.compare_string_with_mode(actual, SnapshotMode::current());
-    }
-
-    pub fn compare_json_with_mode<T: Serialize>(&self, actual: &T, mode: SnapshotMode) {
-        let actual = serde_json::to_string_pretty(actual).unwrap_or_else(|e| {
-            panic!(
-                "Error during serialization: {} (in {})",
-                e,
-                self.path.display()
-            )
-        });
-        self.compare_string_with_mode(&actual, mode);
-    }
-
-    pub fn compare_json<T: Serialize>(&self, actual: &T) {
-        self.compare_json_with_mode(actual, SnapshotMode::current());
-    }
-
-    pub fn remove_with_mode(&self, mode: SnapshotMode) {
-        if self.path.exists() {
-            if mode == SnapshotMode::All {
-                std::fs::remove_file(&self.path).unwrap_or_else(|e| {
-                    panic!("Error removing {}: {}", self.path.display(), e);
-                });
+        } else {
+            if mode >= SnapshotMode::New {
+                std::fs::write(self, actual.to_snapshot())
+                    .unwrap_or_else(|e| panic!("Error writing {}: {}", self.path.display(), e));
             } else {
                 panic!(
-                    "Snapshot {} should not exist\n\nUse UPDATE_SNAPSHOTS=true to remove the unnecessary snapshot",
+                    "Snapshot {} not found\n\nUse UPDATE_SNAPSHOTS=true to generate the snapshot",
                     self.path.display()
                 );
             }
         }
     }
 
-    pub fn remove(&self) {
-        self.remove_with_mode(SnapshotMode::current());
+    pub fn compare<T: Snapshot>(&self, actual: &T) {
+        self.compare_with_mode(actual, SnapshotMode::current());
+    }
+
+    pub fn compare_opt_with_mode<T: Snapshot>(&self, actual: &Option<T>, mode: SnapshotMode) {
+        let expected = self.read_bytes_opt();
+        let comparison = match (actual, &expected) {
+            (Some(actual), Some(expected)) => actual.compare_with(expected),
+            (None, None) => true,
+            _ => false,
+        };
+        if !comparison {
+            if mode == SnapshotMode::All {
+                if let Some(actual) = actual {
+                    std::fs::write(self, actual.to_snapshot())
+                        .unwrap_or_else(|e| panic!("Error writing {}: {}", self.path.display(), e));
+                } else {
+                    if mode == SnapshotMode::All {
+                        std::fs::remove_file(&self.path).unwrap_or_else(|e| {
+                            panic!("Error removing {}: {}", self.path.display(), e);
+                        });
+                    } else {
+                        panic!(
+                            "Snapshot {} should not exist\n\nUse UPDATE_SNAPSHOTS=true to remove the unnecessary snapshot",
+                            self.path.display()
+                        );
+                    }
+                }
+            } else {
+                match (actual, &expected) {
+                    (Some(actual), Some(expected)) => actual.on_diff(expected),
+                    (None, None) => unreachable!(),
+                    (Some(_), None) => panic!("Expected None, got Some"),
+                    (None, Some(_)) => panic!("Expected Some, got None"),
+                };
+            }
+        }
+    }
+
+    pub fn compare_opt<T: Snapshot>(&self, actual: &Option<T>) {
+        self.compare_opt_with_mode(actual, SnapshotMode::current());
+    }
+
+    fn read_bytes_opt(&self) -> Option<Vec<u8>> {
+        match std::fs::read(self) {
+            Ok(expected) => Some(expected),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+            Err(e) => panic!("Error reading {}: {}", self.path.display(), e),
+        }
     }
 }
 
@@ -240,5 +238,37 @@ impl PendingMode {
         } else {
             PendingMode::Keep
         }
+    }
+}
+
+pub trait Snapshot {
+    fn to_snapshot(&self) -> Vec<u8>;
+    fn compare_with(&self, snapshot: &[u8]) -> bool;
+    fn on_diff(&self, snapshot: &[u8]) -> !;
+}
+
+impl Snapshot for Vec<u8> {
+    fn to_snapshot(&self) -> Vec<u8> {
+        self.clone()
+    }
+    fn compare_with(&self, snapshot: &[u8]) -> bool {
+        self == snapshot
+    }
+    fn on_diff(&self, snapshot: &[u8]) -> ! {
+        assert_eq!(self, snapshot);
+        unreachable!();
+    }
+}
+
+impl Snapshot for String {
+    fn to_snapshot(&self) -> Vec<u8> {
+        self.as_bytes().to_owned()
+    }
+    fn compare_with(&self, snapshot: &[u8]) -> bool {
+        self.as_bytes() == snapshot
+    }
+    fn on_diff(&self, snapshot: &[u8]) -> ! {
+        assert_eq!(self, snapshot.as_bstr());
+        unreachable!();
     }
 }

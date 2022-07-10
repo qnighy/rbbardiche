@@ -1,6 +1,6 @@
 use rbbardiche::pgem_ast::SExp;
 use rbbardiche::pos::SourceLocator;
-use testfiles::{test_files, InputFile, OutputFile, PendingFile};
+use testfiles::{test_files, InputFile, OutputFile, PendingFile, SnapshotMode};
 
 #[test_files(dir = "tests/parse")]
 #[test]
@@ -15,9 +15,14 @@ fn test_parser(
         let source_locator = SourceLocator::new(&source);
         let (ast, errors) = rbbardiche::parse(&source);
         let pgem_result = format!("{}\n", SExp::from(&ast));
-        output_pgem.compare_string(&pgem_result);
-        if errors.is_empty() {
-            output_errors.remove();
+
+        if output_errors.path.exists() {
+            output_pgem.compare(&pgem_result);
+        } else {
+            output_pgem.compare_with_mode(&pgem_result, SnapshotMode::None);
+        }
+        let errors_txt = if errors.is_empty() {
+            None
         } else {
             let errors_txt = errors
                 .iter()
@@ -35,7 +40,8 @@ fn test_parser(
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            output_errors.compare_string(&errors_txt);
-        }
+            Some(errors_txt)
+        };
+        output_errors.compare_opt(&errors_txt)
     });
 }
