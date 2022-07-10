@@ -1,0 +1,8 @@
+s(:begin,
+  s(:xstr,
+    s(:str, "foo")),
+  s(:xstr,
+    s(:str, "foo bar")),
+  s(:xstr,
+    s(:str, "foo\n"),
+    s(:str, "bar")))

@@ -1,2 +1,3 @@
-s(:begin, <invalid>,
-  s(:send, nil, :x), <invalid>)
+s(:until,
+  s(:send, nil, :cond),
+  s(:send, nil, :x))

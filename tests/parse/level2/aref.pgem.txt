@@ -1,1 +1,3 @@
-s(:send, nil, :x)
+s(:send,
+  s(:send, nil, :x), :[],
+  s(:send, nil, :i))

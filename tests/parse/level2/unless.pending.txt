@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"s(:begin, <invalid>,\n  s(:send, nil, :x), <invalid>)\n"`,
+ right: `"s(:if,\n  s(:send, nil, :cond), nil,\n  s(:send, nil, :x))\n"`

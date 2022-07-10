@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"<invalid>\n"`,
+ right: `"s(:next)\n"`

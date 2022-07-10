@@ -1,0 +1,3 @@
+s(:while,
+  s(:send, nil, :cond),
+  s(:send, nil, :x))

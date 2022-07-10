@@ -1,0 +1,5 @@
+s(:begin,
+  s(:xstr,
+    s(:str, "\"")),
+  s(:xstr,
+    s(:str, "'")))

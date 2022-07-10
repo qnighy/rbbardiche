@@ -1,0 +1,6 @@
+s(:begin,
+  s(:str, " !\"\#$%&'()*+,-./"),
+  s(:str, ":;<=>?@[]^_"),
+  s(:str, "`{|}~"),
+  s(:str, "dghijklmopqwyz"),
+  s(:str, "ABDEFGHIJKLNOPQRSTUVWXYZ"))

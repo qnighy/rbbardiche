@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"s(:lvasgn, <invalid>, <invalid>)\n"`,
+ right: `"s(:begin,\n  s(:sym, :いろは=),\n  s(:sym, :π=))\n"`

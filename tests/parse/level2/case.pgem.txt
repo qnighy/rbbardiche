@@ -1,3 +1,8 @@
-s(:begin, <invalid>, <invalid>,
-  s(:send, nil, :x), <invalid>,
-  s(:send, nil, :y), <invalid>)
+s(:case,
+  s(:send, nil, :cond),
+  s(:when,
+    s(:send, nil, :c1),
+    s(:send, nil, :x)),
+  s(:when,
+    s(:send, nil, :c2),
+    s(:send, nil, :y)), nil)

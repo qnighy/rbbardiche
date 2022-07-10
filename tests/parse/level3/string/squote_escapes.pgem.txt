@@ -1,0 +1,8 @@
+s(:begin,
+  s(:str, "\\a\\b\\e\\f\\n\\r\\s\\t\\v\\0\\017\\x0F\\ \\\""),
+  s(:str, "<\\>"),
+  s(:str, "<\\>"),
+  s(:str, "<'>"),
+  s(:dstr,
+    s(:str, "foo\\\n"),
+    s(:str, "bar")))

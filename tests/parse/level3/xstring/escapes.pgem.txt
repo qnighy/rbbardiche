@@ -1,0 +1,7 @@
+s(:begin,
+  s(:xstr,
+    s(:str, "\a\b\e\f\n\r \t\v")),
+  s(:xstr,
+    s(:str, "\\`")),
+  s(:xstr,
+    s(:str, "\u001F\u000F")))

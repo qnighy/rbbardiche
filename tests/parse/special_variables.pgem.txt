@@ -3,6 +3,7 @@ s(:begin,
   s(:self),
   s(:true),
   s(:false),
-  s(:__FILE__),
-  s(:__LINE__),
-  s(:__ENCODING__))
+  s(:str, "(string)"),
+  s(:int, 6),
+  s(:const,
+    s(:const, nil, :Encoding), :UTF_8))

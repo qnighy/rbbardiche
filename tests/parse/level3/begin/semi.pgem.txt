@@ -1,0 +1,9 @@
+s(:begin,
+  s(:kwbegin,
+    s(:send, nil, :x)),
+  s(:kwbegin,
+    s(:send, nil, :x),
+    s(:send, nil, :y)),
+  s(:kwbegin,
+    s(:send, nil, :x),
+    s(:send, nil, :y)))

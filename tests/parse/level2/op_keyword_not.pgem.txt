@@ -1,1 +1,2 @@
-<invalid>
+s(:send,
+  s(:send, nil, :x), :!)

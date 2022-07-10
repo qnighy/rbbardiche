@@ -3,5 +3,7 @@ s(:begin,
   s(:str, "foo"),
   s(:str, "foo bar"),
   s(:str, " foo "),
-  s(:str, "foo\nbar"),
+  s(:dstr,
+    s(:str, "foo\n"),
+    s(:str, "bar")),
   s(:str, "'foo'"))

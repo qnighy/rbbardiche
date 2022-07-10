@@ -1,0 +1,2 @@
+s(:kwbegin,
+  s(:send, nil, :x))

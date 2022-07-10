@@ -1,0 +1,4 @@
+s(:for,
+  s(:lvasgn, :x),
+  s(:send, nil, :a),
+  s(:send, nil, :y))

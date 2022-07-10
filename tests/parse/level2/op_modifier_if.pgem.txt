@@ -1,1 +1,3 @@
-s(:send, nil, :x)
+s(:if,
+  s(:send, nil, :y),
+  s(:send, nil, :x), nil)

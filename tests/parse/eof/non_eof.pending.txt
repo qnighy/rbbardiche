@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"s(:begin,\n  s(:str, \"\\u0000\\u0004\\u001A\"),\n  s(:str, \"\\u0000\\u0004\\u001A\"))\n"`,
+ right: `"s(:begin,\n  s(:dstr,\n    s(:str, \"\\u0000\"),\n    s(:str, \"\\u0004\"),\n    s(:str, \"\\u001A\")),\n  s(:dstr,\n    s(:str, \"\\u0000\"),\n    s(:str, \"\\u0004\"),\n    s(:str, \"\\u001A\")))\n"`

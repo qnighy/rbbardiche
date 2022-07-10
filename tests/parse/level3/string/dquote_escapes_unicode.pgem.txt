@@ -1,0 +1,10 @@
+s(:begin,
+  s(:str, "\u0000"),
+  s(:str, " "),
+  s(:str, "ģ"),
+  s(:str, "ﳐ"),
+  s(:str, " "),
+  s(:str, " "),
+  s(:str, " "),
+  s(:str, "𒍏"),
+  s(:str, "\u{10FFFF}"))

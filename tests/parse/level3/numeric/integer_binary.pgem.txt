@@ -1,0 +1,13 @@
+s(:begin,
+  s(:int, 0),
+  s(:int, 1),
+  s(:int, 11),
+  s(:int, 6879),
+  s(:int, 0),
+  s(:int, -1),
+  s(:int, -11),
+  s(:int, -6879),
+  s(:int, 0),
+  s(:int, 1),
+  s(:int, 11),
+  s(:int, 6879))

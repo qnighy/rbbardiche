@@ -1,1 +1,3 @@
-<invalid>
+s(:alias,
+  s(:sym, :x),
+  s(:sym, :y))

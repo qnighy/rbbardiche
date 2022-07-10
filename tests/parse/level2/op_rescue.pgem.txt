@@ -1,1 +1,4 @@
-s(:send, nil, :x)
+s(:rescue,
+  s(:send, nil, :x),
+  s(:resbody, nil, nil,
+    s(:send, nil, :y)), nil)

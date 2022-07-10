@@ -1,4 +1,0 @@
-1:0-1-5: Unexpected token
-1:6-1-10: Unexpected token
-3:0-3-3: Unexpected end of file
-3:0-3-3: Unexpected token

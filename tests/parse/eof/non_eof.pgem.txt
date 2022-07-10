@@ -1,3 +1,9 @@
 s(:begin,
-  s(:str, "\u0000\u0004\u001A"),
-  s(:str, "\u0000\u0004\u001A"))
+  s(:dstr,
+    s(:str, "\u0000"),
+    s(:str, "\u0004"),
+    s(:str, "\u001A")),
+  s(:dstr,
+    s(:str, "\u0000"),
+    s(:str, "\u0004"),
+    s(:str, "\u001A")))
