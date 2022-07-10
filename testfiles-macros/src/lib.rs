@@ -1,6 +1,7 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::collections::HashSet;
+use std::path::PathBuf;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{parse, parse2, FnArg, Item, Lit, Meta, NestedMeta, Token};
@@ -67,7 +68,24 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
         }
         let suffix = suffix
             .ok_or_else(|| syn::Error::new(arg.span(), "Missing argument: #[suffix = ...]"))?;
-        arg_specs.push(ArgSpec { suffix });
+        let typeinfo = match arg {
+            FnArg::Receiver(_) => ArgType::Other,
+            FnArg::Typed(arg) => match &*arg.ty {
+                syn::Type::Path(path) => {
+                    if let Some(segment) = path.path.segments.last() {
+                        if segment.ident.to_string() == "PendingFile" {
+                            ArgType::PendingFile
+                        } else {
+                            ArgType::Other
+                        }
+                    } else {
+                        ArgType::Other
+                    }
+                }
+                _ => ArgType::Other,
+            },
+        };
+        arg_specs.push(ArgSpec { suffix, typeinfo });
     }
 
     let mut file_names = HashSet::new();
@@ -106,29 +124,55 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
 
     let function_name = &item.sig.ident;
 
-    let test_functions = sorted_stems
-        .iter()
-        .map(|stem| {
-            let test_function_name = format!("test_{}", stem.replace("/", "_"));
-            let test_function_ident = Ident::new(&test_function_name, Span::call_site());
-            let arguments = arg_specs.iter().map(|spec| {
-                let filename = format!("{}/{}{}", args.dir, stem, spec.suffix);
-                quote! {
-                    #filename.into()
-                }
-            });
+    let mut test_functions = Vec::new();
+    for stem in &sorted_stems {
+        let test_function_name = format!("test_{}", stem.replace("/", "_"));
+        let test_function_ident = Ident::new(&test_function_name, Span::call_site());
+        let arguments = arg_specs.iter().map(|spec| {
+            let filename = format!("{}/{}{}", args.dir, stem, spec.suffix);
             quote! {
-                #[test]
-                fn #test_function_ident() {
-                    super::#function_name(
-                        #(
-                            #arguments,
-                        )*
-                    );
+                #filename.into()
+            }
+        });
+        let mut should_panic = None;
+        for arg_spec in &arg_specs {
+            if arg_spec.typeinfo != ArgType::PendingFile {
+                continue;
+            }
+            let path = format!("{}{}", stem, arg_spec.suffix);
+            let path = PathBuf::from(&args.dir).join(path);
+            match std::fs::read(&path) {
+                Ok(contents) => {
+                    should_panic = Some(String::from_utf8_lossy(&contents).into_owned());
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => {
+                    return Err(syn::Error::new(
+                        item.span(),
+                        format_args!("error reading {}: {}", path.display(), e),
+                    ));
                 }
             }
-        })
-        .collect::<Vec<_>>();
+        }
+        let should_panic_attr = if let Some(message) = should_panic {
+            quote! {
+                #[should_panic = #message]
+            }
+        } else {
+            quote! {}
+        };
+        test_functions.push(quote! {
+            #[test]
+            #should_panic_attr
+            fn #test_function_ident() {
+                super::#function_name(
+                    #(
+                        #arguments,
+                    )*
+                );
+            }
+        });
+    }
 
     let base_function = {
         let mut base_function = item.clone();
@@ -213,4 +257,11 @@ impl Args {
 #[derive(Debug, Clone)]
 struct ArgSpec {
     suffix: String,
+    typeinfo: ArgType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ArgType {
+    PendingFile,
+    Other,
 }

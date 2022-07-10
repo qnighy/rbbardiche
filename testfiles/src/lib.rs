@@ -1,6 +1,7 @@
 use bstr::ByteSlice;
 use serde::Serialize;
 use std::env;
+use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 
 pub use testfiles_macros::test_files;
@@ -148,6 +149,55 @@ pub struct OutputDirectory {
 
 impl_conversions!(OutputDirectory);
 
+#[derive(Debug, Clone)]
+pub struct PendingFile {
+    pub path: PathBuf,
+}
+
+impl_conversions!(PendingFile);
+
+impl PendingFile {
+    pub fn update_pending_with<R, F>(&self, mode: PendingMode, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        let result = catch_unwind(AssertUnwindSafe(f));
+        match result {
+            Ok(result) => {
+                if mode == PendingMode::Update {
+                    std::fs::remove_file(&self.path).unwrap_or_else(|e| {
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            panic!("Error removing {}: {}", self.path.display(), e);
+                        }
+                    });
+                }
+                result
+            }
+            Err(e) => {
+                if mode == PendingMode::Update {
+                    let message = if let Some(&e) = e.downcast_ref::<&'static str>() {
+                        e
+                    } else if let Some(e) = e.downcast_ref::<String>() {
+                        &e[..]
+                    } else {
+                        "Box<dyn Any>"
+                    };
+                    std::fs::write(&self.path, message).unwrap_or_else(|e| {
+                        panic!("Error writing {}: {}", self.path.display(), e);
+                    });
+                }
+                resume_unwind(e);
+            }
+        }
+    }
+    pub fn update_pending<R, F>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        self.update_pending_with(PendingMode::current(), f)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SnapshotMode {
     None,
@@ -173,5 +223,22 @@ impl SnapshotMode {
             return SnapshotMode::None;
         }
         SnapshotMode::New
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PendingMode {
+    Keep,
+    Update,
+}
+
+impl PendingMode {
+    pub fn current() -> PendingMode {
+        let update_pending = env::var("UPDATE_PENDING").unwrap_or_else(|_| String::from(""));
+        if update_pending == "true" || update_pending == "1" {
+            PendingMode::Update
+        } else {
+            PendingMode::Keep
+        }
     }
 }
