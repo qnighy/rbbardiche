@@ -1,5 +1,4 @@
 use bstr::ByteSlice;
-use serde::Serialize;
 use std::env;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
