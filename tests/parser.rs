@@ -2,7 +2,7 @@ use rbbardiche::pgem_ast::SExp;
 use rbbardiche::pos::SourceLocator;
 use testfiles::{test_files, InputFile, OutputFile, PendingFile, SnapshotMode};
 
-#[test_files(dir = "tests/parse")]
+#[test_files(rs = "tests/parser.rs", dir = "tests/parse")]
 #[test]
 fn test_parser(
     #[suffix = ".rb"] input: InputFile,

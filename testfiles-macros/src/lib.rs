@@ -88,6 +88,7 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
         arg_specs.push(ArgSpec { suffix, typeinfo });
     }
 
+    let mut matched_file_names = HashSet::new();
     let mut file_names = HashSet::new();
     let mut stems = HashSet::new();
     for entry in WalkDir::new(&args.dir).sort_by_file_name() {
@@ -113,6 +114,7 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
         for arg_spec in &arg_specs {
             if file_name.ends_with(&arg_spec.suffix) {
                 stems.insert(file_name[..file_name.len() - arg_spec.suffix.len()].to_owned());
+                matched_file_names.insert(file_name.to_owned());
             }
         }
     }
@@ -120,6 +122,11 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
         let mut sorted_stems = stems.into_iter().collect::<Vec<_>>();
         sorted_stems.sort();
         sorted_stems
+    };
+    let sorted_matched_file_names = {
+        let mut sorted_matched_file_names = matched_file_names.into_iter().collect::<Vec<_>>();
+        sorted_matched_file_names.sort();
+        sorted_matched_file_names
     };
 
     let function_name = &item.sig.ident;
@@ -200,6 +207,40 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
         }
         base_function
     };
+    let check_testcases_function = {
+        let rs = &args.rs;
+        let dir = &args.dir;
+        let arg_specs_code = arg_specs
+            .iter()
+            .map(|arg_spec| {
+                let suffix = &arg_spec.suffix;
+                quote! {
+                    testfiles::__rt::ArgSpec {
+                        suffix: String::from(#suffix),
+                    },
+                }
+            })
+            .collect::<Vec<_>>();
+        quote! {
+            #[test]
+            fn __check_testcases() {
+                testfiles::__rt::check(
+                    &testfiles::__rt::WalkConfig {
+                        rs: String::from(#rs),
+                        dir: String::from(#dir),
+                        arg_specs: vec![
+                            #(#arg_specs_code)*
+                        ],
+                    },
+                    vec![
+                        #(
+                            String::from(#sorted_matched_file_names),
+                        )*
+                    ]
+                );
+            }
+        }
+    };
 
     let expanded = quote! {
         #[cfg(test)]
@@ -207,6 +248,7 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
 
         #[cfg(test)]
         mod #function_name {
+            #check_testcases_function
             #(
                 #test_functions
             )*
@@ -217,11 +259,13 @@ fn test_files2(raw_args: TokenStream, raw_item: TokenStream) -> Result<TokenStre
 
 #[derive(Debug, Clone)]
 struct Args {
+    rs: String,
     dir: String,
 }
 
 impl Args {
     fn parse(meta: &Punctuated<NestedMeta, Token![,]>) -> Result<Self, syn::Error> {
+        let mut rs = None;
         let mut dir = None;
         for arg in meta {
             if let NestedMeta::Meta(arg) = arg {
@@ -239,6 +283,20 @@ impl Args {
                     } else {
                         return Err(syn::Error::new(arg.span(), "invalid argument value"));
                     }
+                } else if arg.path().is_ident("rs") {
+                    if rs.is_some() {
+                        return Err(syn::Error::new(arg.path().span(), "duplicate argument"));
+                    }
+                    if let Meta::NameValue(arg) = arg {
+                        if let Lit::Str(lit) = &arg.lit {
+                            rs = Some(lit.value());
+                            continue;
+                        } else {
+                            return Err(syn::Error::new(arg.lit.span(), "invalid argument value"));
+                        }
+                    } else {
+                        return Err(syn::Error::new(arg.span(), "invalid argument value"));
+                    }
                 } else {
                     return Err(syn::Error::new(
                         arg.path().span(),
@@ -249,8 +307,9 @@ impl Args {
                 return Err(syn::Error::new(arg.span(), "invalid argument"));
             };
         }
+        let rs = rs.ok_or_else(|| syn::Error::new(meta.span(), "missing argument: rs"))?;
         let dir = dir.ok_or_else(|| syn::Error::new(meta.span(), "missing argument: dir"))?;
-        Ok(Args { dir })
+        Ok(Args { rs, dir })
     }
 }
 

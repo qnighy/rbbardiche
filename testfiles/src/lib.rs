@@ -5,6 +5,9 @@ use std::path::{Path, PathBuf};
 
 pub use testfiles_macros::test_files;
 
+#[path = "rt.rs"]
+pub mod __rt;
+
 macro_rules! impl_conversions {
     ($T:ty) => {
         impl<P: Into<PathBuf>> From<P> for $T {

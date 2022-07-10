@@ -599,6 +599,8 @@ dependencies = [
  "serde",
  "serde_json",
  "testfiles-macros",
+ "utime",
+ "walkdir",
 ]
 
 [[package]]
@@ -819,6 +821,16 @@ dependencies = [
  "matches",
  "percent-encoding",
  "serde",
+]
+
+[[package]]
+name = "utime"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91baa0c65eabd12fcbdac8cc35ff16159cab95cae96d0222d6d0271db6193cef"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
