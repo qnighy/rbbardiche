@@ -1,3 +1,0 @@
-assertion failed: `(left == right)`
-  left: `"s(:begin,\n  s(:__FILE__),\n  s(:__LINE__),\n  s(:__ENCODING__))\n"`,
- right: `"s(:begin,\n  s(:str, \"(string)\"),\n  s(:int, 2),\n  s(:const,\n    s(:const, nil, :Encoding), :UTF_8))\n"`

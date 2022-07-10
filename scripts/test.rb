@@ -12,6 +12,8 @@ Dir["tests/parse/**/*.rb"].each do |path|
 
   errored = false
   parser = Parser::Ruby31.new
+  parser.builder.emit_file_line_as_literals = false
+  Parser::Builders::Default.emit_encoding = true
   parser.diagnostics.consumer = -> (diag) do
     if diag.level == :error
       errored = true
