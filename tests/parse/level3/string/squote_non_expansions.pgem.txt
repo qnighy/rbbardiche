@@ -1,0 +1,9 @@
+s(:begin,
+  s(:str, "#"),
+  s(:str, "##"),
+  s(:str, "#%"),
+  s(:str, "#foo"),
+  s(:str, "\#{foo}"),
+  s(:str, "\#@foo"),
+  s(:str, "\#@@foo"),
+  s(:str, "\#$foo"))

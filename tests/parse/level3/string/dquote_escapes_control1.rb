@@ -1,0 +1,6 @@
+"\c \c!\c#\c$\c%\c&\c'\c(\c)\c*\c+\c,\c-\c.\c/"
+"\c0\c1\c2\c3\c4\c5\c6\c7\c8\c9\c:\c;\c<\c=\c>\c?"
+"\c@\cA\cB\cC\cD\cE\cF\cG\cH\cI\cJ\cK\cL\cM\cN\cO"
+"\cP\cQ\cR\cS\cT\cU\cV\cW\cX\cY\cZ\c[\c]\c^\c_"
+"\c`\ca\cb\cc\cd\ce\cf\cg\ch\ci\cj\ck\cl\cm\cn\co"
+"\cp\cq\cr\cs\ct\cu\cv\cw\cx\cy\cz\c{\c|\c}\c~"

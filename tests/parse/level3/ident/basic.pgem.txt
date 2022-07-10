@@ -1,0 +1,7 @@
+s(:begin,
+  s(:send, nil, :foo),
+  s(:send, nil, :foo_bar),
+  s(:send, nil, :foo123),
+  s(:send, nil, :_foo),
+  s(:send, nil, :_foo_bar),
+  s(:send, nil, :_foo123))

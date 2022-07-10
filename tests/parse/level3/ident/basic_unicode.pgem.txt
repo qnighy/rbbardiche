@@ -1,0 +1,3 @@
+s(:begin,
+  s(:send, nil, :いろは),
+  s(:send, nil, :π))

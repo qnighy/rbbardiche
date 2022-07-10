@@ -1,0 +1,9 @@
+s(:begin,
+  s(:gvar, :$-0),
+  s(:gvar, :$-6),
+  s(:gvar, :$-a),
+  s(:gvar, :$-I),
+  s(:gvar, :$-あ),
+  s(:gvar, :$-π),
+  s(:gvar, :$-Π),
+  s(:gvar, :$-_))

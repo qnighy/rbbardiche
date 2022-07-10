@@ -1,0 +1,10 @@
+s(:begin,
+  s(:cvar, :@@foo),
+  s(:cvar, :@@foo_bar),
+  s(:cvar, :@@foo123),
+  s(:cvar, :@@_foo),
+  s(:cvar, :@@_foo_bar),
+  s(:cvar, :@@_foo123),
+  s(:cvar, :@@Foo),
+  s(:cvar, :@@Foo_bar),
+  s(:cvar, :@@Foo123))

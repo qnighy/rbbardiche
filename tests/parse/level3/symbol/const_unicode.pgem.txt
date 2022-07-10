@@ -1,0 +1,3 @@
+s(:begin,
+  s(:sym, :Π),
+  s(:sym, :ǅin))

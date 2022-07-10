@@ -1,0 +1,5 @@
+s(:begin,
+  s(:send, nil, :いろは!),
+  s(:send, nil, :いろは?),
+  s(:send, nil, :π!),
+  s(:send, nil, :π?))

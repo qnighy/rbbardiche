@@ -1,0 +1,10 @@
+s(:begin,
+  s(:gvar, :$foo),
+  s(:gvar, :$foo_bar),
+  s(:gvar, :$foo123),
+  s(:gvar, :$_foo),
+  s(:gvar, :$_foo_bar),
+  s(:gvar, :$_foo123),
+  s(:gvar, :$Foo),
+  s(:gvar, :$Foo_bar),
+  s(:gvar, :$Foo123))

@@ -1,0 +1,4 @@
+s(:begin,
+  s(:__FILE__),
+  s(:__LINE__),
+  s(:__ENCODING__))

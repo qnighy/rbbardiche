@@ -1,0 +1,3 @@
+s(:begin,
+  s(:const, nil, :Π),
+  s(:send, nil, :ǅin))

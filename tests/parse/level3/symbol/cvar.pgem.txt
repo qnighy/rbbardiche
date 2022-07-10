@@ -1,0 +1,10 @@
+s(:begin,
+  s(:sym, :@@foo),
+  s(:sym, :@@foo_bar),
+  s(:sym, :@@foo123),
+  s(:sym, :@@_foo),
+  s(:sym, :@@_foo_bar),
+  s(:sym, :@@_foo123),
+  s(:sym, :@@Foo),
+  s(:sym, :@@Foo_bar),
+  s(:sym, :@@Foo123))

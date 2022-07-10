@@ -1,0 +1,4 @@
+s(:begin,
+  s(:sym, :Foo),
+  s(:sym, :Foo_Bar),
+  s(:sym, :Foo123))

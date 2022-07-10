@@ -1,0 +1,4 @@
+s(:begin,
+  s(:begin),
+  s(:begin,
+    s(:send, nil, :x)))

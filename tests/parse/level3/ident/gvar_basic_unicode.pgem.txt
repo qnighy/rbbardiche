@@ -1,0 +1,5 @@
+s(:begin,
+  s(:gvar, :$いろは),
+  s(:gvar, :$π),
+  s(:gvar, :$Π),
+  s(:gvar, :$ǅin))

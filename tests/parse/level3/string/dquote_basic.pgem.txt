@@ -1,0 +1,7 @@
+s(:begin,
+  s(:str, ""),
+  s(:str, "foo"),
+  s(:str, "foo bar"),
+  s(:str, " foo "),
+  s(:str, "foo\nbar"),
+  s(:str, "'foo'"))
