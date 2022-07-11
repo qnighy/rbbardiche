@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"s(:begin,\n  s(:lvasgn, :x,\n    s(:int, 1)),\n  s(:send, nil, :x))\n"`,
+ right: `"s(:begin,\n  s(:lvasgn, :x,\n    s(:int, 1)),\n  s(:lvar, :x))\n"`

@@ -1,0 +1,5 @@
+s(:begin,
+  s(:send,
+    s(:send, nil, :obj), :+@),
+  s(:send,
+    s(:send, nil, :obj), :-@))

@@ -1,0 +1,5 @@
+f(&block)
+f(x, &block)
+f(x, *y, &block)
+f(*x, k: v, &block)
+f(k => v, **h, &block)
