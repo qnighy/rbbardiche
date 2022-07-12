@@ -1,0 +1,7 @@
+s(:begin,
+  s(:send,
+    s(:send, nil, :f), :call),
+  s(:send,
+    s(:send, nil, :f), :call,
+    s(:send, nil, :x),
+    s(:send, nil, :y)))

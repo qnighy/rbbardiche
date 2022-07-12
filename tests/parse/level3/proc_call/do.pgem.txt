@@ -1,0 +1,13 @@
+s(:begin,
+  s(:block,
+    s(:send,
+      s(:send, nil, :f), :call),
+    s(:args),
+    s(:send, nil, :work)),
+  s(:block,
+    s(:send,
+      s(:send, nil, :f), :call,
+      s(:send, nil, :x),
+      s(:send, nil, :y)),
+    s(:args),
+    s(:send, nil, :work)))
