@@ -1,9 +1,0 @@
-s(:begin,
-  s(:dstr,
-    s(:str, "\u0000"),
-    s(:str, "\u0004"),
-    s(:str, "\u001A")),
-  s(:dstr,
-    s(:str, "\u0000"),
-    s(:str, "\u0004"),
-    s(:str, "\u001A")))

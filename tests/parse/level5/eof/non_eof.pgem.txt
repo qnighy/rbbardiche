@@ -1,0 +1,11 @@
+s(:begin,
+  s(:str, "\u0000"),
+  s(:str, "\u0004"),
+  s(:str, "\u001A"),
+  s(:str, "__END__"),
+  s(:str, "\u0000"),
+  s(:str, "\u0004"),
+  s(:str, "\u001A"),
+  s(:str, "__END__"),
+  s(:send, nil, :__END__a),
+  s(:send, nil, :a__END__))
