@@ -187,7 +187,7 @@ impl From<&ast::VarExpr> for SExp {
                 // TODO: very large nth ref
                 let num = name[1..].parse::<i32>().unwrap();
                 return SExp::Tagged {
-                    tag: "nth_tef".to_owned(),
+                    tag: "nth_ref".to_owned(),
                     args: vec![SExp::Number { value: num }],
                 };
             } else {
