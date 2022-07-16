@@ -1,0 +1,6 @@
+s(:send, nil, :x,
+  s(:send,
+    s(:regexp,
+      s(:str, "y "),
+      s(:regopt)), :+,
+    s(:int, 1)))

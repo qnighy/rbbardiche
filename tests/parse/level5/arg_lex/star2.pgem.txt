@@ -1,0 +1,3 @@
+s(:send, nil, :x,
+  s(:splat,
+    s(:send, nil, :y)))

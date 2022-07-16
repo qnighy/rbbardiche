@@ -1,0 +1,3 @@
+s(:send, nil, :X,
+  s(:const,
+    s(:cbase), :Y))

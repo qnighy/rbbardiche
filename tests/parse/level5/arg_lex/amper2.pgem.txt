@@ -1,0 +1,3 @@
+s(:send, nil, :x,
+  s(:block_pass,
+    s(:send, nil, :y)))

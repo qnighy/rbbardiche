@@ -1,0 +1,6 @@
+s(:begin,
+  s(:lvasgn, :x,
+    s(:int, 0)),
+  s(:send,
+    s(:lvar, :x), :+,
+    s(:send, nil, :y)))

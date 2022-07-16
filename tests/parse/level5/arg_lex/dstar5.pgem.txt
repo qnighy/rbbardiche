@@ -1,0 +1,4 @@
+s(:send, nil, :x,
+  s(:hash,
+    s(:kwsplat,
+      s(:send, nil, :y))))
