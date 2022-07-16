@@ -2,13 +2,13 @@ use crate::ast::{BinaryOp, Range, Token as PublicToken, UnaryOp};
 use bstr::BString;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub range: Range,
+pub(in crate::parser) struct Token {
+    pub(in crate::parser) kind: TokenKind,
+    pub(in crate::parser) range: Range,
 }
 
 impl Token {
-    pub(crate) fn to_binop<F>(&self, cond: F) -> Option<BinaryOp>
+    pub(in crate::parser) fn to_binop<F>(&self, cond: F) -> Option<BinaryOp>
     where
         F: FnOnce(BinaryOp) -> bool,
     {
@@ -18,7 +18,7 @@ impl Token {
         }
     }
 
-    pub(crate) fn to_unop<F>(&self, cond: F) -> Option<UnaryOp>
+    pub(in crate::parser) fn to_unop<F>(&self, cond: F) -> Option<UnaryOp>
     where
         F: FnOnce(UnaryOp) -> bool,
     {
@@ -28,13 +28,13 @@ impl Token {
         }
     }
 
-    pub(crate) fn p(&self) -> PublicToken {
+    pub(in crate::parser) fn p(&self) -> PublicToken {
         PublicToken { range: self.range }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TokenKind {
+pub(in crate::parser) enum TokenKind {
     // Identifiers and keywords
     /// - `foo` (a.k.a. tIDENTIFIER)
     /// - `foo!` (a.k.a. tFID)
@@ -288,7 +288,7 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    pub fn token_class(&self) -> TokenClass {
+    pub(in crate::parser) fn token_class(&self) -> TokenClass {
         match self {
             // `foo`
             TokenKind::Ident(_, _)
@@ -495,7 +495,7 @@ impl TokenKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IdentType {
+pub(in crate::parser) enum IdentType {
     /// `foo` (a.k.a. tIDENTIFIER)
     Ident,
     /// `foo!` (a.k.a. tFID)
@@ -515,7 +515,7 @@ pub enum IdentType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StringType {
+pub(in crate::parser) enum StringType {
     /// `'`
     SQuote,
     /// `"`
@@ -526,7 +526,7 @@ pub enum StringType {
 
 /// Describes how the token relates to expressions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TokenClass {
+pub(in crate::parser) enum TokenClass {
     /// Starts an expression and immediately ends the expression.
     SelfContained,
     /// Starts an expression and possibly is followed by an expression.

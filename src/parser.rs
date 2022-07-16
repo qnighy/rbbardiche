@@ -1,5 +1,5 @@
 use crate::ast::Program;
-pub use crate::parser::token::Token;
+use crate::parser::token::Token;
 use crate::parser_diagnostics::ParseError;
 
 use bstr::BString;
