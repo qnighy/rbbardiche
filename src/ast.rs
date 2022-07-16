@@ -1,4 +1,5 @@
 use crate::token::Token;
+use derive_more::From;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range(pub usize, pub usize);
@@ -42,7 +43,7 @@ impl AsMut<NodeMeta> for Program {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum Expr {
     /// Parenthesized expression, `(1 + 2)`
     Parenthesized(ParenthesizedExpr),
@@ -147,144 +148,6 @@ impl AsRef<NodeMeta> for Expr {
 impl AsMut<NodeMeta> for Expr {
     fn as_mut(&mut self) -> &mut NodeMeta {
         delegate_expr!(self, x => &mut x.meta)
-    }
-}
-
-impl From<ParenthesizedExpr> for Expr {
-    fn from(e: ParenthesizedExpr) -> Self {
-        Expr::Parenthesized(e)
-    }
-}
-
-impl From<CompoundExpr> for Expr {
-    fn from(e: CompoundExpr) -> Self {
-        Expr::Compound(e)
-    }
-}
-
-impl From<NumericExpr> for Expr {
-    fn from(e: NumericExpr) -> Self {
-        Expr::Numeric(e)
-    }
-}
-
-impl From<SymbolExpr> for Expr {
-    fn from(e: SymbolExpr) -> Self {
-        Expr::Symbol(e)
-    }
-}
-
-impl From<StringLiteralExpr> for Expr {
-    fn from(e: StringLiteralExpr) -> Self {
-        Expr::StringLiteral(e)
-    }
-}
-
-impl From<VarExpr> for Expr {
-    fn from(e: VarExpr) -> Self {
-        Expr::Var(e)
-    }
-}
-
-impl From<NilExpr> for Expr {
-    fn from(e: NilExpr) -> Self {
-        Expr::Nil(e)
-    }
-}
-
-impl From<SelfExpr> for Expr {
-    fn from(e: SelfExpr) -> Self {
-        Expr::Self_(e)
-    }
-}
-
-impl From<BooleanLiteralExpr> for Expr {
-    fn from(e: BooleanLiteralExpr) -> Self {
-        Expr::BooleanLiteral(e)
-    }
-}
-
-impl From<FileMetaExpr> for Expr {
-    fn from(e: FileMetaExpr) -> Self {
-        Expr::FileMeta(e)
-    }
-}
-
-impl From<TernaryCondExpr> for Expr {
-    fn from(e: TernaryCondExpr) -> Self {
-        Expr::TernaryCond(e)
-    }
-}
-
-impl From<RangeExpr> for Expr {
-    fn from(e: RangeExpr) -> Self {
-        Expr::Range(e)
-    }
-}
-
-impl From<BinaryExpr> for Expr {
-    fn from(e: BinaryExpr) -> Self {
-        Expr::Binary(e)
-    }
-}
-
-impl From<UnaryExpr> for Expr {
-    fn from(e: UnaryExpr) -> Self {
-        Expr::Unary(e)
-    }
-}
-
-impl From<AssignExpr> for Expr {
-    fn from(e: AssignExpr) -> Self {
-        Expr::Assign(e)
-    }
-}
-
-impl From<SendExpr> for Expr {
-    fn from(e: SendExpr) -> Self {
-        Expr::Send(e)
-    }
-}
-
-impl From<ConstExpr> for Expr {
-    fn from(e: ConstExpr) -> Self {
-        Expr::Const(e)
-    }
-}
-
-impl From<ArrayExpr> for Expr {
-    fn from(e: ArrayExpr) -> Self {
-        Expr::Array(e)
-    }
-}
-
-impl From<HashExpr> for Expr {
-    fn from(e: HashExpr) -> Self {
-        Expr::Hash(e)
-    }
-}
-
-impl From<ClassExpr> for Expr {
-    fn from(e: ClassExpr) -> Self {
-        Expr::Class(e)
-    }
-}
-
-impl From<ModuleExpr> for Expr {
-    fn from(e: ModuleExpr) -> Self {
-        Expr::Module(e)
-    }
-}
-
-impl From<DefnExpr> for Expr {
-    fn from(e: DefnExpr) -> Self {
-        Expr::Defn(e)
-    }
-}
-
-impl From<ErroredExpr> for Expr {
-    fn from(e: ErroredExpr) -> Self {
-        Expr::Errored(e)
     }
 }
 
@@ -430,7 +293,7 @@ impl SendExpr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum Args {
     Paren(ParenArgs),
     Command(CommandArgs),
@@ -510,7 +373,7 @@ impl DelimitedArg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum Arg {
     Simple(Expr),
     // Splat(SplatArg),
@@ -617,7 +480,7 @@ pub struct DefnExpr {
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum FArgs {
     Paren(ParenFArgs),
     Command(CommandFArgs),
@@ -697,7 +560,7 @@ impl DelimitedFArg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum FArg {
     Simple(Expr),
     // Splat(SplatFArg),
@@ -731,7 +594,7 @@ pub struct ErroredExpr {
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum Stmt {
     Expr(ExprStmt),
     Empty(EmptyStmt),
@@ -754,18 +617,6 @@ impl Stmt {
 
     pub fn range(&self) -> Range {
         self.meta().range
-    }
-}
-
-impl From<ExprStmt> for Stmt {
-    fn from(s: ExprStmt) -> Self {
-        Stmt::Expr(s)
-    }
-}
-
-impl From<EmptyStmt> for Stmt {
-    fn from(s: EmptyStmt) -> Self {
-        Stmt::Empty(s)
     }
 }
 
@@ -853,7 +704,7 @@ pub enum UnaryOp {
     BitwiseNot,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum Debri {
     Token(Token),
     ExprLike(Expr),
