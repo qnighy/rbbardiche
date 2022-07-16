@@ -2,7 +2,7 @@ use bstr::ByteSlice;
 
 use crate::ast::{
     self, Arg, Args, ArrayExpr, BinaryOp, CommandArgs, Debri, DefnExpr, DelimitedArg,
-    DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, FileMetaName, NilExpr, NodeMeta,
+    DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, FileMetaName, NilExpr, Node, NodeMeta,
     ParenArgs, ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::parser::lexer::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};

@@ -1,5 +1,5 @@
 use crate::token::Token;
-use derive_more::From;
+use derive_more::{AsMut, AsRef, From};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range(pub usize, pub usize);
@@ -12,35 +12,48 @@ impl std::ops::BitOr for Range {
     }
 }
 
+pub trait Node {
+    fn meta(&self) -> &NodeMeta;
+    fn meta_mut(&mut self) -> &mut NodeMeta;
+    fn range(&self) -> Range {
+        self.meta().range
+    }
+}
+
+impl<T> Node for T
+where
+    T: AsRef<NodeMeta> + AsMut<NodeMeta> + ?Sized,
+{
+    fn meta(&self) -> &NodeMeta {
+        self.as_ref()
+    }
+
+    fn meta_mut(&mut self) -> &mut NodeMeta {
+        self.as_mut()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeMeta {
     pub range: Range,
     pub node_id: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct DelimitedElement<T, D> {
     pub inner: T,
     pub delimiter: Option<D>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct Program {
     pub stmts: Vec<Stmt>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
-}
-
-impl AsRef<NodeMeta> for Program {
-    fn as_ref(&self) -> &NodeMeta {
-        &self.meta
-    }
-}
-
-impl AsMut<NodeMeta> for Program {
-    fn as_mut(&mut self) -> &mut NodeMeta {
-        &mut self.meta
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, From)]
@@ -125,20 +138,6 @@ macro_rules! delegate_expr {
     };
 }
 
-impl Expr {
-    pub fn meta(&self) -> &NodeMeta {
-        self.as_ref()
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        self.as_mut()
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
-    }
-}
-
 impl AsRef<NodeMeta> for Expr {
     fn as_ref(&self) -> &NodeMeta {
         delegate_expr!(self, x => &x.meta)
@@ -151,69 +150,89 @@ impl AsMut<NodeMeta> for Expr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ParenthesizedExpr {
     pub stmts: Vec<Stmt>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct CompoundExpr {
     pub stmts: Vec<Stmt>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 // TODO: bigint, float, etc.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct NumericExpr {
     pub numval: i32,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct SymbolExpr {
     pub open_token: Token,
     pub ident_token: Token,
     pub value: String,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct StringLiteralExpr {
     pub strval: String,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 /// `foo`, `$foo`, `@foo`, `@@foo`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct VarExpr {
     pub name: String,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 /// `nil`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct NilExpr {
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 /// `self`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct SelfExpr {
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 /// `true` or `false`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct BooleanLiteralExpr {
     pub value: bool,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
 /// One of `__FILE__`, `__LINE__`, or `__ENCODING__`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct FileMetaExpr {
     pub name: FileMetaName,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -238,50 +257,62 @@ impl FileMetaName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct TernaryCondExpr {
     pub cond: Box<Expr>,
     pub consequence: Box<Expr>,
     pub alternate: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct RangeExpr {
     pub begin: Option<Box<Expr>>,
     pub range_type: RangeType,
     pub end: Option<Box<Expr>>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: BinaryOp,
     pub rhs: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct UnaryExpr {
     pub op: UnaryOp,
     pub expr: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct AssignExpr {
     pub lhs: Box<Expr>,
     pub rhs: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct SendExpr {
     pub optional: bool,
     pub recv: Option<Box<Expr>>,
     pub name: String,
     pub args: Option<Args>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -313,18 +344,6 @@ impl Args {
             Args::Command(e) => &mut e.list,
         }
     }
-
-    pub fn meta(&self) -> &NodeMeta {
-        self.as_ref()
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        self.as_mut()
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
-    }
 }
 
 impl AsRef<NodeMeta> for Args {
@@ -345,25 +364,31 @@ impl AsMut<NodeMeta> for Args {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ParenArgs {
     pub open_token: Token,
     pub list: Vec<DelimitedArg>,
     pub close_token: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct CommandArgs {
     pub list: Vec<DelimitedArg>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct DelimitedArg {
     pub arg: Arg,
     pub debris: Vec<Debri>,
     pub delim: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -383,25 +408,23 @@ pub enum Arg {
     // Block(BlockArg),
 }
 
-impl Arg {
-    pub fn meta(&self) -> &NodeMeta {
+impl AsRef<NodeMeta> for Arg {
+    fn as_ref(&self) -> &NodeMeta {
         match self {
-            Arg::Simple(a) => a.meta(),
+            Arg::Simple(e) => e.meta(),
         }
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        match self {
-            Arg::Simple(a) => a.meta_mut(),
-        }
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl AsMut<NodeMeta> for Arg {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            Arg::Simple(e) => e.meta_mut(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ConstExpr {
     /// If true, this expression starts with `::`.
     /// Cannot coexist with recv.
@@ -409,6 +432,8 @@ pub struct ConstExpr {
     /// Expression before the token `::`.
     pub recv: Option<Box<Expr>>,
     pub name: String,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -429,33 +454,41 @@ impl ConstExpr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ArrayExpr {
     pub open_token: Token,
     pub list: Vec<DelimitedArg>,
     pub close_token: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct HashExpr {
     pub open_token: Token,
     pub list: Vec<DelimitedArg>,
     pub close_token: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ClassExpr {
     pub cpath: Box<Expr>,
     pub superclass: Option<SuperclassClause>,
     pub body: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct SuperclassClause {
     pub expr: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -465,18 +498,22 @@ impl SuperclassClause {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ModuleExpr {
     pub cpath: Box<Expr>,
     pub body: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct DefnExpr {
     pub name: String,
     pub args: Option<FArgs>,
     pub body: Box<Expr>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -500,18 +537,6 @@ impl FArgs {
             FArgs::Command(e) => &mut e.list,
         }
     }
-
-    pub fn meta(&self) -> &NodeMeta {
-        self.as_ref()
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        self.as_mut()
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
-    }
 }
 
 impl AsRef<NodeMeta> for FArgs {
@@ -532,25 +557,31 @@ impl AsMut<NodeMeta> for FArgs {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ParenFArgs {
     pub open_token: Token,
     pub list: Vec<DelimitedFArg>,
     pub close_token: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct CommandFArgs {
     pub list: Vec<DelimitedFArg>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct DelimitedFArg {
     pub arg: FArg,
     pub debris: Vec<Debri>,
     pub delim: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -570,27 +601,27 @@ pub enum FArg {
     // Block(BlockFArg),
 }
 
-impl FArg {
-    pub fn meta(&self) -> &NodeMeta {
+impl AsRef<NodeMeta> for FArg {
+    fn as_ref(&self) -> &NodeMeta {
         match self {
-            FArg::Simple(a) => a.meta(),
+            FArg::Simple(e) => e.meta(),
         }
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        match self {
-            FArg::Simple(a) => a.meta_mut(),
-        }
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl AsMut<NodeMeta> for FArg {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            FArg::Simple(e) => e.meta_mut(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ErroredExpr {
     pub debris: Vec<Debri>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
@@ -600,37 +631,39 @@ pub enum Stmt {
     Empty(EmptyStmt),
 }
 
-impl Stmt {
-    pub fn meta(&self) -> &NodeMeta {
+impl AsRef<NodeMeta> for Stmt {
+    fn as_ref(&self) -> &NodeMeta {
         match self {
-            Stmt::Expr(s) => &s.meta,
-            Stmt::Empty(s) => &s.meta,
+            Stmt::Expr(e) => e.meta(),
+            Stmt::Empty(e) => e.meta(),
         }
-    }
-
-    pub fn meta_mut(&mut self) -> &mut NodeMeta {
-        match self {
-            Stmt::Expr(s) => &mut s.meta,
-            Stmt::Empty(s) => &mut s.meta,
-        }
-    }
-
-    pub fn range(&self) -> Range {
-        self.meta().range
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl AsMut<NodeMeta> for Stmt {
+    fn as_mut(&mut self) -> &mut NodeMeta {
+        match self {
+            Stmt::Expr(e) => e.meta_mut(),
+            Stmt::Empty(e) => e.meta_mut(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ExprStmt {
     pub expr: Expr,
     pub debris: Vec<Debri>,
     pub delim: Option<Token>,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct EmptyStmt {
     pub delim: Token,
+    #[as_ref]
+    #[as_mut]
     pub meta: NodeMeta,
 }
 

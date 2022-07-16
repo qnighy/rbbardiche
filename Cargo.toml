@@ -12,7 +12,7 @@ serde = { version = "1.0.137", features = ["derive"] }
 thiserror = "1.0.31"
 clap = { version = "3.1.18", features = ["derive"] }
 unicode-general-category = "0.5.1"
-derive_more = { version = "0.99.17", features = ["from"] }
+derive_more = { version = "0.99.17", features = ["as_ref", "as_mut", "from"] }
 
 [dev-dependencies]
 testfiles = { path = "testfiles" }
