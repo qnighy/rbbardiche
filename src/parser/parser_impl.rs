@@ -65,7 +65,7 @@ impl Parser {
                 let delim = self.bump(LexCtx::default().beg());
                 let range = delim.range;
                 stmts.push(Stmt::Empty(EmptyStmt {
-                    delim,
+                    delim: delim.p(),
                     meta: NodeMeta { range, node_id: 0 },
                 }));
                 continue;
@@ -87,7 +87,7 @@ impl Parser {
             stmts.push(Stmt::Expr(ExprStmt {
                 expr,
                 debris,
-                delim,
+                delim: delim.map(|token| token.p()),
                 meta: NodeMeta { range, node_id: 0 },
             }));
         }
@@ -733,7 +733,7 @@ impl Parser {
             list.push(DelimitedArg {
                 arg,
                 debris,
-                delim,
+                delim: delim.map(|token| token.p()),
                 meta: NodeMeta { range, node_id: 0 },
             })
         }
@@ -745,10 +745,10 @@ impl Parser {
         let range = lbrack_token.range | rbrack_token.range;
         // TODO: check invalid arguments (like `[&block]`)
         ArrayExpr {
-            open_token: lbrack_token,
+            open_token: lbrack_token.p(),
             list,
             meta: NodeMeta { range, node_id: 0 },
-            close_token: Some(rbrack_token),
+            close_token: Some(rbrack_token.p()),
         }
     }
 
@@ -791,7 +791,7 @@ impl Parser {
             list.push(DelimitedArg {
                 arg,
                 debris,
-                delim,
+                delim: delim.map(|token| token.p()),
                 meta: NodeMeta { range, node_id: 0 },
             })
         }
@@ -802,10 +802,10 @@ impl Parser {
         let rparen_token = self.bump(ctx.end());
         let range = lparen_token.range | rparen_token.range;
         Args::Paren(ParenArgs {
-            open_token: lparen_token,
+            open_token: lparen_token.p(),
             list,
             meta: NodeMeta { range, node_id: 0 },
-            close_token: Some(rparen_token),
+            close_token: Some(rparen_token.p()),
         })
     }
 
@@ -834,7 +834,7 @@ impl Parser {
             list.push(DelimitedArg {
                 arg,
                 debris: vec![],
-                delim,
+                delim: delim.map(|token| token.p()),
                 meta: NodeMeta { range, node_id: 0 },
             });
             if !has_delim {
@@ -1117,8 +1117,8 @@ impl Parser {
                 };
                 let range = open_token.range | ident_token.range;
                 ast::SymbolExpr {
-                    open_token,
-                    ident_token,
+                    open_token: open_token.p(),
+                    ident_token: ident_token.p(),
                     value,
                     meta: NodeMeta { range, node_id: 0 },
                 }
@@ -1221,9 +1221,9 @@ impl Parser {
                 let close_token = self.bump(ctx.end());
                 let range = open_token.range | close_token.range;
                 ast::HashExpr {
-                    open_token,
+                    open_token: open_token.p(),
                     list: vec![],
-                    close_token: Some(close_token),
+                    close_token: Some(close_token.p()),
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
@@ -1376,7 +1376,7 @@ impl Parser {
                     .push(ParseError::UnexpectedToken { range: token.range });
                 let range = token.range;
                 ast::ErroredExpr {
-                    debris: vec![Debri::Token(token)],
+                    debris: vec![Debri::Token(token.p())],
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
@@ -1419,7 +1419,7 @@ impl Parser {
             list.push(DelimitedFArg {
                 arg,
                 debris,
-                delim,
+                delim: delim.map(|token| token.p()),
                 meta: NodeMeta { range, node_id: 0 },
             })
         }
@@ -1433,10 +1433,10 @@ impl Parser {
         // TODO: check ordering constraints
         // TODO: check invalid trailing comma
         ParenFArgs {
-            open_token: lparen_token,
+            open_token: lparen_token.p(),
             list,
             meta: NodeMeta { range, node_id: 0 },
-            close_token: Some(rparen_token),
+            close_token: Some(rparen_token.p()),
         }
     }
 
@@ -1494,13 +1494,13 @@ impl Parser {
                 // Those which is likely followed by an expression
                 TokenClass::MaybeInfix | TokenClass::Infix => {
                     let token = self.bump(ctx.beg());
-                    debris.push(Debri::Token(token));
+                    debris.push(Debri::Token(token.p()));
                 }
 
                 // Those which usually closes an expression
                 TokenClass::Postfix => {
                     let token = self.bump(ctx.end());
-                    debris.push(Debri::Token(token));
+                    debris.push(Debri::Token(token.p()));
                 }
             }
         }

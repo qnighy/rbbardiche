@@ -1,4 +1,3 @@
-use crate::parser::Token;
 use derive_more::{AsMut, AsRef, From};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -10,6 +9,11 @@ impl std::ops::BitOr for Range {
     fn bitor(self, rhs: Self) -> Self::Output {
         Range(std::cmp::min(self.0, rhs.0), std::cmp::max(self.1, rhs.1))
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Token {
+    pub range: Range,
 }
 
 pub trait Node {

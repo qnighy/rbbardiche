@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOp, Range, UnaryOp};
+use crate::ast::{BinaryOp, Range, Token as PublicToken, UnaryOp};
 use bstr::BString;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +26,10 @@ impl Token {
             TokenKind::UnOp(op) if cond(*op) => Some(*op),
             _ => None,
         }
+    }
+
+    pub(crate) fn p(&self) -> PublicToken {
+        PublicToken { range: self.range }
     }
 }
 
