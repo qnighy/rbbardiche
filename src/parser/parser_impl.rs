@@ -6,9 +6,9 @@ use crate::ast::{
     ParenArgs, ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
 use crate::parser::lexer::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};
+use crate::parser::token::{IdentType, StringType, Token, TokenClass, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
-use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
 
 impl Parser {
     pub(in crate::parser) fn new(source: &[u8]) -> Parser {

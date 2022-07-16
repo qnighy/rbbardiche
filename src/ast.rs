@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::parser::Token;
 use derive_more::{AsMut, AsRef, From};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

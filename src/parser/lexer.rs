@@ -1,7 +1,7 @@
 use crate::ast::{BinaryOp, Range, UnaryOp};
+use crate::parser::token::{IdentType, StringType, Token, TokenKind};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
-use crate::token::{IdentType, StringType, Token, TokenKind};
 use crate::util::{CharExt, OptionPredExt};
 use bstr::{BStr, ByteSlice};
 use once_cell::sync::Lazy;

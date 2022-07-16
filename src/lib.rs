@@ -7,5 +7,4 @@ pub mod parser_diagnostics;
 pub mod pgem_ast;
 pub mod pos;
 mod ruby_util;
-pub mod token;
 pub(crate) mod util;

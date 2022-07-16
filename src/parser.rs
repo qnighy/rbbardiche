@@ -1,11 +1,12 @@
 use crate::ast::Program;
+pub use crate::parser::token::Token;
 use crate::parser_diagnostics::ParseError;
-use crate::token::Token;
 
 use bstr::BString;
 
 mod lexer;
 mod parser_impl;
+mod token;
 
 pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
     let mut parser = Parser::new(source);
