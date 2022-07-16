@@ -1,3 +1,0 @@
-assertion failed: `(left == right)`
-  left: `"1:0-1-6: Unexpected token\n1:7-1-11: Unexpected token\n3:0-3-5: Unexpected token\n3:6-3-11: Unexpected token\n5:0-5-3: Unexpected end of file\n5:0-5-3: Unexpected token\n"`,
- right: `""`

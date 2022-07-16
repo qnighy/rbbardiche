@@ -1,0 +1,10 @@
+s(:begin,
+  s(:float, 1.234567891234568e+305),
+  s(:float, -1.234567891234568e+305),
+  s(:float, 1.234567891234568e+305),
+  s(:float, 1.234567891234568e+305),
+  s(:float, -1.234567891234568e+305),
+  s(:float, 1.234567891234568e+305),
+  s(:float, Infinity),
+  s(:float, -Infinity),
+  s(:float, Infinity))
