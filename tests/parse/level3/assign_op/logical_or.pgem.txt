@@ -1,0 +1,3 @@
+s(:or_asgn,
+  s(:lvasgn, :x),
+  s(:send, nil, :y))

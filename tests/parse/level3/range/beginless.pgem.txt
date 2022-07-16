@@ -1,0 +1,5 @@
+s(:begin,
+  s(:irange, nil,
+    s(:send, nil, :x)),
+  s(:erange, nil,
+    s(:send, nil, :x)))

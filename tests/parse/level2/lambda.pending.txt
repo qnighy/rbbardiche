@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"<invalid>\n"`,
+ right: `"s(:block,\n  s(:send, nil, :lambda),\n  s(:args), nil)\n"`

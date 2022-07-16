@@ -1,0 +1,3 @@
+s(:block,
+  s(:send, nil, :lambda),
+  s(:args), nil)
