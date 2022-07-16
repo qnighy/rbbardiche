@@ -1,0 +1,13 @@
+s(:if,
+  s(:begin,
+    s(:lvasgn, :y,
+      s(:int, 2)),
+    s(:array,
+      s(:lvar, :x),
+      s(:lvar, :y))),
+  s(:begin,
+    s(:lvasgn, :x,
+      s(:int, 1)),
+    s(:array,
+      s(:lvar, :x),
+      s(:send, nil, :y))), nil)

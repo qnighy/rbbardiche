@@ -1,0 +1,3 @@
+assertion failed: `(left == right)`
+  left: `"s(:begin,\n  s(:lvasgn, :x,\n    s(:int, 1)),\n  s(:array,\n    s(:send, nil, :x),\n    s(:send, nil, :y)))\n"`,
+ right: `"s(:if,\n  s(:begin,\n    s(:lvasgn, :y,\n      s(:int, 2)),\n    s(:array,\n      s(:lvar, :x),\n      s(:lvar, :y))),\n  s(:begin,\n    s(:lvasgn, :x,\n      s(:int, 1)),\n    s(:array,\n      s(:lvar, :x),\n      s(:send, nil, :y))), nil)\n"`
