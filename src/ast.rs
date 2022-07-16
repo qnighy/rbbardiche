@@ -40,15 +40,6 @@ pub struct NodeMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
-pub struct DelimitedElement<T, D> {
-    pub inner: T,
-    pub delimiter: Option<D>,
-    #[as_ref]
-    #[as_mut]
-    pub meta: NodeMeta,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct Program {
     pub stmts: Vec<Stmt>,
     #[as_ref]
