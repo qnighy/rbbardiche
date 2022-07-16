@@ -58,14 +58,14 @@ static KEYWORDS: Lazy<HashMap<&BStr, Option<TokenKind>>> = Lazy::new(|| {
 });
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct LexerParams {
-    pub(crate) mode: LexerMode,
-    pub(crate) in_condition: bool,
-    pub(crate) in_command_args: bool,
+pub(in crate::parser) struct LexerParams {
+    pub(in crate::parser) mode: LexerMode,
+    pub(in crate::parser) in_condition: bool,
+    pub(in crate::parser) in_command_args: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LexerMode {
+pub(in crate::parser) enum LexerMode {
     /// Beginning of an expression; IS_BEG().
     ///
     /// ## Behavior (example)
@@ -122,7 +122,7 @@ pub(crate) enum LexerMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LexerBeginMode {
+pub(in crate::parser) enum LexerBeginMode {
     /// Ordinary beginning state; EXPR_BEG or EXPR_VALUE.
     ///
     /// ## Conditions
@@ -188,13 +188,13 @@ pub(crate) enum LexerBeginMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum StringLexerMode {
+pub(in crate::parser) enum StringLexerMode {
     SingleQuoted,
     DoubleQuoted,
 }
 
 impl Parser {
-    pub(crate) fn bump(&mut self, params: LexerParams) -> Token {
+    pub(in crate::parser) fn bump(&mut self, params: LexerParams) -> Token {
         let next_token = self.lex_token(params);
         std::mem::replace(&mut self.next_token, next_token)
     }

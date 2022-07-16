@@ -5,19 +5,13 @@ use crate::ast::{
     DelimitedFArg, EmptyStmt, Expr, ExprStmt, FArg, FArgs, FileMetaName, NilExpr, NodeMeta,
     ParenArgs, ParenFArgs, Program, Range, RangeType, Stmt, SuperclassClause, UnaryOp,
 };
-use crate::lexing::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};
+use crate::parser::lexer::{LexerBeginMode, LexerMode, LexerParams, StringLexerMode};
 use crate::parser::Parser;
 use crate::parser_diagnostics::ParseError;
 use crate::token::{IdentType, StringType, Token, TokenClass, TokenKind};
 
-pub fn parse(source: &[u8]) -> (Program, Vec<ParseError>) {
-    let mut parser = Parser::new(source);
-    let program = parser.parse_program();
-    (program, parser.errors)
-}
-
 impl Parser {
-    fn new(source: &[u8]) -> Parser {
+    pub(in crate::parser) fn new(source: &[u8]) -> Parser {
         let mut parser = Parser {
             source: source.into(),
             pos: 0,
@@ -32,7 +26,7 @@ impl Parser {
         parser
     }
 
-    fn parse_program(&mut self) -> Program {
+    pub(in crate::parser) fn parse_program(&mut self) -> Program {
         let stmts = self.parse_compstmt(|token| matches!(token.kind, TokenKind::Eof));
         Program {
             stmts,
