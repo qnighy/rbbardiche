@@ -101,7 +101,12 @@ impl From<&Program> for SExp {
 
 impl From<&ast::ParenthesizedExpr> for SExp {
     fn from(expr: &ast::ParenthesizedExpr) -> Self {
-        let ast::ParenthesizedExpr { stmts, meta: _ } = expr;
+        let ast::ParenthesizedExpr {
+            open_token: _,
+            stmts,
+            close_token: _,
+            meta: _,
+        } = expr;
         let stmts = stmts
             .iter()
             .filter(|&stmt| !matches!(stmt, Stmt::Empty(_)))
@@ -255,7 +260,9 @@ impl From<&ast::TernaryCondExpr> for SExp {
     fn from(expr: &ast::TernaryCondExpr) -> Self {
         let ast::TernaryCondExpr {
             cond,
+            question_token: _,
             consequence,
+            colon_token: _,
             alternate,
             meta: _,
         } = expr;
@@ -270,6 +277,7 @@ impl From<&ast::RangeExpr> for SExp {
     fn from(expr: &ast::RangeExpr) -> Self {
         let ast::RangeExpr {
             begin,
+            op_token: _,
             range_type,
             end,
             meta: _,
@@ -300,6 +308,7 @@ impl From<&ast::BinaryExpr> for SExp {
     fn from(expr: &ast::BinaryExpr) -> Self {
         let ast::BinaryExpr {
             lhs,
+            op_token: _,
             op,
             rhs,
             meta: _,
@@ -325,7 +334,12 @@ impl From<&ast::BinaryExpr> for SExp {
 
 impl From<&ast::UnaryExpr> for SExp {
     fn from(expr: &ast::UnaryExpr) -> Self {
-        let ast::UnaryExpr { op, expr, meta: _ } = expr;
+        let ast::UnaryExpr {
+            op_token: _,
+            op,
+            expr,
+            meta: _,
+        } = expr;
         SExp::Tagged {
             tag: "send".to_owned(),
             args: vec![
@@ -340,11 +354,17 @@ impl From<&ast::UnaryExpr> for SExp {
 
 impl From<&ast::AssignExpr> for SExp {
     fn from(expr: &ast::AssignExpr) -> Self {
-        let ast::AssignExpr { lhs, rhs, meta: _ } = expr;
+        let ast::AssignExpr {
+            lhs,
+            op_token: _,
+            rhs,
+            meta: _,
+        } = expr;
         match &**lhs {
             Expr::Send(ast::SendExpr {
                 optional: false,
                 recv: None,
+                op_token: _,
                 name,
                 args: None,
                 meta: _,
@@ -365,6 +385,7 @@ impl From<&ast::SendExpr> for SExp {
         let ast::SendExpr {
             optional,
             recv,
+            op_token: _,
             name,
             args,
             meta: _,
@@ -401,6 +422,7 @@ impl From<&ast::ConstExpr> for SExp {
         let ast::ConstExpr {
             toplevel,
             recv,
+            op_token: _,
             name,
             meta: _,
         } = expr;
@@ -473,9 +495,11 @@ impl From<&ast::HashExpr> for SExp {
 impl From<&ast::ClassExpr> for SExp {
     fn from(expr: &ast::ClassExpr) -> Self {
         let ast::ClassExpr {
+            open_token: _,
             cpath,
             superclass,
             body,
+            close_token: _,
             meta: _,
         } = expr;
         SExp::Tagged {
@@ -496,8 +520,10 @@ impl From<&ast::ClassExpr> for SExp {
 impl From<&ast::ModuleExpr> for SExp {
     fn from(expr: &ast::ModuleExpr) -> Self {
         let ast::ModuleExpr {
+            open_token: _,
             cpath,
             body,
+            close_token: _,
             meta: _,
         } = expr;
         SExp::Tagged {
@@ -510,9 +536,12 @@ impl From<&ast::ModuleExpr> for SExp {
 impl From<&ast::DefnExpr> for SExp {
     fn from(expr: &ast::DefnExpr) -> Self {
         let ast::DefnExpr {
+            open_token: _,
+            name_token: _,
             name,
             args,
             body,
+            close_token: _,
             meta: _,
         } = expr;
         SExp::Tagged {
@@ -555,6 +584,7 @@ impl From<&ast::FArg> for SExp {
                 Expr::Send(ast::SendExpr {
                     optional: false,
                     recv: None,
+                    op_token: _,
                     name,
                     args: None,
                     meta: _,

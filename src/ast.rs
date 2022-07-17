@@ -147,7 +147,9 @@ impl AsMut<NodeMeta> for Expr {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ParenthesizedExpr {
+    pub open_token: Token,
     pub stmts: Vec<Stmt>,
+    pub close_token: Option<Token>,
     #[as_ref]
     #[as_mut]
     pub meta: NodeMeta,
@@ -255,7 +257,9 @@ impl FileMetaName {
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct TernaryCondExpr {
     pub cond: Box<Expr>,
+    pub question_token: Token,
     pub consequence: Box<Expr>,
+    pub colon_token: Option<Token>,
     pub alternate: Box<Expr>,
     #[as_ref]
     #[as_mut]
@@ -265,6 +269,7 @@ pub struct TernaryCondExpr {
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct RangeExpr {
     pub begin: Option<Box<Expr>>,
+    pub op_token: Token,
     pub range_type: RangeType,
     pub end: Option<Box<Expr>>,
     #[as_ref]
@@ -275,6 +280,7 @@ pub struct RangeExpr {
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
+    pub op_token: Token,
     pub op: BinaryOp,
     pub rhs: Box<Expr>,
     #[as_ref]
@@ -284,6 +290,7 @@ pub struct BinaryExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct UnaryExpr {
+    pub op_token: Token,
     pub op: UnaryOp,
     pub expr: Box<Expr>,
     #[as_ref]
@@ -294,6 +301,7 @@ pub struct UnaryExpr {
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct AssignExpr {
     pub lhs: Box<Expr>,
+    pub op_token: Token,
     pub rhs: Box<Expr>,
     #[as_ref]
     #[as_mut]
@@ -304,6 +312,7 @@ pub struct AssignExpr {
 pub struct SendExpr {
     pub optional: bool,
     pub recv: Option<Box<Expr>>,
+    pub op_token: Option<Token>,
     pub name: String,
     pub args: Option<Args>,
     #[as_ref]
@@ -426,6 +435,7 @@ pub struct ConstExpr {
     pub toplevel: bool,
     /// Expression before the token `::`.
     pub recv: Option<Box<Expr>>,
+    pub op_token: Option<Token>,
     pub name: String,
     #[as_ref]
     #[as_mut]
@@ -442,6 +452,7 @@ impl ConstExpr {
         SendExpr {
             optional: false,
             recv: self.recv,
+            op_token: self.op_token,
             name: self.name,
             args: None,
             meta: self.meta,
@@ -471,9 +482,11 @@ pub struct HashExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ClassExpr {
+    pub open_token: Token,
     pub cpath: Box<Expr>,
     pub superclass: Option<SuperclassClause>,
     pub body: Box<Expr>,
+    pub close_token: Token,
     #[as_ref]
     #[as_mut]
     pub meta: NodeMeta,
@@ -481,7 +494,9 @@ pub struct ClassExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct SuperclassClause {
+    pub open_token: Token,
     pub expr: Box<Expr>,
+    pub close_token: Option<Token>,
     #[as_ref]
     #[as_mut]
     pub meta: NodeMeta,
@@ -495,8 +510,10 @@ impl SuperclassClause {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct ModuleExpr {
+    pub open_token: Token,
     pub cpath: Box<Expr>,
     pub body: Box<Expr>,
+    pub close_token: Token,
     #[as_ref]
     #[as_mut]
     pub meta: NodeMeta,
@@ -504,9 +521,12 @@ pub struct ModuleExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, AsRef, AsMut)]
 pub struct DefnExpr {
+    pub open_token: Token,
+    pub name_token: Token,
     pub name: String,
     pub args: Option<FArgs>,
     pub body: Box<Expr>,
+    pub close_token: Token,
     #[as_ref]
     #[as_mut]
     pub meta: NodeMeta,

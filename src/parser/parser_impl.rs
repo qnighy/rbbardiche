@@ -99,11 +99,12 @@ impl Parser {
         loop {
             match &self.next_token.kind {
                 TokenKind::Equal => {
-                    self.bump(LexCtx::default().beg());
+                    let op_token = self.bump(LexCtx::default().beg());
                     let rhs = self.parse_expr(LexCtx::default());
                     let range = e.range() | rhs.range();
                     e = ast::AssignExpr {
                         lhs: Box::new(e),
+                        op_token: op_token.p(),
                         rhs: Box::new(rhs),
                         meta: NodeMeta { range, node_id: 0 },
                     }
@@ -149,20 +150,22 @@ impl Parser {
     fn parse_ternary_cond(&mut self, ctx: LexCtx) -> Expr {
         let expr = self.parse_range(ctx, false);
         if matches!(self.next_token.kind, TokenKind::Question) {
-            self.bump(ctx.beg());
+            let question_token = self.bump(ctx.beg());
             // This is delimited by `?` and `:` so the full `arg` can come here
             let consequence = self.parse_arg_expr(ctx);
             self.parse_opt_nl(ctx);
-            if matches!(self.next_token.kind, TokenKind::Colon) {
-                self.bump(ctx.beg());
+            let colon_token = if matches!(self.next_token.kind, TokenKind::Colon) {
+                self.bump(ctx.beg())
             } else {
                 todo!("error handling for missing colon");
-            }
+            };
             let alternate = self.parse_ternary_cond(ctx);
             let range = expr.range() | alternate.range();
             ast::TernaryCondExpr {
                 cond: Box::new(expr),
+                question_token: question_token.p(),
                 consequence: Box::new(consequence),
+                colon_token: Some(colon_token.p()),
                 alternate: Box::new(alternate),
                 meta: NodeMeta { range, node_id: 0 },
             }
@@ -203,6 +206,7 @@ impl Parser {
             let range = expr.range() | rhs.range();
             expr = ast::RangeExpr {
                 begin: Some(Box::new(expr)),
+                op_token: op_token.p(),
                 range_type,
                 end: Some(Box::new(rhs)),
                 meta: NodeMeta { range, node_id: 0 },
@@ -231,11 +235,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_logical_and(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -263,11 +268,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_equality(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -318,6 +324,7 @@ impl Parser {
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -365,6 +372,7 @@ impl Parser {
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -394,7 +402,7 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(if matches!(op, BinaryOp::BitwiseOr) {
+            let op_token = self.bump(if matches!(op, BinaryOp::BitwiseOr) {
                 ctx.beg_labelable()
             } else {
                 ctx.beg()
@@ -403,6 +411,7 @@ impl Parser {
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -430,11 +439,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_shift(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -463,11 +473,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_additive(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -496,11 +507,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_multiplicative(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -530,11 +542,12 @@ impl Parser {
             } else {
                 break;
             };
-            self.bump(ctx.beg());
+            let op_token = self.bump(ctx.beg());
             let rhs = self.parse_pow(ctx);
             let range = expr.range() | rhs.range();
             expr = ast::BinaryExpr {
                 lhs: Box::new(expr),
+                op_token: op_token.p(),
                 op,
                 rhs: Box::new(rhs),
                 meta: NodeMeta { range, node_id: 0 },
@@ -558,19 +571,21 @@ impl Parser {
         } else {
             return expr;
         };
-        self.bump(ctx.beg());
+        let op_token = self.bump(ctx.beg());
         let rhs = self.parse_pow(ctx);
         match self.decompose_uminus(expr) {
-            Ok((uminus_range, expr)) => {
+            Ok((uminus_token, expr)) => {
                 // Special case for `-e ** e`
                 // In this case, we reinterpret `(-e) ** e` as `-(e ** e)`.
                 let pow_range = expr.range() | rhs.range();
-                let range = uminus_range | expr.range();
+                let range = uminus_token.range | expr.range();
                 ast::UnaryExpr {
+                    op_token: uminus_token,
                     op: UnaryOp::Neg,
                     expr: Box::new(
                         ast::BinaryExpr {
                             lhs: Box::new(expr),
+                            op_token: op_token.p(),
                             op: BinaryOp::Pow,
                             rhs: Box::new(rhs),
                             meta: NodeMeta {
@@ -588,6 +603,7 @@ impl Parser {
                 let range = expr.range() | rhs.range();
                 ast::BinaryExpr {
                     lhs: Box::new(expr),
+                    op_token: op_token.p(),
                     op: BinaryOp::Pow,
                     rhs: Box::new(rhs),
                     meta: NodeMeta { range, node_id: 0 },
@@ -599,20 +615,27 @@ impl Parser {
 
     /// Decomposes `-x` into `-` and `x`.
     /// Handles negative literals like `-123` as well.
-    fn decompose_uminus(&self, expr: Expr) -> Result<(Range, Expr), Expr> {
+    fn decompose_uminus(&self, expr: Expr) -> Result<(crate::ast::Token, Expr), Expr> {
         match expr {
             Expr::Unary(ast::UnaryExpr {
                 op: UnaryOp::Neg,
                 expr,
                 meta: NodeMeta { range, .. },
                 ..
-            }) => Ok((Range(range.0, range.0 + 1), *expr)),
+            }) => Ok((
+                crate::ast::Token {
+                    range: Range(range.0, range.0 + 1),
+                },
+                *expr,
+            )),
             Expr::Numeric(ast::NumericExpr {
                 numval,
                 meta: NodeMeta { range, .. },
                 ..
             }) if self.source.get(range.0).copied() == Some(b'-') => Ok((
-                Range(range.0, range.0 + 1),
+                crate::ast::Token {
+                    range: Range(range.0, range.0 + 1),
+                },
                 ast::NumericExpr {
                     numval: -numval,
                     meta: NodeMeta {
@@ -658,6 +681,7 @@ impl Parser {
             let range = op_token.range | expr.range();
             return ast::RangeExpr {
                 begin: None,
+                op_token: op_token.p(),
                 range_type,
                 end: Some(Box::new(expr)),
                 meta: NodeMeta { range, node_id: 0 },
@@ -678,6 +702,7 @@ impl Parser {
         let expr = self.parse_unary(ctx);
         let range = op_token.range | expr.range();
         ast::UnaryExpr {
+            op_token: op_token.p(),
             op,
             expr: Box::new(expr),
             meta: NodeMeta { range, node_id: 0 },
@@ -903,6 +928,7 @@ impl Parser {
                                 let e = ast::ConstExpr {
                                     toplevel: false,
                                     recv: Some(Box::new(expr)),
+                                    op_token: Some(op_token.p()),
                                     name,
                                     meta: NodeMeta { range, node_id: 0 },
                                 };
@@ -918,6 +944,7 @@ impl Parser {
                                 let mut e = ast::SendExpr {
                                     optional: matches!(op_token.kind, TokenKind::AndDot),
                                     recv: Some(Box::new(expr)),
+                                    op_token: Some(op_token.p()),
                                     args: None,
                                     name,
                                     meta: NodeMeta { range, node_id: 0 },
@@ -938,6 +965,7 @@ impl Parser {
                             expr = ast::ConstExpr {
                                 toplevel: false,
                                 recv: Some(Box::new(expr)),
+                                op_token: Some(op_token.p()),
                                 name: "".to_owned(),
                                 meta: NodeMeta { range, node_id: 0 },
                             }
@@ -999,6 +1027,7 @@ impl Parser {
                 let mut e = ast::SendExpr {
                     optional: false,
                     recv: None,
+                    op_token: None,
                     name,
                     args: None,
                     meta: NodeMeta {
@@ -1023,6 +1052,7 @@ impl Parser {
                 let e = ast::ConstExpr {
                     toplevel: false,
                     recv: None,
+                    op_token: None,
                     name,
                     meta: NodeMeta {
                         range: token.range,
@@ -1065,6 +1095,7 @@ impl Parser {
                     ast::ConstExpr {
                         toplevel: true,
                         recv: None,
+                        op_token: Some(dcolon_token.p()),
                         name,
                         meta: NodeMeta { range, node_id: 0 },
                     }
@@ -1077,6 +1108,7 @@ impl Parser {
                     ast::ConstExpr {
                         toplevel: true,
                         recv: None,
+                        op_token: Some(dcolon_token.p()),
                         name: "".to_owned(),
                         meta: NodeMeta { range, node_id: 0 },
                     }
@@ -1205,7 +1237,9 @@ impl Parser {
                 let rparen_token = self.bump(ctx.end());
                 let range = lparen_token.range | rparen_token.range;
                 ast::ParenthesizedExpr {
+                    open_token: lparen_token.p(),
                     stmts,
+                    close_token: Some(rparen_token.p()),
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
@@ -1247,9 +1281,11 @@ impl Parser {
                     if !matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                         todo!("error handling after superclass clause");
                     }
-                    self.bump(ctx.beg());
+                    let close_token = self.bump(ctx.beg());
                     Some(SuperclassClause {
+                        open_token: op_token.p(),
                         expr: Box::new(expr),
+                        close_token: Some(close_token.p()),
                         meta: NodeMeta { range, node_id: 0 },
                     })
                 } else {
@@ -1268,9 +1304,11 @@ impl Parser {
                 let end_token = self.bump(ctx.end());
                 let range = class_token.range | end_token.range;
                 ast::ClassExpr {
+                    open_token: class_token.p(),
                     cpath: Box::new(cpath),
                     superclass,
                     body: Box::new(body),
+                    close_token: end_token.p(),
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
@@ -1293,8 +1331,10 @@ impl Parser {
                 let end_token = self.bump(ctx.end());
                 let range = module_token.range | end_token.range;
                 ast::ModuleExpr {
+                    open_token: module_token.p(),
                     cpath: Box::new(cpath),
                     body: Box::new(body),
+                    close_token: end_token.p(),
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
@@ -1321,7 +1361,7 @@ impl Parser {
                 .to_string();
 
                 // TODO: EXPR_ENDFN
-                self.bump(ctx.end());
+                let name_token = self.bump(ctx.end());
                 if matches!(self.next_token.kind, TokenKind::Dot) {
                     todo!("singleton def");
                 }
@@ -1340,9 +1380,12 @@ impl Parser {
                 let end_token = self.bump(ctx.end());
                 let range = def_token.range | end_token.range;
                 DefnExpr {
+                    open_token: def_token.p(),
+                    name_token: name_token.p(),
                     name,
                     args,
                     body: Box::new(body),
+                    close_token: end_token.p(),
                     meta: NodeMeta { range, node_id: 0 },
                 }
                 .into()
