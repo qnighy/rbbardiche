@@ -473,6 +473,7 @@ dependencies = [
 name = "rbbardiche"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "bstr",
  "clap",
  "derive_more",

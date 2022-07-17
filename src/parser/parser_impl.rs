@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use bstr::ByteSlice;
 
 use crate::ast::{
@@ -27,7 +28,7 @@ impl Parser {
     }
 
     pub(in crate::parser) fn parse_program(&mut self) -> Program {
-        let stmts = self.parse_compstmt(|token| matches!(token.kind, TokenKind::Eof));
+        let stmts = self.parse_compstmt(DelimiterFlags::TOPLEVEL);
         Program {
             stmts,
             meta: NodeMeta {
@@ -37,11 +38,8 @@ impl Parser {
         }
     }
 
-    fn parse_compstmt_<F>(&mut self, is_end_token: F) -> Expr
-    where
-        F: Fn(&Token) -> bool,
-    {
-        let stmts = self.parse_compstmt(is_end_token);
+    fn parse_compstmt_(&mut self, delim: DelimiterFlags) -> Expr {
+        let stmts = self.parse_compstmt(delim);
         let range = if stmts.is_empty() {
             // TODO: empty range?
             Range(self.next_token.range.0, self.next_token.range.0)
@@ -55,12 +53,9 @@ impl Parser {
         .into()
     }
 
-    fn parse_compstmt<F>(&mut self, is_end_token: F) -> Vec<Stmt>
-    where
-        F: Fn(&Token) -> bool,
-    {
+    fn parse_compstmt(&mut self, delim: DelimiterFlags) -> Vec<Stmt> {
         let mut stmts = Vec::new();
-        while !is_end_token(&self.next_token) {
+        while !delim.is_end_token(&self.next_token) {
             if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 let delim = self.bump(LexCtx::default().beg());
                 let range = delim.range;
@@ -71,9 +66,7 @@ impl Parser {
                 continue;
             }
             let expr = self.parse_stmt();
-            let debris = self.skip_debris(|token| {
-                matches!(token.kind, TokenKind::Semi | TokenKind::NewLine) || is_end_token(token)
-            });
+            let debris = self.skip_debris(delim | DelimiterFlags::TOKEN_SEMI);
             let delim = if matches!(self.next_token.kind, TokenKind::Semi | TokenKind::NewLine) {
                 Some(self.bump(LexCtx::default().beg()))
             } else {
@@ -726,17 +719,7 @@ impl Parser {
         ) {
             let arg = self.parse_arg_elem(ctx);
 
-            let debris = self.skip_debris(|token| {
-                matches!(
-                    token.kind,
-                    TokenKind::Eof
-                        | TokenKind::KeywordEnd
-                        | TokenKind::Semi
-                        | TokenKind::RBrack
-                        | TokenKind::Comma
-                        | TokenKind::NewLine
-                )
-            });
+            let debris = self.skip_debris(DelimiterFlags::ARRAY_ELEM);
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma | TokenKind::NewLine) {
@@ -791,16 +774,7 @@ impl Parser {
         ) {
             let arg = self.parse_arg_elem(ctx);
 
-            let debris = self.skip_debris(|token| {
-                matches!(
-                    token.kind,
-                    TokenKind::Eof
-                        | TokenKind::KeywordEnd
-                        | TokenKind::Semi
-                        | TokenKind::RParen
-                        | TokenKind::Comma
-                )
-            });
+            let debris = self.skip_debris(DelimiterFlags::PAREN_ARGS_ELEM);
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
@@ -1222,12 +1196,7 @@ impl Parser {
             // primary : tLPAREN compstmt ')'
             TokenKind::LParenBeg => {
                 let lparen_token = self.bump(ctx.beg_labelable());
-                let stmts = self.parse_compstmt(|token| {
-                    matches!(
-                        token.kind,
-                        TokenKind::Eof | TokenKind::RParen | TokenKind::KeywordEnd
-                    )
-                });
+                let stmts = self.parse_compstmt(DelimiterFlags::PAREN);
                 if !matches!(self.next_token.kind, TokenKind::RParen) {
                     todo!(
                         "error recovery on unmatched parentheses: {:?}",
@@ -1292,9 +1261,7 @@ impl Parser {
                     None
                 };
                 // TODO: bodystmt
-                let body = self.parse_compstmt_(|token| {
-                    matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
-                });
+                let body = self.parse_compstmt_(DelimiterFlags::END);
                 if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!(
                         "error recovery on unmatched class-end: {:?}",
@@ -1319,9 +1286,7 @@ impl Parser {
                 // TODO: check cpath condition
                 let cpath = self.parse_primary(ctx);
                 // TODO: bodystmt
-                let body = self.parse_compstmt_(|token| {
-                    matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
-                });
+                let body = self.parse_compstmt_(DelimiterFlags::END);
                 if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!(
                         "error recovery on unmatched module-end: {:?}",
@@ -1371,9 +1336,7 @@ impl Parser {
                 }
                 self.bump(ctx.beg());
                 // TODO: bodystmt
-                let body = self.parse_compstmt_(|token| {
-                    matches!(token.kind, TokenKind::Eof | TokenKind::KeywordEnd)
-                });
+                let body = self.parse_compstmt_(DelimiterFlags::END);
                 if !matches!(self.next_token.kind, TokenKind::KeywordEnd) {
                     todo!("error recovery for def body");
                 }
@@ -1437,16 +1400,7 @@ impl Parser {
         ) {
             let arg = self.parse_f_arg(ctx);
 
-            let debris = self.skip_debris(|token| {
-                matches!(
-                    token.kind,
-                    TokenKind::Eof
-                        | TokenKind::KeywordEnd
-                        | TokenKind::Semi
-                        | TokenKind::RParen
-                        | TokenKind::Comma
-                )
-            });
+            let debris = self.skip_debris(DelimiterFlags::PAREN_ARGS_ELEM);
 
             // TODO: the condition below should exclude block args
             let delim = if matches!(self.next_token.kind, TokenKind::Comma) {
@@ -1519,14 +1473,11 @@ impl Parser {
         }
     }
 
-    fn skip_debris<F>(&mut self, is_end_token: F) -> Vec<Debri>
-    where
-        F: Fn(&Token) -> bool,
-    {
+    fn skip_debris(&mut self, delim: DelimiterFlags) -> Vec<Debri> {
         let ctx = LexCtx::default();
         let first_range = self.next_token.range;
         let mut debris = Vec::new();
-        while !is_end_token(&self.next_token) {
+        while !delim.is_end_token(&self.next_token) {
             match self.next_token.kind.token_class() {
                 // Those which likely starts an expression
                 TokenClass::SelfContained | TokenClass::MaybePrefix | TokenClass::Prefix => {
@@ -1584,6 +1535,40 @@ impl LexCtx {
 
     fn end(&self) -> LexerParams {
         self.with_mode(LexerMode::End)
+    }
+}
+
+bitflags! {
+    struct DelimiterFlags: u32 {
+        const TOKEN_END   = 0b00000001;
+        const TOKEN_SEMI  = 0b00000010;
+        const TOKEN_COMMA = 0b00000100;
+        const TOKEN_PAREN = 0b00001000;
+        const TOKEN_BRACK = 0b00010000;
+        const TOKEN_BRACE = 0b00100000;
+
+        const TOPLEVEL = 0;
+        const END = Self::TOKEN_END.bits;
+        const EXPR = Self::TOKEN_END.bits | Self::TOKEN_SEMI.bits;
+        const PAREN = Self::TOKEN_END.bits | Self::TOKEN_PAREN.bits;
+        const ARRAY_ELEM = Self::EXPR.bits | Self::TOKEN_BRACK.bits | Self::TOKEN_COMMA.bits;
+        const HASH_ELEM = Self::EXPR.bits | Self::TOKEN_BRACE.bits | Self::TOKEN_COMMA.bits;
+        const PAREN_ARGS_ELEM = Self::EXPR.bits | Self::TOKEN_PAREN.bits | Self::TOKEN_COMMA.bits;
+    }
+}
+
+impl DelimiterFlags {
+    fn is_end_token(&self, token: &Token) -> bool {
+        match token.kind {
+            TokenKind::Eof => true,
+            TokenKind::KeywordEnd => self.intersects(DelimiterFlags::TOKEN_END),
+            TokenKind::NewLine | TokenKind::Semi => self.intersects(DelimiterFlags::TOKEN_SEMI),
+            TokenKind::Comma => self.intersects(DelimiterFlags::TOKEN_COMMA),
+            TokenKind::RParen => self.intersects(DelimiterFlags::TOKEN_PAREN),
+            TokenKind::RBrack => self.intersects(DelimiterFlags::TOKEN_BRACK),
+            TokenKind::RBrace => self.intersects(DelimiterFlags::TOKEN_BRACE),
+            _ => false,
+        }
     }
 }
 
