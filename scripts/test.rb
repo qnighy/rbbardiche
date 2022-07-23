@@ -91,6 +91,23 @@ class RipperWrapper < ::Ripper   #:nodoc:
     end
   end
 
+  def node_type(node)
+    if node.is_a?(Parser::AST::Node)
+      node.type
+    else
+      nil
+    end
+  end
+
+  def tokname(tok)
+    case node_type(tok)
+    when :@cvar, :@const, :@gvar, :@ident, :@ivar, :@kw, :@op
+      tok.children[0]
+    else
+      :"RAW_TOK_#{tok.inspect}"
+    end
+  end
+
   PARSER_EVENTS.each do |event|
     module_eval(<<-End, __FILE__, __LINE__ + 1)
       def on_#{event}(*args)
@@ -153,7 +170,7 @@ class RipperWrapper < ::Ripper   #:nodoc:
   end
 
   def on_begin(stmts)
-    s(:kwbegin, collapse(stmts))
+    s(:kwbegin, *stmts.compact)
   end
 
   def on_binary(lhs, op, rhs)
@@ -175,8 +192,9 @@ class RipperWrapper < ::Ripper   #:nodoc:
     s(:break, *args)
   end
 
-  def on_call(obj, op, name)
-    if op == "&."
+  def on_call(obj, op, meth)
+    name = meth == :call ? meth : tokname(meth)
+    if node_type(op) == :@op && tokname(op) == :"&."
       s(:csend, obj, name)
     else
       s(:send, obj, name)
@@ -191,16 +209,40 @@ class RipperWrapper < ::Ripper   #:nodoc:
     s(:class, path, superclass, collapse(body))
   end
 
-  def on_const_path_ref(base, name)
-    s(:const, base, name)
+  def on_command(meth, args)
+    s(:send, nil, tokname(meth), *args)
   end
 
-  def on_const_ref(name)
-    s(:const, nil, name)
+  def on_command_call(obj, op, meth, args)
+    if node_type(op) == :@op && tokname(op) == :"&."
+      s(:csend, obj, tokname(meth), *args)
+    else
+      s(:send, obj, tokname(meth), *args)
+    end
+  end
+
+  def on_const_path_ref(base, c)
+    s(:const, base, tokname(c))
+  end
+
+  def on_const_ref(c)
+    s(:const, nil, tokname(c))
+  end
+
+  def on_def(meth, params, stmts)
+    s(:def, tokname(meth), s(:args, *params), collapse(stmts))
   end
 
   def on_defined(expr)
     s(:defined?, expr)
+  end
+
+  def on_dot2(lhs, rhs)
+    s(:irange, lhs, rhs)
+  end
+
+  def on_dot3(lhs, rhs)
+    s(:erange, lhs, rhs)
   end
 
   def on_else(stmts)
@@ -208,8 +250,8 @@ class RipperWrapper < ::Ripper   #:nodoc:
     s(:else, collapse(stmts))
   end
 
-  def on_fcall(name)
-    s(:send, nil, name)
+  def on_fcall(meth)
+    s(:send, nil, tokname(meth))
   end
 
   def on_for(lhs, collection, body)
@@ -218,7 +260,7 @@ class RipperWrapper < ::Ripper   #:nodoc:
 
   def on_if(cond, then_cl, else_cl)
     then_cl = collapse(then_cl)
-    if else_cl.is_a?(Parser::AST::Node) && else_cl.type == :else
+    if node_type(else_cl) == :else
       else_cl = else_cl.children[0]
     end
     s(:if, cond, then_cl, else_cl)
@@ -249,16 +291,51 @@ class RipperWrapper < ::Ripper   #:nodoc:
   end
 
   def on_opassign(lhs, op, rhs)
-    op_base = op.to_s.sub(/=$/, "").to_sym
+    op_base = tokname(op).to_s.sub(/=$/, "").to_sym
     s(:op_asgn, lhs, op_base, rhs)
   end
 
-  def on_paren(stmts)
-    if stmts.is_a?(Parser::AST::Node) && stmts.type == :RAW_params
-      s(:RAW_paren, stmts)
-    else
-      s(:begin, *stmts.compact)
+  def on_params(pre, opt, rest, post, kw, kwrest, block)
+    params = []
+    (pre || []).each do |arg|
+      params << s(:arg, tokname(arg))
     end
+    (opt || []).each do |arg|
+      params << s(:optarg, tokname(arg[0]), arg[1])
+    end
+    if rest
+      if rest.children[0]
+        params << s(:restarg, rest.children[0])
+      else
+        params << s(:restarg)
+      end
+    end
+    (post || []).each do |arg|
+      params << s(:arg, tokname(arg))
+    end
+    (kw || []).each do |arg|
+      kwname = arg[0].children[0].sub(/:$/, "").to_sym
+      if arg[1]
+        params << s(:kwoptarg, kwname, arg[1])
+      else
+        params << s(:kwarg, kwname)
+      end
+    end
+    if kwrest
+      if kwrest.children[0]
+        params << s(:kwrestarg, rest.children[0])
+      else
+        params << s(:kwrestarg)
+      end
+    end
+    if block
+      params << s(:blockarg, block)
+    end
+    params
+  end
+
+  def on_paren(stmts)
+    s(:begin, *stmts.compact)
   end
 
   def on_program(stmts)
@@ -282,8 +359,16 @@ class RipperWrapper < ::Ripper   #:nodoc:
     s(:return)
   end
 
-  def on_symbol_literal(name)
-    s(:sym, name)
+  def on_symbol(v)
+    s(:sym, tokname(v))
+  end
+
+  def on_symbol_literal(sym)
+    if node_type(sym) == :sym
+      sym
+    else
+      s(:sym, tokname(sym))
+    end
   end
 
   def on_unary(op, expr)
@@ -311,27 +396,46 @@ class RipperWrapper < ::Ripper   #:nodoc:
     s(:until, cond, expr)
   end
 
-  def on_var_field(name)
-    s(:lvasgn, name)
+  def on_var_field(v)
+    s(:lvasgn, tokname(v))
   end
 
-  def on_var_ref(name)
-    case name.to_s
-    when /\A\$/
-      s(:gvar, name)
-    when /\A@@/
-      s(:cvar, name)
-    when /\A@/
-      s(:ivar, name)
-    when /\A[\p{Uppercase_Letter}\p{Titlecase_Letter}]/
-      s(:const, nil, name)
+  def on_var_ref(v)
+    case node_type(v)
+    when :@gvar
+      s(:gvar, tokname(v))
+    when :@cvar
+      s(:cvar, tokname(v))
+    when :@ivar
+      s(:ivar, tokname(v))
+    when :@const
+      s(:const, nil, tokname(v))
+    when :@ident
+      s(:lvar, tokname(v))
+    when :@kw
+      case tokname(v)
+      when :nil
+        s(:nil)
+      when :true
+        s(:true)
+      when :false
+        s(:false)
+      when :__FILE__
+        s(:__FILE__)
+      when :__LINE__
+        s(:__LINE__)
+      when :__ENCODING__
+        s(:__ENCODING__)
+      else
+        s(:RAW_var_ref, v)
+      end
     else
-      s(:lvar, name)
+      s(:RAW_var_ref, v)
     end
   end
 
-  def on_vcall(name)
-    s(:send, nil, name)
+  def on_vcall(meth)
+    s(:send, nil, tokname(meth))
   end
 
   def on_void_stmt
@@ -341,7 +445,7 @@ class RipperWrapper < ::Ripper   #:nodoc:
   def on_when(conds, stmts, tail)
     if tail.nil?
       tail = [nil]
-    elsif tail.is_a?(Parser::AST::Node) && tail.type == :else
+    elsif node_type(tail) == :else
       tail = [tail]
     end
     tail.unshift(s(:when, *conds, collapse(stmts)))
@@ -394,20 +498,24 @@ class RipperWrapper < ::Ripper   #:nodoc:
     end
   end
 
+  def on_backtick(tok)
+    s(:@op, tok.to_sym)
+  end
+
   def on_cvar(tok)
-    tok.to_sym
+    s(:@cvar, tok.to_sym)
   end
 
   def on_const(tok)
-    tok.to_sym
+    s(:@const, tok.to_sym)
   end
 
   def on_gvar(tok)
-    tok.to_sym
+    s(:@gvar, tok.to_sym)
   end
 
   def on_ident(tok)
-    tok.to_sym
+    s(:@ident, tok.to_sym)
   end
 
   def on_int(tok)
@@ -415,11 +523,15 @@ class RipperWrapper < ::Ripper   #:nodoc:
   end
 
   def on_ivar(tok)
-    tok.to_sym
+    s(:@ivar, tok.to_sym)
+  end
+
+  def on_kw(tok)
+    s(:@kw, tok.to_sym)
   end
 
   def on_op(tok)
-    tok.to_sym
+    s(:@op, tok.to_sym)
   end
 end
 
